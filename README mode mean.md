@@ -144,8 +144,7 @@ fi
 | Paramter     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
 | -finishline | 1/2 of image |  A column of all images is lined up. This gives a rough overview of the pictures from the whole night. With this parameter you can now choose another column. (Center of rotation, ...)|
-| -addRow | 0 |  In case of short nights or high resolution you will get thin keograms. (1:) add the same row twice or more to get a "good" image.
-(2:) add the neighbor column(s). So you can see the transit of one star.|
+| -addRow | 0 |  In case of short nights or high resolution you will get thin keograms. 1: add the same row twice or more to get a "good" image. 2: add the neighbor column(s). So you can see the transit of one star.|
 
 
 ## Usage
