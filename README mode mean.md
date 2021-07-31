@@ -97,7 +97,7 @@ nano config.sh
 | MEAN_KP | 1 | experimental parameter - not used |
 | MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
 | MEAN_INFO | 0 | 1: show some debug infos in the image |
-| MEAN_QUICKSTART | 0 | 1: deactivate delay between captures, until the mean_value has reached | 
+| MEAN_QUICKSTART | 10 | >1: Only 1s delay between captures for MEAN_QUICKSTART times or until the mean_value has reached | 
 
 
 ### Other scripts of interest
