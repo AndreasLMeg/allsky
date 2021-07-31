@@ -22,6 +22,7 @@
 // new includes
 #include "mode_RPiHQ_mean.h"
 #include "RPiHQ_raspistill.h"
+#include "RPiHQ_modeMean.h"
 
 using namespace std;
 
@@ -47,6 +48,7 @@ bool bSavingImg = false;
 
 
 raspistillSetting myRaspistillSetting;
+modeMeanSetting myModeMeanSetting;
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -800,6 +802,11 @@ int main(int argc, char *argv[])
 				mean_info = atoi(argv[i + 1]);
 				i++;
 			}
+			else if (strcmp(argv[i], "-mean-quickstart") == 0)
+			{
+				myModeMeanSetting.quickstart = std::max(0,atoi(argv[i + 1]));
+				i++;
+			}
 			// Check for text parameter
 			else if (strcmp(argv[i], "-text") == 0)
 			{
@@ -1123,7 +1130,7 @@ int main(int argc, char *argv[])
 // printf("Daytimecapture: %d\n", daytimeCapture);
 
 		if (mode_mean) {
-  			RPiHQcalcMean(fileName, asiExposure, asiGain, mean_value, mean_threshold, mean_shuttersteps, mean_fastforward, mean_brightnessControl,  asiBrightness, mean_historySize, mean_Kp, myRaspistillSetting);
+  			RPiHQcalcMean(fileName, asiExposure, asiGain, mean_value, mean_threshold, mean_shuttersteps, mean_fastforward, mean_brightnessControl,  asiBrightness, mean_historySize, mean_Kp, myRaspistillSetting, myModeMeanSetting);
 		}
 
 		if (dayOrNight=="DAY")
@@ -1253,10 +1260,19 @@ int main(int argc, char *argv[])
 					}
 
 					if (mode_mean) {
-						RPiHQcalcMean(fileName, asiExposure, asiGain, mean_value, mean_threshold, mean_shuttersteps, mean_fastforward, mean_brightnessControl,  asiBrightness, mean_historySize, mean_Kp, myRaspistillSetting);
-						printf("asiExposure: %d shutter: %1.4f s\n", asiExposure, (double) myRaspistillSetting.shutter / 1000000.0);
-						if ((dayOrNight == "NIGHT") && !mean_longplay) {
+						RPiHQcalcMean(fileName, asiExposure, asiGain, mean_value, mean_threshold, mean_shuttersteps, mean_fastforward, mean_brightnessControl,  asiBrightness, mean_historySize, mean_Kp, myRaspistillSetting, myModeMeanSetting);
+						printf("asiExposure: %d shutter: %1.4f s quickstart: %d\n", asiExposure, (double) myRaspistillSetting.shutter / 1000000.0, myModeMeanSetting.quickstart);
+						if (myModeMeanSetting.quickstart) {
+							useDelay = 1000;
+						}
+						else if ((dayOrNight == "NIGHT") && !mean_longplay) {
 							useDelay = (asiExposure / 1000) - (int) (myRaspistillSetting.shutter / 1000.0) + delay;
+						}
+						else if (dayOrNight == "NIGHT"){
+							useDelay = delay;
+						}
+						else {
+							useDelay = daytimeDelay;
 						}
 					}
 

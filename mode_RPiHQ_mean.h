@@ -9,6 +9,8 @@
 #define MEAN_H
 
 #include "RPiHQ_raspistill.h"
+#include "RPiHQ_modeMean.h"
+
 
 //user defined mode "mean"
 bool mode_mean    = false;
@@ -23,7 +25,7 @@ double mean_Kp = 1.0;
 int mean_maskHorizon = 0;
 int mean_info = 0;
 
-void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double mean_value, double mean_threshold, double mean_shuttersteps, double mean_fastforward, int mean_brightnessControl,  int asiBrightness, int mean_historySize, double Kp, raspistillSetting &currentRaspistillSetting);
+void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double mean_value, double mean_threshold, double mean_shuttersteps, double mean_fastforward, int mean_brightnessControl,  int asiBrightness, int mean_historySize, double Kp, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting);
 void RPiHQmask(const char* fileName);
 
 #endif

@@ -83,6 +83,8 @@ if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
   if [ -z ${MEAN_KP+x} ]; then echo "MEAN_KP is unset"; else ARGUMENTS="$ARGUMENTS -mean-kp $MEAN_KP "; fi
   if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
   if [ -z ${MEAN_BRIGHTNESSCONTROL+x} ]; then echo "MEAN_BRIGHTNESSCONTROL is unset"; else ARGUMENTS="$ARGUMENTS -mean-brightnessControl $MEAN_BRIGHTNESSCONTROL "; fi
+  if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
+  if [ -z ${MEAN_QUICKSTART+x} ]; then echo "MEAN_QUICKSTART is unset"; else ARGUMENTS="$ARGUMENTS -mean-quickstart $MEAN_QUICKSTART "; fi
 fi
 
 # When using a desktop environment (Remote Desktop, VNC, HDMI output, etc), a preview of the capture can be displayed in a separate window

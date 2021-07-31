@@ -17,6 +17,7 @@
 #include <algorithm> 
 
 #include "RPiHQ_raspistill.h"
+#include "RPiHQ_modeMean.h"
 
 int ExposureLevel = 1;
 double mean_history [5] = {0.5,0.5,0.5,0.5,0.5};
@@ -144,7 +145,7 @@ void RPiHQmask(const char* fileName)
 }
 
 // Build capture command to capture the image from the HQ camera
-void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double mean_value, double mean_threshold, double mean_shuttersteps,  double mean_fastforward, int mean_brightnessControl, int asiBrightness, int mean_historySize, double Kp, raspistillSetting &currentRaspistillSetting)
+void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double mean_value, double mean_threshold, double mean_shuttersteps,  double mean_fastforward, int mean_brightnessControl, int asiBrightness, int mean_historySize, double Kp, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
 {
 
 	// get old ExposureTime
@@ -327,6 +328,15 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 			else {
 				ExposureLevel -= ExposureChange;
 			}
+		}
+		else {
+			if (currentModeMeanSetting.quickstart) {
+				currentModeMeanSetting.quickstart = 0;
+				printf("Quickstart deactivated !\n");
+			}
+		}
+		if (currentModeMeanSetting.quickstart > 0) {
+			currentModeMeanSetting.quickstart--;
 		}
 
 		// gain or exposure ?
