@@ -19,7 +19,7 @@
 #include "RPiHQ_raspistill.h"
 #include "RPiHQ_modeMean.h"
 
-double mean_history [5] = {0.5,0.5,0.5,0.5,0.5};
+double mean_history [5] = {0.0,1.0,0.0,1.0,0.0};
 int MeanCnt = 0;
 
 //double Kp = 50.0;
@@ -326,12 +326,6 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 			}
 			else {
 				currentModeMeanSetting.ExposureLevel -= ExposureChange;
-			}
-		}
-		else {
-			if (currentModeMeanSetting.quickstart) {
-				currentModeMeanSetting.quickstart = 0;
-				printf("Quickstart deactivated !\n");
 			}
 		}
 		if (currentModeMeanSetting.quickstart > 0) {

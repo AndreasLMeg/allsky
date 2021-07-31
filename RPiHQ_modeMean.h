@@ -19,7 +19,7 @@ struct modeMeanSetting {
     double Kp = 1.0;                // unused feature
     int maskHorizon = 0;            //
     int info = 0;                   // show some debug infos
-    int quickstart = 10;    // Sets the quickstart. deactivate delay between captures, until the mean_value has reached.
+    int quickstart = 10;            // Sets the quickstart. Deactivate delay between captures for quickstart times.
     // some other values
     int ExposureLevel = 1;  // current ExposureLevel 
 };
