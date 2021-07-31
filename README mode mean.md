@@ -97,6 +97,7 @@ nano config.sh
 | MEAN_KP | 1 | experimental parameter - not used |
 | MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
 | MEAN_INFO | 0 | 1: show some debug infos in the image |
+| MEAN_QUICKSTART | 0 | 1: deactivate delay between captures, until the mean_value has reached | 
 
 
 ### Other scripts of interest
@@ -130,6 +131,7 @@ if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
   if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
   if [ -z ${MEAN_BRIGHTNESSCONTROL+x} ]; then echo "MEAN_BRIGHTNESSCONTROL is unset"; else ARGUMENTS="$ARGUMENTS -mean-brightnessControl $MEAN_BRIGHTNESSCONTROL "; fi
   if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
+  if [ -z ${MEAN_QUICKSTART+x} ]; then echo "MEAN_QUICKSTART is unset"; else ARGUMENTS="$ARGUMENTS -mean-quickstart $MEAN_QUICKSTART "; fi
 fi
 ```
 
