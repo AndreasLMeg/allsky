@@ -19,7 +19,6 @@
 #include "RPiHQ_raspistill.h"
 #include "RPiHQ_modeMean.h"
 
-int ExposureLevel = 1;
 double mean_history [5] = {0.5,0.5,0.5,0.5,0.5};
 int MeanCnt = 0;
 
@@ -145,7 +144,7 @@ void RPiHQmask(const char* fileName)
 }
 
 // Build capture command to capture the image from the HQ camera
-void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double mean_value, double mean_threshold, double mean_shuttersteps,  double mean_fastforward, int mean_brightnessControl, int asiBrightness, int mean_historySize, double Kp, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
+void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int asiBrightness, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
 {
 
 	// get old ExposureTime
@@ -231,7 +230,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 			std::cout <<  basename(fileName) << " " << ExposureTest << " " << mean << " " << (mean_value - mean) << std::endl;
 		ExposureTest = ExposureTest / 2;
 		*/
-		std::cout <<  basename(fileName) << " " << ExposureTime << " " << mean << " " << (mean_value - mean) << std::endl;
+		std::cout <<  basename(fileName) << " " << ExposureTime << " " << mean << " " << (currentModeMeanSetting.mean_value - mean) << std::endl;
 
 		// Versuch PI Regler
 		if (STG == 0.0) {
@@ -243,7 +242,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 		Tn = Ta * 10.0;
 		//printf("Tn: %1.8f\n", Tn);
 
-		Ek = Kp * (mean_value - mean);
+		Ek = currentModeMeanSetting.Kp * (currentModeMeanSetting.mean_value - mean);
 		//printf("Ek: %1.8f\n", Ek);
 
 		Esum = Esum + Ek;
@@ -265,7 +264,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 			STG_Brightness = asiBrightness; // Start asiBrightness
 		}
 
-		Ek_Brightness = Kp_Brightness * (mean_value - mean);
+		Ek_Brightness = Kp_Brightness * (currentModeMeanSetting.mean_value - mean);
 		//printf("Ek_Brightness: %1.8f\n", Ek_Brightness);
 
 		Esum_Brightness = Esum_Brightness + Ek_Brightness;
@@ -282,43 +281,43 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 
 		// avg of mean history 
 		printf("MeanCnt: %d\n", MeanCnt);
-		printf("mean_historySize: %d\n", mean_historySize);
-		mean_history[MeanCnt % mean_historySize] = mean;
+		printf("mean_historySize: %d\n", currentModeMeanSetting.historySize);
+		mean_history[MeanCnt % currentModeMeanSetting.historySize] = mean;
 		int values = 0;
 		mean=0.0;
-		for (int i=1; i <= mean_historySize; i++) {
-  			printf("i=%d: idx=%d mean=%1.4f\n", i, (MeanCnt + i) % mean_historySize, mean_history[(MeanCnt + i) % mean_historySize]);
-			mean += mean_history[(MeanCnt + i) % mean_historySize] * (double) i;
+		for (int i=1; i <= currentModeMeanSetting.historySize; i++) {
+  			printf("i=%d: idx=%d mean=%1.4f\n", i, (MeanCnt + i) % currentModeMeanSetting.historySize, mean_history[(MeanCnt + i) % currentModeMeanSetting.historySize]);
+			mean += mean_history[(MeanCnt + i) % currentModeMeanSetting.historySize] * (double) i;
 			values += i;
 		} 
 		printf("values: %d\n", values);
 		mean = mean / (double) values;
 		MeanCnt++;
 
-   		double mean_diff = abs(mean - mean_value);
+   		double mean_diff = abs(mean - currentModeMeanSetting.mean_value);
 		printf("mean_diff: %1.4f\n", mean_diff);
     
 		int ExposureChange = 1;
 	    // fast forward
-		if (mean_diff > (mean_threshold * 2.0)) {
-			ExposureChange = std::max(1.0, pow ((mean_diff * mean_fastforward * mean_shuttersteps),2.0));
+		if (mean_diff > (currentModeMeanSetting.mean_threshold * 2.0)) {
+			ExposureChange = std::max(1.0, pow ((mean_diff * currentModeMeanSetting.fastforward * currentModeMeanSetting.shuttersteps),2.0));
 		}
 		printf("ExposureChange: %d\n", ExposureChange);
 
 		//printf("asiExposure: %d\n", asiExposure);
 		//printf("asiGain: %1.4f\n", asiGain);
-		if (mean < (mean_value - (mean_threshold))) {
-			if (mean_brightnessControl && (currentRaspistillSetting.brightness < asiBrightness)) {
+		if (mean < (currentModeMeanSetting.mean_value - (currentModeMeanSetting.mean_threshold))) {
+			if (currentModeMeanSetting.brightnessControl && (currentRaspistillSetting.brightness < asiBrightness)) {
 				currentRaspistillSetting.brightness++;
 			}
 			else if ((currentRaspistillSetting.analoggain < asiGain) || (currentRaspistillSetting.shutter < asiExposure)) {  // obere Grenze durch Gaim und shutter
-				ExposureLevel += ExposureChange;
+				currentModeMeanSetting.ExposureLevel += ExposureChange;
 			}
 		}
-		if (mean > (mean_value + mean_threshold))  {
+		if (mean > (currentModeMeanSetting.mean_value + currentModeMeanSetting.mean_threshold))  {
 			if (ExposureTime <= 0.000001) { // untere Grenze durch shuttertime
 				printf("ExposureTime to low - stop !\n");
-				if (mean_brightnessControl && (currentRaspistillSetting.brightness > 0)) {
+				if (currentModeMeanSetting.brightnessControl && (currentRaspistillSetting.brightness > 0)) {
 					currentRaspistillSetting.brightness--;
 				}
 				else {
@@ -326,7 +325,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 				}
 			}
 			else {
-				ExposureLevel -= ExposureChange;
+				currentModeMeanSetting.ExposureLevel -= ExposureChange;
 			}
 		}
 		else {
@@ -342,7 +341,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 		// gain or exposure ?
 		if (true) {
         	// change gain
-			double newGain = std::min(asiGain, std::max(1.0, pow(2.0, double(ExposureLevel)/pow(mean_shuttersteps,2.0)) / (asiExposure/1000000.0))); 
+			double newGain = std::min(asiGain, std::max(1.0, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (asiExposure/1000000.0))); 
 			double deltaGain = newGain - currentRaspistillSetting.analoggain; 
 			if (deltaGain > 2.0) {
 				currentRaspistillSetting.analoggain += 2.0;
@@ -353,19 +352,19 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 			else {
 				currentRaspistillSetting.analoggain = newGain;
 			}
-			ExposureTime = pow(2.0, double(ExposureLevel)/pow(mean_shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
+			ExposureTime = pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
 		}
 		else {
 			// change ExposureTime
 			// calculate new ExposureTime
-			ExposureTime = pow(2.0, double(ExposureLevel)/pow(mean_shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
+			ExposureTime = pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
 			if ((ExposureTime > (asiExposure/1000000.0)) && (currentRaspistillSetting.analoggain < asiGain)) {
 				currentRaspistillSetting.analoggain += 1.0;
-				ExposureTime = pow(2.0, double(ExposureLevel)/pow(mean_shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
+				ExposureTime = pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
 			}
-			else if ((currentRaspistillSetting.analoggain >= 2) && (pow(2.0, double(ExposureLevel)/pow(mean_shuttersteps,2.0)) / (currentRaspistillSetting.analoggain-1) <= (asiExposure/1000000.0))) {
+			else if ((currentRaspistillSetting.analoggain >= 2) && (pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (currentRaspistillSetting.analoggain-1) <= (asiExposure/1000000.0))) {
 				currentRaspistillSetting.analoggain -= 1.0;
-				ExposureTime = pow(2.0, double(ExposureLevel)/pow(mean_shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
+				ExposureTime = pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain;
 			}
 		}
 
@@ -377,7 +376,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, double
 		}
 		
 		currentRaspistillSetting.shutter = ExposureTime * 1000 * 1000;
-		printf("Mean: %1.4f Exposure level:%d Exposure time:%1.8f analoggain:%1.2f\n", mean, ExposureLevel, ExposureTime, currentRaspistillSetting.analoggain);
+		printf("Mean: %1.4f Exposure level:%d Exposure time:%1.8f analoggain:%1.2f\n", mean, currentModeMeanSetting.ExposureLevel, ExposureTime, currentRaspistillSetting.analoggain);
 
 	}
 }
