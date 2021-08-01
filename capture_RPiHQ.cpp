@@ -304,11 +304,9 @@ time ( NULL );
 	if (asiWBR < 0.1) 	{
 		asiWBR = 0.1;
 	}
-
 	if (asiWBR > 10) {
 		asiWBR = 10;
 	}
-
 	if (asiWBB < 0.1) {
 		asiWBB = 0.1;
 	}
@@ -333,7 +331,7 @@ time ( NULL );
 			awb += "," + ss.str() + " ";
 		}
 	}
-	else if (!asiAutoGain) {
+	else if (!asiAutoAWB) {
 		ss.str("");
 		ss << asiWBR;
 		awb  = "--awb off --awbgains " + ss.str();
@@ -701,12 +699,14 @@ int main(int argc, char *argv[])
 				daytimeDelay = atoi(argv[i + 1]);
 				i++;
 			}
+
 			else if (strcmp(argv[i], "-awb") == 0)
 			{
 				printf("argument: %s: %s not use !\n\n", argv[i], argv[i + 1]);
 				asiAutoAWB = atoi(argv[i + 1]);
 				i++;
 			}
+
 			else if (strcmp(argv[i], "-wbr") == 0)
 			{
 				asiWBR = atof(argv[i + 1]);
@@ -980,7 +980,7 @@ int main(int argc, char *argv[])
 		printf(" -autogain                          - Default = 0 - Set to 1 to enable auto Gain \n");
 		printf(" -gamma                             - Default = 50 (-100 till 100)\n");
 		printf(" -brightness                        - Default = 50 (0 till 100) \n");
-//		printf(" -awb                               - Default = 0 - Auto White Balance (0 = off)\n");
+		printf(" -awb                               - Default = 0 - Auto White Balance (0 = off)\n");
 		printf(" -wbr                               - Default = 2 - White Balance Red  (0 = off)\n");
 		printf(" -wbb                               - Default = 2 - White Balance Blue (0 = off)\n");
 		printf(" -bin                               - Default = 1 - binning OFF (1x1), 2 = 2x2, 3 = 3x3 binning\n");
