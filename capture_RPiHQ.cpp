@@ -20,8 +20,8 @@
 #include <fstream>
 
 // new includes
-#include "mode_RPiHQ_mean.h"
 #include "RPiHQ_raspistill.h"
+#include "RPiHQ_modeMean.h"
 
 using namespace std;
 
@@ -47,6 +47,7 @@ bool bSavingImg = false;
 
 
 raspistillSetting myRaspistillSetting;
+modeMeanSetting myModeMeanSetting;
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -219,7 +220,7 @@ time ( NULL );
 
 	if (asiAutoExposure)
 	{
-		if (mode_mean) {
+		if (myModeMeanSetting.mode_mean) {
 			ss.str("");
 			ss << myRaspistillSetting.shutter;
 			shutter = "--exposure off --shutter " + ss.str() + " ";
@@ -250,7 +251,7 @@ time ( NULL );
 	// Check if auto gain is slected
 	if (asiAutoGain)
 	{
-		if (mode_mean) {
+		if (myModeMeanSetting.mode_mean) {
 			ss.str("");
 			ss << myRaspistillSetting.analoggain;
 			gain = "--analoggain " + ss.str() + " ";
@@ -288,7 +289,7 @@ time ( NULL );
 	command += gain;
 
 	// Add exif information to raspistill command string
-	if (mode_mean) {
+	if (myModeMeanSetting.mode_mean) {
      	string exif;
 	   	stringstream Str_ExposureTime;
    		stringstream Str_Reinforcement;
@@ -316,7 +317,7 @@ time ( NULL );
 	}
 
 	// Check if R and B component are given
-	if (mode_mean) {
+	if (myModeMeanSetting.mode_mean) {
 		// support asiAutoAWB, asiWBR and asiWBB
 		if (asiAutoAWB) {
   			awb = "--awb auto ";
@@ -419,7 +420,7 @@ time ( NULL );
 		asiBrightness = 100;
 	}
 
-	if (mode_mean) {
+	if (myModeMeanSetting.mode_mean) {
 		// check if brightness setting is set
 		if (myRaspistillSetting.brightness != 50) {
 			ss.str("");
@@ -469,7 +470,7 @@ time ( NULL );
 		if (strcmp(ImgText, "") != 0) {
 			ss.str("");
 			ss << ImgText; 
-			if (mean_info) {
+			if (myModeMeanSetting.info) {
 				ss << ImgText
 				<< " (li-" << __TIMESTAMP__ << ") " 
 			   	<< myRaspistillSetting.brightness << " " 
@@ -717,87 +718,67 @@ int main(int argc, char *argv[])
 				asiWBB = atof(argv[i + 1]);
 				i++;
 			}
-			//bool mode_mean    = false;
-			//double mean_value    = 0.5;
-			//double mean_threshold = 0.05;
-			//double mean_shuttersteps = 3.0;
 			else if (strcmp(argv[i], "-mode") == 0)
 			{
 				mode = atoi(argv[i + 1]);
 				i++;
-				mode_mean = (mode == 1);  
+				myModeMeanSetting.mode_mean = (mode == 1);  
 				
    				//printf("mode: %d\n", mode);
 			}
 			else if (strcmp(argv[i], "-mean-value") == 0)
 			{
-				mean_value = atof(argv[i + 1]);
+				myModeMeanSetting.mean_value = atof(argv[i + 1]);
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-threshold") == 0)
 			{
-				mean_threshold = atof(argv[i + 1]);
+				myModeMeanSetting.mean_threshold = atof(argv[i + 1]);
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-shuttersteps") == 0)
 			{
-				mean_shuttersteps = atof(argv[i + 1]);
-				if (mean_shuttersteps <= 1.0) {
-					mean_shuttersteps = 1.0;
-				}
+				myModeMeanSetting.shuttersteps = std::max(1.0,atof(argv[i + 1]));
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-fastforward") == 0)
 			{
-				mean_fastforward = atof(argv[i + 1]);
-				if (mean_fastforward < 1.0) {
-					mean_fastforward = 1.0;
-				}
-				else if (mean_fastforward > 10.0) {
-					mean_fastforward = 10.0;
-				}
+				myModeMeanSetting.fastforward = std::min(10.0,std::max(1.0,atof(argv[i + 1])));
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-longplay") == 0)
 			{
-				mean_longplay = atoi(argv[i + 1]);
+				myModeMeanSetting.longplay = atoi(argv[i + 1]);
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-historySize") == 0)
 			{
-				mean_historySize = atoi(argv[i + 1]);
-				if (mean_historySize < 1) {
-					mean_historySize = 1;
-				}
-				else if (mean_historySize > 5) {
-					mean_historySize = 5;
-				}
+				myModeMeanSetting.historySize = std::min(5,std::max(1,atoi(argv[i + 1])));
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-kp") == 0)
 			{
-				mean_Kp = atof(argv[i + 1]);
-				if (mean_Kp < 1.0) {
-					mean_Kp = 1.0;
-				}
-				else if (mean_Kp > 100.0) {
-					mean_Kp = 100.0;
-				}
+				myModeMeanSetting.Kp = std::min(100.0,std::max(1.0,atof(argv[i + 1])));
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-maskHorizon") == 0)
 			{
-				mean_maskHorizon = atoi(argv[i + 1]);
+				myModeMeanSetting.maskHorizon = atoi(argv[i + 1]);
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-brightnessControl") == 0)
 			{
-				mean_brightnessControl = atoi(argv[i + 1]);
+				myModeMeanSetting.brightnessControl = atoi(argv[i + 1]);
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-info") == 0)
 			{
-				mean_info = atoi(argv[i + 1]);
+				myModeMeanSetting.info = atoi(argv[i + 1]);
+				i++;
+			}
+			else if (strcmp(argv[i], "-mean-quickstart") == 0)
+			{
+				myModeMeanSetting.quickstart = std::max(0,atoi(argv[i + 1]));
 				i++;
 			}
 			// Check for text parameter
@@ -1122,8 +1103,8 @@ int main(int argc, char *argv[])
 // Next lines are present for testing purposes
 // printf("Daytimecapture: %d\n", daytimeCapture);
 
-		if (mode_mean) {
-  			RPiHQcalcMean(fileName, asiExposure, asiGain, mean_value, mean_threshold, mean_shuttersteps, mean_fastforward, mean_brightnessControl,  asiBrightness, mean_historySize, mean_Kp, myRaspistillSetting);
+		if (myModeMeanSetting.mode_mean) {
+  			RPiHQcalcMean(fileName, asiExposure, asiGain, asiBrightness, myRaspistillSetting, myModeMeanSetting);
 		}
 
 		if (dayOrNight=="DAY")
@@ -1138,7 +1119,7 @@ int main(int argc, char *argv[])
 
 		if (dayOrNight == "DAY")
 		{
-			if (mode_mean) {
+			if (myModeMeanSetting.mode_mean) {
 				// changing settings in runtime is so bad... 
 				asiAutoExposure = 1;
 				asiGain = 1;
@@ -1198,7 +1179,7 @@ int main(int argc, char *argv[])
 		else if (dayOrNight == "NIGHT")
 		{
 			// Retrieve auto gain setting
-			if (mode_mean) {
+			if (myModeMeanSetting.mode_mean) {
 				asiGain = oldGain;
 				asiAutoExposure = 1;
 			}
@@ -1230,7 +1211,7 @@ int main(int argc, char *argv[])
 
 				// Capture and save image
 				RPiHQcapture(asiAutoFocus, asiAutoExposure, currentExposure, asiAutoGain, asiAutoAWB, asiGain, bin, asiWBR, asiWBB, asiRotation, asiFlip, asiGamma, asiBrightness, quality, fileName, time, showDetails, ImgText, fontsize, fontcolor, background, darkframe);
-				if (mean_maskHorizon) {
+				if (myModeMeanSetting.maskHorizon) {
 					RPiHQmask (fileName);
 				}
 
@@ -1252,11 +1233,20 @@ int main(int argc, char *argv[])
 						system("scripts/saveImageDay.sh &");
 					}
 
-					if (mode_mean) {
-						RPiHQcalcMean(fileName, asiExposure, asiGain, mean_value, mean_threshold, mean_shuttersteps, mean_fastforward, mean_brightnessControl,  asiBrightness, mean_historySize, mean_Kp, myRaspistillSetting);
-						printf("asiExposure: %d shutter: %1.4f s\n", asiExposure, (double) myRaspistillSetting.shutter / 1000000.0);
-						if ((dayOrNight == "NIGHT") && !mean_longplay) {
+					if (myModeMeanSetting.mode_mean) {
+						RPiHQcalcMean(fileName, asiExposure, asiGain, asiBrightness, myRaspistillSetting, myModeMeanSetting);
+						printf("asiExposure: %d shutter: %1.4f s quickstart: %d\n", asiExposure, (double) myRaspistillSetting.shutter / 1000000.0, myModeMeanSetting.quickstart);
+						if (myModeMeanSetting.quickstart) {
+							useDelay = 1000;
+						}
+						else if ((dayOrNight == "NIGHT") && !myModeMeanSetting.longplay) {
 							useDelay = (asiExposure / 1000) - (int) (myRaspistillSetting.shutter / 1000.0) + delay;
+						}
+						else if (dayOrNight == "NIGHT"){
+							useDelay = delay;
+						}
+						else {
+							useDelay = daytimeDelay;
 						}
 					}
 

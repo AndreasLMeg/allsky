@@ -57,7 +57,7 @@ capture:capture.cpp
 	$(CC)  capture.cpp -o capture $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
 
 capture_RPiHQ:capture_RPiHQ.cpp mode_RPiHQ_mean.o
-	$(CC)  capture_RPiHQ.cpp mode_RPiHQ_mean.cpp mode_RPiHQ_mean.h -o capture_RPiHQ $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
+	$(CC)  capture_RPiHQ.cpp mode_RPiHQ_mean.cpp -o capture_RPiHQ $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
 
 startrails:startrails.cpp
 	$(CC)  startrails.cpp -o startrails $(CFLAGS) $(OPENCV)

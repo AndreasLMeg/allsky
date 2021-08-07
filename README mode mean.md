@@ -97,6 +97,7 @@ nano config.sh
 | MEAN_KP | 1 | experimental parameter - not used |
 | MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
 | MEAN_INFO | 0 | 1: show some debug infos in the image |
+| MEAN_QUICKSTART | 10 | >0: Only 1s delay between captures for MEAN_QUICKSTART times |
 
 
 ### Other scripts of interest
@@ -130,6 +131,7 @@ if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
   if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
   if [ -z ${MEAN_BRIGHTNESSCONTROL+x} ]; then echo "MEAN_BRIGHTNESSCONTROL is unset"; else ARGUMENTS="$ARGUMENTS -mean-brightnessControl $MEAN_BRIGHTNESSCONTROL "; fi
   if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
+  if [ -z ${MEAN_QUICKSTART+x} ]; then echo "MEAN_QUICKSTART is unset"; else ARGUMENTS="$ARGUMENTS -mean-quickstart $MEAN_QUICKSTART "; fi
 fi
 ```
 
@@ -142,8 +144,7 @@ fi
 | Paramter     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
 | -finishline | 1/2 of image |  A column of all images is lined up. This gives a rough overview of the pictures from the whole night. With this parameter you can now choose another column. (Center of rotation, ...)|
-| -addRow | 0 |  In case of short nights or high resolution you will get thin keograms. (1:) add the same row twice or more to get a "good" image.
-(2:) add the neighbor column(s). So you can see the transit of one star.|
+| -addRow | 0 |  In case of short nights or high resolution you will get thin keograms. 1: add the same row twice or more to get a "good" image. 2: add the neighbor column(s). So you can see the transit of one star.|
 
 
 ## Usage

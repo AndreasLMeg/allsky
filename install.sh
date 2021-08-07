@@ -48,10 +48,10 @@ echo "export ALLSKY_HOME=$PWD" | sudo tee /etc/profile.d/allsky.sh
 echo -en '\n'
 
 echo -en "${GREEN}* Copy camera settings files\n${NC}"
-cp settings_ZWO.json.repo settings_ZWO.json
-cp settings_RPiHQ.json.repo settings_RPiHQ.json
-cp config.sh.repo config.sh
-cp scripts/ftp-settings.sh.repo scripts/ftp-settings.sh
+cp settings_ZWO.json.repo settings_ZWO.json -i
+cp settings_RPiHQ.json.repo settings_RPiHQ.json -i
+cp config.sh.repo config.sh -i
+cp scripts/ftp-settings.sh.repo scripts/ftp-settings.sh -i
 chown -R `logname`:`logname` ../allsky
 systemctl daemon-reload
 systemctl enable allsky.service
