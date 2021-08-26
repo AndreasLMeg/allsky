@@ -22,19 +22,6 @@
 double mean_history [5] = {0.0,1.0,0.0,1.0,0.0};
 int MeanCnt = 0;
 
-//double Kp = 50.0;
-double Ta = 60.0;
-double Tn = 600.0;
-double Ek = 0.0;
-double Esum = 0.0;
-double STG = 0.0;
-
-double Kp_Brightness = 1.5;
-double Ek_Brightness = 0.0;
-double Esum_Brightness = 0.0;
-double STG_Brightness = 0.0;
-
-double ExposureTest = 60;
 bool createMaskHorizon = true;
 
 // remove same areas
@@ -225,59 +212,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
                 break;
         }
 		 
-		/* 
-        if (ExposureTest != 1) 
-			std::cout <<  basename(fileName) << " " << ExposureTest << " " << mean << " " << (mean_value - mean) << std::endl;
-		ExposureTest = ExposureTest / 2;
-		*/
 		std::cout <<  basename(fileName) << " " << ExposureTime << " " << mean << " " << (currentModeMeanSetting.mean_value - mean) << std::endl;
-
-		// Versuch PI Regler
-		if (STG == 0.0) {
-			STG = log (1000000.0); // Startbelichtung 1s
-		}
-		Ta = (double) asiExposure / 1000000.0;
-		//printf("Ta: %1.8f\n", Ta);
-
-		Tn = Ta * 10.0;
-		//printf("Tn: %1.8f\n", Tn);
-
-		Ek = currentModeMeanSetting.Kp * (currentModeMeanSetting.mean_value - mean);
-		//printf("Ek: %1.8f\n", Ek);
-
-		Esum = Esum + Ek;
-		STG = STG + Ek + (Esum * Ta / Tn);
-
-		// STG ... Steuergroeße (1...asiExposure) [us]
-		// Versuch e^STG
-		if (STG <  0.0) {
-			STG = 0.0;
-		}
-		else if (STG > log (asiExposure)) {
-			STG = log (asiExposure);
-		}
-
-		//printf("STG: %1.8f\n", STG);
-		
-
-		if (STG_Brightness == 0.0) {
-			STG_Brightness = asiBrightness; // Start asiBrightness
-		}
-
-		Ek_Brightness = Kp_Brightness * (currentModeMeanSetting.mean_value - mean);
-		//printf("Ek_Brightness: %1.8f\n", Ek_Brightness);
-
-		Esum_Brightness = Esum_Brightness + Ek_Brightness;
-		STG_Brightness = STG_Brightness + Ek_Brightness + (Esum_Brightness * Ta / Tn);
-
-		if (STG_Brightness <  30.0) {
-			STG_Brightness = 30.0;
-		}
-		else if (STG_Brightness > asiBrightness) {
-			STG_Brightness = asiBrightness;
-		}
-
-		//printf("STG_Brightness: %1.8f\n", STG_Brightness);
 
 		// avg of mean history 
 		printf("MeanCnt: %d\n", MeanCnt);

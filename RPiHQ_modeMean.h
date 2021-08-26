@@ -16,7 +16,6 @@ struct modeMeanSetting {
     int longplay = 0;               // make delay between captures 
     int brightnessControl = 0;      //
     int historySize = 3;            // use the last images for mean calculation
-    double Kp = 1.0;                // unused feature
     int maskHorizon = 0;            //
     int info = 0;                   // show some debug infos
     int quickstart = 10;            // Sets the quickstart. Deactivate delay between captures for quickstart times.

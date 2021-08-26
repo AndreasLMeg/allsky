@@ -757,11 +757,6 @@ int main(int argc, char *argv[])
 				myModeMeanSetting.historySize = std::min(5,std::max(1,atoi(argv[i + 1])));
 				i++;
 			}
-			else if (strcmp(argv[i], "-mean-kp") == 0)
-			{
-				myModeMeanSetting.Kp = std::min(100.0,std::max(1.0,atof(argv[i + 1])));
-				i++;
-			}
 			else if (strcmp(argv[i], "-mean-maskHorizon") == 0)
 			{
 				myModeMeanSetting.maskHorizon = atoi(argv[i + 1]);

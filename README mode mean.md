@@ -94,7 +94,6 @@ nano config.sh
 | MEAN_FASTFORWARD | 4.0 | magic number to speeed up fastforward (be carefule changing this value) |
 | MEAN_LONGPLAY | 0 | 1: deactivate image captureinterval (camera setting: exposure). You will get much more images ! | 
 | MEAN_HISTORYSIZE | 3 | 3: the last 3 image are taken to calculate the mean value |
-| MEAN_KP | 1 | experimental parameter - not used |
 | MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
 | MEAN_INFO | 0 | 1: show some debug infos in the image |
 | MEAN_QUICKSTART | 10 | >0: Only 1s delay between captures for MEAN_QUICKSTART times |
@@ -127,7 +126,6 @@ if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
   if [ -z ${MEAN_FASTFORWARD+x} ]; then echo "MEAN_FASTFORWARD is unset"; else ARGUMENTS="$ARGUMENTS -mean-fastforward $MEAN_FASTFORWARD "; fi
   if [ -z ${MEAN_LONGPLAY+x} ]; then echo "MEAN_LONGPLAY is unset"; else ARGUMENTS="$ARGUMENTS -mean-longplay $MEAN_LONGPLAY "; fi
   if [ -z ${MEAN_HISTORYSIZE+x} ]; then echo "MEAN_HISTORYSIZE is unset"; else ARGUMENTS="$ARGUMENTS -mean-historySize $MEAN_HISTORYSIZE "; fi
-  if [ -z ${MEAN_KP+x} ]; then echo "MEAN_KP is unset"; else ARGUMENTS="$ARGUMENTS -mean-kp $MEAN_KP "; fi
   if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
   if [ -z ${MEAN_BRIGHTNESSCONTROL+x} ]; then echo "MEAN_BRIGHTNESSCONTROL is unset"; else ARGUMENTS="$ARGUMENTS -mean-brightnessControl $MEAN_BRIGHTNESSCONTROL "; fi
   if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
