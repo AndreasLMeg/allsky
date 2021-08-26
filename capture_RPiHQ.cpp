@@ -470,14 +470,15 @@ time ( NULL );
 		if (strcmp(ImgText, "") != 0) {
 			ss.str("");
 			ss << ImgText; 
-			if (myModeMeanSetting.info) {
-				ss << ImgText
-				<< " (li-" << __TIMESTAMP__ << ") " 
-			   	<< myRaspistillSetting.brightness << " " 
-			   	<< myRaspistillSetting.shutter << " " 
-			   	<< myRaspistillSetting.analoggain << " " 
-			   	<< asiWBR << " " 
-			   	<< asiWBB;
+			if (myModeMeanSetting.info > 0) {
+				ss << " shutter:" << myRaspistillSetting.shutter 
+				<< " gain:"	<< myRaspistillSetting.analoggain;
+				if (myModeMeanSetting.info  > 1 ) {
+					ss << " (li-" << __TIMESTAMP__ 
+					<< ") br:" << myRaspistillSetting.brightness 
+					<< " WBR:" << asiWBR 
+					<< " WBB:" << asiWBB;
+				}
 			}
 			command += "-a \"" + ss.str() + "\" ";
 		}
