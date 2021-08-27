@@ -25,6 +25,8 @@ int exp_history [5] = {0,0,0,0,0};
 int MeanCnt = 0;
 double dMean = 1.0; // Mean(n-1)-Mean(n)
 int dExp = 1.0; //Exp(n-1)-Exp(n)
+int lastExposureChange = 0;
+int dExposureChange = 0;
 
 bool createMaskHorizon = true;
 
@@ -255,7 +257,9 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		if (mean_diff > (currentModeMeanSetting.mean_threshold * 2.0)) {
 			ExposureChange = std::max(1.0, pow ((mean_diff * currentModeMeanSetting.fastforward * currentModeMeanSetting.shuttersteps),2.0));
 		}
-		printf("ExposureChange: %d\n", ExposureChange);
+		dExposureChange = ExposureChange-lastExposureChange;
+		lastExposureChange = ExposureChange;
+		printf("ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
 
 		if (mean < (currentModeMeanSetting.mean_value - (currentModeMeanSetting.mean_threshold))) {
 			if (currentModeMeanSetting.brightnessControl && (currentRaspistillSetting.brightness < asiBrightness)) {
