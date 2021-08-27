@@ -246,6 +246,14 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		dMean = mean_history[idx] - mean_history[idxN1];
 		dExp = exp_history[idx] - exp_history[idxN1];
 		
+		// forcast (m_forcast = m_neu + diff = m_neu + m_neu - m_alt = 2*m_neu - m_alt)
+		double mean_forecast = 2.0 * mean_history[idx] - mean_history[idxN1];
+		mean_forecast = std::min((double) std::max((double) mean_forecast, 0.0), 1.0);
+		printf("mean_forecast: %1.4f\n", mean_forecast);
+		// gleiche Wertigkeit wie aktueller Wert
+		//mean += mean_forecast * currentModeMeanSetting.historySize;
+		//values += currentModeMeanSetting.historySize;
+
 		printf("values: %d\n", values);
 		mean = mean / (double) values;
 

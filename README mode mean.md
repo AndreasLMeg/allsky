@@ -75,8 +75,8 @@ nano settings.json
 
 | Setting     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
-| exposure | 10000 | No difference between night and day. Maximum value for time exposure in milliseconds.  If autogain=0 this value is used for all images |
-| gain | 16 |No difference between night and day. Maximum value for gain. Varies from 0 to 16. If autogain=0 this value is used for all images|
+| exposure | 60000 | No difference between night and day. Maximum value for time exposure in milliseconds.  If autogain=0 this value is used for all images |
+| gain | 15 |No difference between night and day. Maximum value for gain. Varies from 0 to 16. If autogain=0 this value is used for all images|
 | autogain | 0 | Set to 1 to allow auto-gain This mode will adjust the gain /exposure of images when the overall brightness of the sky changes (cloud cover, moon, aurora, etc).|
 
 The second file called **config.sh** lets you configure the overall behavior of the camera. Options include functionalities such as upload, timelapse, dark frame location, keogram.
@@ -90,12 +90,12 @@ nano config.sh
 | MODE | 1 |  Mode 1: mean - Simple algorithm - the shutter speed and gain are adjusted based on the averaged exposure value |
 | MEAN_VALUE | 0.5 | mode mean tries to make well exposed images |
 | MEAN_THRESHOLD | 0.05 | underexposed: image < (mean value - threshold) -> increase shutter time or gain, overexposed: image > (mean value + threshold) -> decrease shutter time or gain | 
-| MEAN_SHUTTERSTEPS | 3 | 1: shuttertime 1s, 2s, 4s, 8s,...  3:  1s, 1,26s, 1,59s, 2s   (For step ...-2, -1, 0, 1, 2, ... -> 2^(step/shuttersteps)) |
-| MEAN_FASTFORWARD | 4.0 | magic number to speeed up fastforward (be carefule changing this value) |
+| MEAN_SHUTTERSTEPS | 6 | 1: shuttertime 1s, 2s, 4s, 8s,...  3:  1s, 1,26s, 1,59s, 2s   (For step ...-2, -1, 0, 1, 2, ... -> 2^(step/shuttersteps)) |
+| MEAN_FASTFORWARD | 4.0 | magic number to speeed up fastforward (be careful changing this value) |
 | MEAN_LONGPLAY | 0 | 1: deactivate image captureinterval (camera setting: exposure). You will get much more images ! | 
 | MEAN_HISTORYSIZE | 3 | 3: the last 3 image are taken to calculate the mean value |
 | MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
-| MEAN_INFO | 0 | 1: show some debug infos in the image |
+| MEAN_INFO | 0 | 1: show some debug infos in the image, 2: more infos... |
 | MEAN_QUICKSTART | 10 | >0: Only 1s delay between captures for MEAN_QUICKSTART times |
 
 
@@ -127,7 +127,6 @@ if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
   if [ -z ${MEAN_LONGPLAY+x} ]; then echo "MEAN_LONGPLAY is unset"; else ARGUMENTS="$ARGUMENTS -mean-longplay $MEAN_LONGPLAY "; fi
   if [ -z ${MEAN_HISTORYSIZE+x} ]; then echo "MEAN_HISTORYSIZE is unset"; else ARGUMENTS="$ARGUMENTS -mean-historySize $MEAN_HISTORYSIZE "; fi
   if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
-  if [ -z ${MEAN_BRIGHTNESSCONTROL+x} ]; then echo "MEAN_BRIGHTNESSCONTROL is unset"; else ARGUMENTS="$ARGUMENTS -mean-brightnessControl $MEAN_BRIGHTNESSCONTROL "; fi
   if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
   if [ -z ${MEAN_QUICKSTART+x} ]; then echo "MEAN_QUICKSTART is unset"; else ARGUMENTS="$ARGUMENTS -mean-quickstart $MEAN_QUICKSTART "; fi
 fi
