@@ -70,28 +70,15 @@ do
 	ARGUMENTS="$ARGUMENTS -$KEY `jq -r '.'$KEY $CAMERA_SETTINGS` "
 done
 
-# user defined mode
-if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
-  echo "mode mean"
-  ARGUMENTS="$ARGUMENTS -mode 1 "
-  if [ -z ${MEAN_VALUE+x} ]; then echo "MEAN_VALUE is unset"; else ARGUMENTS="$ARGUMENTS -mean-value $MEAN_VALUE "; fi
-  if [ -z ${MEAN_THRESHOLD+x} ]; then echo "MEAN_THRESHOLD is unset"; else ARGUMENTS="$ARGUMENTS -mean-threshold $MEAN_THRESHOLD "; fi
-  if [ -z ${MEAN_SHUTTERSTEPS+x} ]; then echo "MEAN_SHUTTERSTEPS is unset"; else ARGUMENTS="$ARGUMENTS -mean-shuttersteps $MEAN_SHUTTERSTEPS "; fi
-  if [ -z ${MEAN_FASTFORWARD+x} ]; then echo "MEAN_FASTFORWARD is unset"; else ARGUMENTS="$ARGUMENTS -mean-fastforward $MEAN_FASTFORWARD "; fi
-  if [ -z ${MEAN_LONGPLAY+x} ]; then echo "MEAN_LONGPLAY is unset"; else ARGUMENTS="$ARGUMENTS -mean-longplay $MEAN_LONGPLAY "; fi
-  if [ -z ${MEAN_HISTORYSIZE+x} ]; then echo "MEAN_HISTORYSIZE is unset"; else ARGUMENTS="$ARGUMENTS -mean-historySize $MEAN_HISTORYSIZE "; fi
-  if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
-  if [ -z ${MEAN_BRIGHTNESSCONTROL+x} ]; then echo "MEAN_BRIGHTNESSCONTROL is unset"; else ARGUMENTS="$ARGUMENTS -mean-brightnessControl $MEAN_BRIGHTNESSCONTROL "; fi
-  if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
-  if [ -z ${MEAN_QUICKSTART+x} ]; then echo "MEAN_QUICKSTART is unset"; else ARGUMENTS="$ARGUMENTS -mean-quickstart $MEAN_QUICKSTART "; fi
-fi
-
 # When using a desktop environment (Remote Desktop, VNC, HDMI output, etc), a preview of the capture can be displayed in a separate window
 # The preview mode does not work if allsky.sh is started as a service or if the debian distribution has no desktop environment.
 if [[ $1 == "preview" ]] ; then
 	ARGUMENTS="$ARGUMENTS -preview 1"
 fi
 ARGUMENTS="$ARGUMENTS -daytime $DAYTIME"
+
+# Additional parameters
+ARGUMENTS="$ARGUMENTS $ADD_PARAMS"
 
 echo "$ARGUMENTS">>log.txt
 
