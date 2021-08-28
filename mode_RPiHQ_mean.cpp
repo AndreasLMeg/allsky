@@ -251,8 +251,8 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		mean_forecast = std::min((double) std::max((double) mean_forecast, 0.0), 1.0);
 		printf("mean_forecast: %1.4f\n", mean_forecast);
 		// gleiche Wertigkeit wie aktueller Wert
-		//mean += mean_forecast * currentModeMeanSetting.historySize;
-		//values += currentModeMeanSetting.historySize;
+		mean += mean_forecast * currentModeMeanSetting.historySize;
+		values += currentModeMeanSetting.historySize;
 
 		printf("values: %d\n", values);
 		mean = mean / (double) values;
@@ -263,7 +263,7 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		int ExposureChange = 1;
 	    // fast forward
 		if (mean_diff > (currentModeMeanSetting.mean_threshold * 2.0)) {
-			ExposureChange = std::max(1.0, pow ((mean_diff * currentModeMeanSetting.fastforward * currentModeMeanSetting.shuttersteps),2.0));
+			ExposureChange = std::max(1.0, currentModeMeanSetting.shuttersteps + pow ((mean_diff * currentModeMeanSetting.fastforward * currentModeMeanSetting.shuttersteps),2.0));
 		}
 		dExposureChange = ExposureChange-lastExposureChange;
 		lastExposureChange = ExposureChange;
@@ -343,6 +343,6 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		exp_history[MeanCnt % currentModeMeanSetting.historySize] = currentModeMeanSetting.ExposureLevel;
 
 		currentRaspistillSetting.shutter = ExposureTime * 1000 * 1000;
-		printf("Mean: %1.4f (%1.4f) Exposure level:%d (%d) Exposure time:%1.8f analoggain:%1.2f\n", mean, mean_diff, currentModeMeanSetting.ExposureLevel, dExp, ExposureTime, currentRaspistillSetting.analoggain);
+		printf("Mean: %1.4f (%1.4f) Exposure level:%d (%d) Exposure time:%1.8f analoggain:%1.2f\n", mean, mean_diff, currentModeMeanSetting.ExposureLevel, currentModeMeanSetting.ExposureLevel-exp_history[idx], ExposureTime, currentRaspistillSetting.analoggain);
 	}
 }
