@@ -7,60 +7,17 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 
 ![](http://www.thomasjacquin.com/allsky-portal/screenshots/camera-header-photo.jpg)
 
-## Requirements
+## Warum wurde dieser Fork gemacht:
 
-## Full installation (not testet !) 
+Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A), aus Interesse an Astronomie, Programmieren und Experimentieren, wollte ich mir das ständige Anpassen der Einstellungen ersparen. Dabei sind mir aber auch ein paar Verbesserungen und Erweiterungen eingefallen.
+Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacquin/allsky) zwar weiter beobachten, aber nicht alle Anpassungen übernehmen. (Da fehlt mir wieder die Zeit dazu)
+
+
+## Installation
+
 
 Installation described in Readme should work (use https://github.com/AndreasLMeg/allsky.git)
 
-## Test Installation
-
-First stop allsky (eg. GUI / System / Stop Allsky)
-
-Navigate to the allsky directory:
-```shell
-cd allsky
-```
-
-Make secure copy of capture_RPiHQ
-```shell
-cp capture_RPiHQ capture_RPiHQ_ori 
-```
-
-Back to home directory
-```shell
-cd ~
-```
-
-Now fetch the code from this GitHub page. Open the terminal and type the following:
-
-```shell
-git clone --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
-```
-
-```shell
-cd allsky_li
-```
-
-make new capture_RPiHQ
-```shell
-sudo make capture_RPiHQ
-```
-
-Copy new capture_RPiHQ to existing installation
-```shell
-cp capture_RPiHQ ~/allsky/capture_RPiHQ 
-```
-
-Make some config changes....some new lines in allsky.sh und config.sh
-
-For Deinstallion stop allsky und restore secure copy of capture_RPiHQ
-```shell
-cd allsky
-cp capture_RPiHQ_ori capture_RPiHQ 
-``` 
-
-And start Allsky - good luck !
 
 
 ## Configuration
