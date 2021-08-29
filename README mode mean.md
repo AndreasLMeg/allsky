@@ -19,11 +19,13 @@ Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacq
 4. Die Regelung erfolgt mit einer empirisch ermittelten Formel. Meine Versuche mit PID Reglern scheiterte.
 5. Es können bei Bedarf Bildbereiche geschwärzt werden (Schlafzimmerfenser vom Nachbarn,...)
 6. Zusatzparameter in config.sh.
-7. Keogram: Zusatzparameter in config.sh.
-8. Keogram: Wenn die Kamera nicht optimal nach Norden ausgereichtet ist, bzw. sich störende Elemente in der Bildmitte befinden, kann nun die Spalte des Bildes gewählt werden. Siehe auch https://github.com/thomasjacquin/allsky/issues/387
-9. Keogram: Es können nun Zusatzspalten eingefügt werden. Bei großer Auflösung und kurzen Nächten werden die Keogramme sonst sehr schmal.
-10. Keogram: Es wird nun auch der Datumswechsel angezeigt.
-11. Keogram: Die Schrift ist nun deutlicher zu lesen (Schwarzer Text ist hinterlegt)
+7. Es werden nun 
+8. Es wird nun eine Progrose berechnet, dieser Wert beeinflußt die neu berechnete Belichtungszeit
+9. Keogram: Zusatzparameter in config.sh.
+10. Keogram: Wenn die Kamera nicht optimal nach Norden ausgereichtet ist, bzw. sich störende Elemente in der Bildmitte befinden, kann nun die Spalte des Bildes gewählt werden. Siehe auch https://github.com/thomasjacquin/allsky/issues/387
+11. Keogram: Es können nun Zusatzspalten eingefügt werden. Bei großer Auflösung und kurzen Nächten werden die Keogramme sonst sehr schmal.
+12. Keogram: Es wird nun auch der Datumswechsel angezeigt.
+13. Keogram: Die Schrift ist nun deutlicher zu lesen (Schwarzer Text ist hinterlegt)
  
 
 ## Installation
@@ -48,7 +50,20 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktivier
 
 | Configuration     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
-| ADD_PARAMS  | ""          | hier köennen nun die erforderlichen Startparameter eingetragen werden                |
+| ADD_PARAMS  | "$ADD_PARAMS -mode 1 -mean-info 1" | Das ist der empfohlene Wert, es können aber auch weitere Parameter angegeben werden                |
+|             | "$ADD_PARAMS" | ein eventuell schon vorher definierter Parameter wird übernommen
+|             | "-mode 1" | [0]: Mode Mean ist deaktiviert, 1: Mode Mean ist aktiviert
+|             | "-mean-info 1" | [0]: keine Zusatzinfos, 1: Werte für shutter und gain werden eingeblendet, 2: weitere Infos werden angezeigt 
+|             | "-mean-value 0.5" | Mittelwert des Bildes, es können werte von 0.0 bis 1.0 eingegeben werden
+|             | "-mean-threshold 0.2" | Ab dieser Abweichung vom Mittelwert startet die Regelung
+|             | "-mean-shuttersteps 6" | Wie von der Fotografie bekannt gibt es bestimmte Werte für die Belichtungszeit (0.5s, 1s, 2s, 4s, 8s,...) Die Einstellung ermöglicht auch Zwischenwerte, d.h. die Regelung kann präzisier erfolgen.
+|             | "-mean-fastforward 4.0" | Dieser Wert bestimmt wie stark auf regelabweichungen reagiert wird. (4.0 wurde empirisch ermittelt) Kleinere Werte führen zu einem langsamen Regelverhalten, größere Werte können aber schnell zu unerwünschten Schwingungen führen
+|             | "-mean-longplay 0" | [0]: Bei kürzeren Belichtungszeiten wird eine Pause eingelegt. 1: Keine Pause, daher in der Dämmerung mehr Bilder.
+|             | "-mean-historySize 3" | Ab dieser Abweichung vom Mittelwert startet die Regelung
+
+
+
+
 | MODE | 1 |  Mode 1: mean - Simple algorithm - the shutter speed and gain are adjusted based on the averaged exposure value |
 | MEAN_VALUE | 0.5 | mode mean tries to make well exposed images |
 | MEAN_THRESHOLD | 0.05 | underexposed: image < (mean value - threshold) -> increase shutter time or gain, overexposed: image > (mean value + threshold) -> decrease shutter time or gain | 
