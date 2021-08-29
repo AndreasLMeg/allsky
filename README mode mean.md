@@ -70,6 +70,7 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wur
 
 ### Editor - allsky.sh
 Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten:
+
 ```shell
 ...
 # When using a desktop environment (Remote Desktop, VNC, HDMI output, etc), a preview of the capture can be displayed in a separate window
@@ -88,6 +89,7 @@ echo "$ARGUMENTS">>log.txt
 
 ### Editor - endOfNight.sh
 Diese Datei sollte die Zeile "../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS" enthalten:
+
 ```shell
 ...
 # Generate keogram from collected images
