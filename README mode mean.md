@@ -11,6 +11,7 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 
 Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A) und aus Interesse an Astronomie, Programmieren und Experimentieren wollte ich mir das ständige Anpassen der Einstellungen ersparen und habe mir ein paar Verbesserungen und Erweiterungen einfallen lassen.
 Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacquin/allsky) zwar weiter beobachten, aber nicht alle Anpassungen übernehmen. (Da fehlt mir wieder die Zeit dazu)
+Hinweis: Leider ist die Regelung noch nicht perfekt, da wird es sicher noch Verbesserungen geben. Aber es ist schwierig die Belichtungssituation der nächsten Minute vorherzusehen.
 
 ### Anpassungen
 1. Es wird versucht ein optimal belichtetes Bild zu erzeugen. Dazu wird der Mittelwert des Bildes berechnet und die Belichtungszeit und Verstärkung entsprechend angepasst.
@@ -19,7 +20,7 @@ Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacq
 4. Die Regelung erfolgt mit einer empirisch ermittelten Formel. Meine Versuche mit PID Reglern scheiterte.
 5. Es können bei Bedarf Bildbereiche geschwärzt werden (Schlafzimmerfenser vom Nachbarn,...)
 6. Zusatzparameter in config.sh.
-7. Es werden nun 
+7. Es werden nun historische Werte für die Regelung herangezogen 
 8. Es wird nun eine Progrose berechnet, dieser Wert beeinflußt die neu berechnete Belichtungszeit
 9. Keogram: Zusatzparameter in config.sh.
 10. Keogram: Wenn die Kamera nicht optimal nach Norden ausgereichtet ist, bzw. sich störende Elemente in der Bildmitte befinden, kann nun die Spalte des Bildes gewählt werden. Siehe auch https://github.com/thomasjacquin/allsky/issues/387
@@ -44,7 +45,7 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktivier
 | ----------- | ----------- | ----------------|
 | exposure | 60000 | Die maximale Belichtungszeit [ms]. Kein Unterschied zwischen Tag und Nacht. Bei kürzeren Belichtungszeiten wird eine entsprechende Pause zwischen den Bildern eingelegt. |
 | gain | 15 | Die maximale Verstärkung. [1..16]|
-| autogain | 0 | Wähle 1 um die automatische Regelung zu ermöglichen.|
+| autogain | 0 | 0: kein Autogain, 1: Wähle 1 um die automatische Regelung zu ermöglichen.|
 
 ### Editor - config.sh
 
@@ -60,21 +61,14 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktivier
 |             | "-mean-fastforward 4.0" | Dieser Wert bestimmt wie stark auf regelabweichungen reagiert wird. (4.0 wurde empirisch ermittelt) Kleinere Werte führen zu einem langsamen Regelverhalten, größere Werte können aber schnell zu unerwünschten Schwingungen führen
 |             | "-mean-longplay 0" | [0]: Bei kürzeren Belichtungszeiten wird eine Pause eingelegt. 1: Keine Pause, daher in der Dämmerung mehr Bilder.
 |             | "-mean-historySize 3" | Ab dieser Abweichung vom Mittelwert startet die Regelung
-
-
-
-
-| MODE | 1 |  Mode 1: mean - Simple algorithm - the shutter speed and gain are adjusted based on the averaged exposure value |
-| MEAN_VALUE | 0.5 | mode mean tries to make well exposed images |
-| MEAN_THRESHOLD | 0.05 | underexposed: image < (mean value - threshold) -> increase shutter time or gain, overexposed: image > (mean value + threshold) -> decrease shutter time or gain | 
-| MEAN_SHUTTERSTEPS | 6 | 1: shuttertime 1s, 2s, 4s, 8s,...  3:  1s, 1,26s, 1,59s, 2s   (For step ...-2, -1, 0, 1, 2, ... -> 2^(step/shuttersteps)) |
-| MEAN_FASTFORWARD | 4.0 | magic number to speeed up fastforward (be careful changing this value) |
-| MEAN_LONGPLAY | 0 | 1: deactivate image captureinterval (camera setting: exposure). You will get much more images ! | 
-| MEAN_HISTORYSIZE | 3 | 3: the last 3 image are taken to calculate the mean value |
-| MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
-| MEAN_INFO | 0 | 1: show some debug infos in the image, 2: more infos... |
-| MEAN_QUICKSTART | 10 | >0: Only 1s delay between captures for MEAN_QUICKSTART times |
-
+|             | "-mean-maskHorizon 0" | 0: Keine Schwärzung 1: Es wird ein Bild (Maske) als Vorlage zur Verfügung gestellt. Mit einem Grafikprogramm deiner Wahl können unerwünschte Bereich geschwärzt werden. Eine genauere Beschreibung folgt...
+|             | "-mean-quickstart 10" | Um sich schneller Einzuregeln, werden 10 Bilder ohne Pause gemacht.
+| KEOGRAM_ADD_PARAMS  | "-fontsize 2.0 -fontline 2 -fontcolor 255 255 255" | Das ist der empfohlene Wert, es können aber auch weitere Parameter angegeben werden                |
+|             | "-fontsize 2.0" | Zeichensatzgröße
+|             | "-fontline 2" | 
+|             | "-fontcolor 255 255 255" | Textfarbe
+|             | "-finishline 809" | Gibt an welche Spalte des Ursprungsbilds ins Keogramm übernommen wird (https://github.com/thomasjacquin/allsky/issues/387)
+|             | "-addRow 1" | 0: nur eine Spalte pro Bild - das ergibt aber meist sehr schmale Keogramme 1: Spalte wird mehrfach verwendet, um ein breiteres Bild zu erhalten. 2: Die Nachbarspalten werden verwendet. 
 
 
 E: (outdated)
