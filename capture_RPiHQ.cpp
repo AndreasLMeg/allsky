@@ -521,8 +521,6 @@ time ( NULL );
 
 	printf("Capture command: %s\n", cmd);
 
-    printf("analoggain=%1.2f\n", myRaspistillSetting.analoggain);
-
 	// Execute raspistill command
 	printf ("capturing image in file %s\n", fileName);
 	system(cmd);
@@ -597,7 +595,10 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------------------------------------------
 	//-------------------------------------------------------------------------------------------------------
 	printf("\n");
-	printf("%s ******************************************\n", KGRN);
+	printf("%s ***********************************************\n", KGRN);
+	printf("%s *** Allsky_li Camera Software v0.6.1 | 2021 ***\n", KGRN);
+	printf("%s ***********************************************\n\n", KGRN);
+	printf("%s *** based on (fork)                    ***\n", KGRN);
 	printf("%s *** Allsky Camera Software v0.6 | 2019 ***\n", KGRN);
 	printf("%s ******************************************\n\n", KGRN);
 	printf("\%sCapture images of the sky with a Raspberry Pi and an ZWO ASI or RPi HQ camera\n", KGRN);
@@ -1231,7 +1232,8 @@ int main(int argc, char *argv[])
 
 					if (myModeMeanSetting.mode_mean) {
 						RPiHQcalcMean(fileName, asiExposure, asiGain, asiBrightness, myRaspistillSetting, myModeMeanSetting);
-						printf("asiExposure: %d shutter: %1.4f s quickstart: %d\n", asiExposure, (double) myRaspistillSetting.shutter / 1000000.0, myModeMeanSetting.quickstart);
+						if (myModeMeanSetting.info >= 2)
+							printf("asiExposure: %d shutter: %1.4f s quickstart: %d\n", asiExposure, (double) myRaspistillSetting.shutter / 1000000.0, myModeMeanSetting.quickstart);
 						if (myModeMeanSetting.quickstart) {
 							useDelay = 1000;
 						}

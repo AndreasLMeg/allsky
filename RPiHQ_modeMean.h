@@ -10,7 +10,7 @@
 struct modeMeanSetting {
     bool mode_mean       = false;   // activate mode mean
     double mean_value    = 0.5;     // mean value for well exposed images
-    double mean_threshold = 0.05;   // threshold value
+    double mean_threshold = 0.02;   // threshold value
     double shuttersteps = 6.0;      // shuttersteps
     double fastforward = 4.0;       // magic number for fastforward  [0...10]
     int longplay = 0;               // make delay between captures 

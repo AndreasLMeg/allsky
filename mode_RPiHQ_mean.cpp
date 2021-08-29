@@ -184,7 +184,9 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
     	cv::meanStdDev(lap, mu, sigma);
 
     	double focusMeasure = sigma.val[0]*sigma.val[0];
-	    std::cout <<  "focusMeasure: " << focusMeasure << std::endl;
+	    if (currentModeMeanSetting.info >= 2) {
+			std::cout <<  "focusMeasure: " << focusMeasure << std::endl;
+		}
 /////////////////////////////////////////////////////////////////////////////////////
         
 
@@ -225,17 +227,22 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
                 break;
         }
 		 
-		std::cout <<  basename(fileName) << " " << ExposureTime << " " << mean << " " << (currentModeMeanSetting.mean_value - mean) << std::endl;
+		if ( currentModeMeanSetting.info >= 1) {
+			std::cout <<  basename(fileName) << " " << ExposureTime << " " << mean << " " << (currentModeMeanSetting.mean_value - mean) << std::endl;
+		}
 
 		// avg of mean history 
-		printf("MeanCnt: %d\n", MeanCnt);
-		printf("mean_historySize: %d\n", currentModeMeanSetting.historySize);
+		if (currentModeMeanSetting.info >= 3) {
+			printf("MeanCnt: %d\n", MeanCnt);
+			printf("mean_historySize: %d\n", currentModeMeanSetting.historySize);
+		}
 		mean_history[MeanCnt % currentModeMeanSetting.historySize] = mean;
 		int values = 0;
 		mean=0.0;
 		for (int i=1; i <= currentModeMeanSetting.historySize; i++) {
 			int idx =  (MeanCnt + i) % currentModeMeanSetting.historySize;
-			printf("i=%d: idx=%d mean=%1.4f exp=%d\n", i, idx, mean_history[idx], exp_history[idx]);
+			if (currentModeMeanSetting.info >= 1)
+				printf("i=%d: idx=%d mean=%1.4f exp=%d\n", i, idx, mean_history[idx], exp_history[idx]);
 			mean += mean_history[idx] * (double) i;
 			values += i;
 		} 
@@ -249,25 +256,36 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		// forcast (m_forcast = m_neu + diff = m_neu + m_neu - m_alt = 2*m_neu - m_alt)
 		double mean_forecast = 2.0 * mean_history[idx] - mean_history[idxN1];
 		mean_forecast = std::min((double) std::max((double) mean_forecast, 0.0), 1.0);
-		printf("mean_forecast: %1.4f\n", mean_forecast);
+		if (currentModeMeanSetting.info >= 2)
+			printf("mean_forecast: %1.4f\n", mean_forecast);
 		// gleiche Wertigkeit wie aktueller Wert
 		mean += mean_forecast * currentModeMeanSetting.historySize;
 		values += currentModeMeanSetting.historySize;
 
-		printf("values: %d\n", values);
+		if (currentModeMeanSetting.info >= 3)
+			printf("values: %d\n", values);
 		mean = mean / (double) values;
 
    		mean_diff = abs(mean - currentModeMeanSetting.mean_value);
-		printf("mean_diff: %1.4f\n", mean_diff);
+		if (currentModeMeanSetting.info >= 2)
+			printf("mean_diff: %1.4f\n", mean_diff);
     
-		int ExposureChange = 1;
+		int ExposureChange = currentModeMeanSetting.shuttersteps / 2;
+		if (mean_diff > (currentModeMeanSetting.mean_threshold)) {
+			ExposureChange = currentModeMeanSetting.shuttersteps / 2;
+		}
 	    // fast forward
 		if (mean_diff > (currentModeMeanSetting.mean_threshold * 2.0)) {
 			ExposureChange = std::max(1.0, currentModeMeanSetting.shuttersteps + pow ((mean_diff * currentModeMeanSetting.fastforward * currentModeMeanSetting.shuttersteps),2.0));
 		}
+		// slow forward
+		else if (mean_diff > (currentModeMeanSetting.mean_threshold)) {
+			ExposureChange = currentModeMeanSetting.shuttersteps;
+		}
 		dExposureChange = ExposureChange-lastExposureChange;
 		lastExposureChange = ExposureChange;
-		printf("ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
+		if (currentModeMeanSetting.info >= 1)
+			printf("ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
 
 		if (mean < (currentModeMeanSetting.mean_value - (currentModeMeanSetting.mean_threshold))) {
 			if (currentModeMeanSetting.brightnessControl && (currentRaspistillSetting.brightness < asiBrightness)) {
@@ -279,12 +297,14 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		}
 		if (mean > (currentModeMeanSetting.mean_value + currentModeMeanSetting.mean_threshold))  {
 			if (ExposureTime <= 0.000001) { // untere Grenze durch shuttertime
-				printf("ExposureTime to low - stop !\n");
+				if (currentModeMeanSetting.info >= 2)
+					printf("ExposureTime to low - stop !\n");
 				if (currentModeMeanSetting.brightnessControl && (currentRaspistillSetting.brightness > 0)) {
 					currentRaspistillSetting.brightness--;
 				}
 				else {
-					printf("Brightness to low - stop !\n");
+					if (currentModeMeanSetting.info >= 2)
+						printf("Brightness to low - stop !\n");
 				}
 			}
 			else {
