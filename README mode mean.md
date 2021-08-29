@@ -9,7 +9,7 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 
 ## Warum wurde dieser Fork gemacht:
 
-Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A), aus Interesse an Astronomie, Programmieren und Experimentieren, wollte ich mir das ständige Anpassen der Einstellungen ersparen. Dabei sind mir aber auch ein paar Verbesserungen und Erweiterungen eingefallen.
+Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A) und aus Interesse an Astronomie, Programmieren und Experimentieren wollte ich mir das ständige Anpassen der Einstellungen ersparen und habe mir ein paar Verbesserungen und Erweiterungen einfallen lassen.
 Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacquin/allsky) zwar weiter beobachten, aber nicht alle Anpassungen übernehmen. (Da fehlt mir wieder die Zeit dazu)
 
 ### Anpassungen
@@ -36,6 +36,14 @@ EN: Installation described in Readme should work (but use https://github.com/And
 ## Configuration
 
 D/A/CH:
+Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktiviert wurde:
+### Camera settings
+| Setting     | Default     | Additional Info |
+| ----------- | ----------- | ----------------|
+| exposure | 60000 | Die maximale Belichtungszeit [ms]. Kein Unterschied zwischen Tag und Nacht. Bei kürzeren Belichtungszeiten wird eine entsprechende Pause zwischen den Bildern eingelegt. |
+| gain | 15 | Die maximale Verstärkung. [1..16]|
+| autogain | 0 | Wähle 1 um die automatische Regelung zu ermöglichen.|
+
 
 E: (outdated)
 Here's a quick overview of the configuration files (only for new mode mean).
