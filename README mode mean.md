@@ -44,6 +44,23 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktivier
 | gain | 15 | Die maximale Verstärkung. [1..16]|
 | autogain | 0 | Wähle 1 um die automatische Regelung zu ermöglichen.|
 
+### Editor - config.sh
+
+| Configuration     | Default     | Additional Info |
+| ----------- | ----------- | ----------------|
+| ADD_PARAMS  | ""          | hier köennen nun die erforderlichen Startparameter eingetragen werden                |
+| MODE | 1 |  Mode 1: mean - Simple algorithm - the shutter speed and gain are adjusted based on the averaged exposure value |
+| MEAN_VALUE | 0.5 | mode mean tries to make well exposed images |
+| MEAN_THRESHOLD | 0.05 | underexposed: image < (mean value - threshold) -> increase shutter time or gain, overexposed: image > (mean value + threshold) -> decrease shutter time or gain | 
+| MEAN_SHUTTERSTEPS | 6 | 1: shuttertime 1s, 2s, 4s, 8s,...  3:  1s, 1,26s, 1,59s, 2s   (For step ...-2, -1, 0, 1, 2, ... -> 2^(step/shuttersteps)) |
+| MEAN_FASTFORWARD | 4.0 | magic number to speeed up fastforward (be careful changing this value) |
+| MEAN_LONGPLAY | 0 | 1: deactivate image captureinterval (camera setting: exposure). You will get much more images ! | 
+| MEAN_HISTORYSIZE | 3 | 3: the last 3 image are taken to calculate the mean value |
+| MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
+| MEAN_INFO | 0 | 1: show some debug infos in the image, 2: more infos... |
+| MEAN_QUICKSTART | 10 | >0: Only 1s delay between captures for MEAN_QUICKSTART times |
+
+
 
 E: (outdated)
 Here's a quick overview of the configuration files (only for new mode mean).
