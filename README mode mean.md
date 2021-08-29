@@ -9,9 +9,9 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 
 ## Warum wurde dieser Fork gemacht:
 
-Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A) und aus Interesse an Astronomie, Programmieren und Experimentieren wollte ich mir das ständige Anpassen der Einstellungen ersparen und habe mir ein paar Verbesserungen und Erweiterungen einfallen lassen.
-Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacquin/allsky) zwar weiter beobachten, aber nicht alle Anpassungen übernehmen. (Da fehlt mir wieder die Zeit dazu)
-Hinweis: Leider ist die Regelung noch nicht perfekt, da wird es sicher noch Verbesserungen geben. Aber es ist schwierig die Belichtungssituation der nächsten Minute vorherzusehen.
+* Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A) und aus Interesse an Astronomie, Programmieren und Experimentieren wollte ich mir das ständige Anpassen der Einstellungen ersparen und habe mir ein paar Verbesserungen und Erweiterungen einfallen lassen.
+* Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacquin/allsky) zwar weiter beobachten, aber nicht alle Anpassungen übernehmen. (Da fehlt mir wieder die Zeit dazu)
+* Hinweis: Leider ist die Regelung noch nicht perfekt, da wird es sicher noch Verbesserungen geben. Aber es ist schwierig die Belichtungssituation der nächsten Minute vorherzusehen.
 
 ### Anpassungen
 1. Es wird versucht ein optimal belichtetes Bild zu erzeugen. Dazu wird der Mittelwert des Bildes berechnet und die Belichtungszeit und Verstärkung entsprechend angepasst.
@@ -23,7 +23,7 @@ Hinweis: Leider ist die Regelung noch nicht perfekt, da wird es sicher noch Verb
 7. Es werden nun historische Werte für die Regelung herangezogen 
 8. Es wird nun eine Progrose berechnet, dieser Wert beeinflußt die neu berechnete Belichtungszeit
 9. Keogram: Zusatzparameter in config.sh.
-10. Keogram: Wenn die Kamera nicht optimal nach Norden ausgereichtet ist, bzw. sich störende Elemente in der Bildmitte befinden, kann nun die Spalte des Bildes gewählt werden. Siehe auch https://github.com/thomasjacquin/allsky/issues/387
+10. Keogram: Wenn die Kamera nicht optimal nach Norden ausgerichtet ist, bzw. sich störende Elemente in der Bildmitte befinden, kann nun die Spalte des Bildes gewählt werden. Siehe auch https://github.com/thomasjacquin/allsky/issues/387
 11. Keogram: Es können nun Zusatzspalten eingefügt werden. Bei großer Auflösung und kurzen Nächten werden die Keogramme sonst sehr schmal.
 12. Keogram: Es wird nun auch der Datumswechsel angezeigt.
 13. Keogram: Die Schrift ist nun deutlicher zu lesen (Schwarzer Text ist hinterlegt)
@@ -31,15 +31,13 @@ Hinweis: Leider ist die Regelung noch nicht perfekt, da wird es sicher noch Verb
 
 ## Installation
 
-D/A/CH: Installation wie im readme beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
-EN: Installation described in Readme should work (but use https://github.com/AndreasLMeg/allsky.git)
-
-
+* D/A/CH: Installation wie im readme beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
+* EN: Installation described in Readme should work (but use https://github.com/AndreasLMeg/allsky.git)
 
 ## Configuration
 
-D/A/CH:
-Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktiviert wurde:
+* D/A/CH:
+Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wurde:
 ### Camera settings
 | Setting     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
@@ -70,85 +68,35 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der neue Modus aktivier
 |             | "-finishline 809" | Gibt an welche Spalte des Ursprungsbilds ins Keogramm übernommen wird (https://github.com/thomasjacquin/allsky/issues/387)
 |             | "-addRow 1" | 0: nur eine Spalte pro Bild - das ergibt aber meist sehr schmale Keogramme 1: Spalte wird mehrfach verwendet, um ein breiteres Bild zu erhalten. 2: Die Nachbarspalten werden verwendet. 
 
-
-E: (outdated)
-Here's a quick overview of the configuration files (only for new mode mean).
-
-the first one is called **settings.json**. It contains the camera parameters such as exposure, gain but also latitude, longitude, etc.
-
+### Editor - allsky.sh
+Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten:
 ```shell
-nano settings.json
-```
-
-| Setting     | Default     | Additional Info |
-| ----------- | ----------- | ----------------|
-| exposure | 60000 | No difference between night and day. Maximum value for time exposure in milliseconds.  If autogain=0 this value is used for all images |
-| gain | 15 |No difference between night and day. Maximum value for gain. Varies from 0 to 16. If autogain=0 this value is used for all images|
-| autogain | 0 | Set to 1 to allow auto-gain This mode will adjust the gain /exposure of images when the overall brightness of the sky changes (cloud cover, moon, aurora, etc).|
-
-The second file called **config.sh** lets you configure the overall behavior of the camera. Options include functionalities such as upload, timelapse, dark frame location, keogram.
-
-```shell
-nano config.sh
-```
-
-| Configuration     | Default     | Additional Info |
-| ----------- | ----------- | ----------------|
-| MODE | 1 |  Mode 1: mean - Simple algorithm - the shutter speed and gain are adjusted based on the averaged exposure value |
-| MEAN_VALUE | 0.5 | mode mean tries to make well exposed images |
-| MEAN_THRESHOLD | 0.05 | underexposed: image < (mean value - threshold) -> increase shutter time or gain, overexposed: image > (mean value + threshold) -> decrease shutter time or gain | 
-| MEAN_SHUTTERSTEPS | 6 | 1: shuttertime 1s, 2s, 4s, 8s,...  3:  1s, 1,26s, 1,59s, 2s   (For step ...-2, -1, 0, 1, 2, ... -> 2^(step/shuttersteps)) |
-| MEAN_FASTFORWARD | 4.0 | magic number to speeed up fastforward (be careful changing this value) |
-| MEAN_LONGPLAY | 0 | 1: deactivate image captureinterval (camera setting: exposure). You will get much more images ! | 
-| MEAN_HISTORYSIZE | 3 | 3: the last 3 image are taken to calculate the mean value |
-| MEAN_MASKHORIZON | 0 | 1: You will get a mask_template.jpg  - the live view plus some grid lines. Use color WHITE for all ares you want to see and BLACK to remove unwanted areas. Save the image as mask.jpg |
-| MEAN_INFO | 0 | 1: show some debug infos in the image, 2: more infos... |
-| MEAN_QUICKSTART | 10 | >0: Only 1s delay between captures for MEAN_QUICKSTART times |
-
-
-### Other scripts of interest
-
-**allsky.sh** you have to add some code line to activate the new mode
-
-nano is a text editor. Hit **ctrl + x**, followed by **y** and **Enter** in order to save your changes.
-
-serach for "# Building the arguments to pass to the capture binary" and add the lines for user defined mode
-
-```
-# Building the arguments to pass to the capture binary
-ARGUMENTS=""
-KEYS=( $(jq -r 'keys[]' $CAMERA_SETTINGS) )
-for KEY in ${KEYS[@]}
-do
-	ARGUMENTS="$ARGUMENTS -$KEY `jq -r '.'$KEY $CAMERA_SETTINGS` "
-done
-
-# user defined mode
-if [[ $CAMERA == "RPiHQ" && $MODE -eq "1" ]]; then
-  echo "mode mean"
-  ARGUMENTS="$ARGUMENTS -mode 1 "
-  if [ -z ${MEAN_VALUE+x} ]; then echo "MEAN_VALUE is unset"; else ARGUMENTS="$ARGUMENTS -mean-value $MEAN_VALUE "; fi
-  if [ -z ${MEAN_THRESHOLD+x} ]; then echo "MEAN_THRESHOLD is unset"; else ARGUMENTS="$ARGUMENTS -mean-threshold $MEAN_THRESHOLD "; fi
-  if [ -z ${MEAN_SHUTTERSTEPS+x} ]; then echo "MEAN_SHUTTERSTEPS is unset"; else ARGUMENTS="$ARGUMENTS -mean-shuttersteps $MEAN_SHUTTERSTEPS "; fi
-  if [ -z ${MEAN_FASTFORWARD+x} ]; then echo "MEAN_FASTFORWARD is unset"; else ARGUMENTS="$ARGUMENTS -mean-fastforward $MEAN_FASTFORWARD "; fi
-  if [ -z ${MEAN_LONGPLAY+x} ]; then echo "MEAN_LONGPLAY is unset"; else ARGUMENTS="$ARGUMENTS -mean-longplay $MEAN_LONGPLAY "; fi
-  if [ -z ${MEAN_HISTORYSIZE+x} ]; then echo "MEAN_HISTORYSIZE is unset"; else ARGUMENTS="$ARGUMENTS -mean-historySize $MEAN_HISTORYSIZE "; fi
-  if [ -z ${MEAN_MASKHORIZON+x} ]; then echo "MEAN_MASKHORIZON is unset"; else ARGUMENTS="$ARGUMENTS -mean-maskHorizon $MEAN_MASKHORIZON "; fi
-  if [ -z ${MEAN_INFO+x} ]; then echo "MEAN_INFO is unset"; else ARGUMENTS="$ARGUMENTS -mean-info $MEAN_INFO "; fi
-  if [ -z ${MEAN_QUICKSTART+x} ]; then echo "MEAN_QUICKSTART is unset"; else ARGUMENTS="$ARGUMENTS -mean-quickstart $MEAN_QUICKSTART "; fi
+...
+# When using a desktop environment (Remote Desktop, VNC, HDMI output, etc), a preview of the capture can be displayed in a separate window
+# The preview mode does not work if allsky.sh is started as a service or if the debian distribution has no desktop environment.
+if [[ $1 == "preview" ]] ; then
+	ARGUMENTS="$ARGUMENTS -preview 1"
 fi
+ARGUMENTS="$ARGUMENTS -daytime $DAYTIME"
+
+# Additional parameters
+ARGUMENTS="$ARGUMENTS $ADD_PARAMS"
+
+echo "$ARGUMENTS">>log.txt
+...
 ```
 
-**endOfNight.sh** some useful parameters for keogramm
-
+### Editor - endOfNight.sh
+Diese Datei sollte die Zeile "../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS" enthalten:
+```shell
+...
+# Generate keogram from collected images
+if [[ $KEOGRAM == "true" ]]; then
+        echo -e "Generating Keogram\n"
+        mkdir -p $ALLSKY_HOME/images/$LAST_NIGHT/keogram/
+        ../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS
+...
 ```
-        ../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION -fontsize 1.0 -fontline 1 -fontcolor 128 128 128 -finishline 819 -addRow 2
-```
-
-| Paramter     | Default     | Additional Info |
-| ----------- | ----------- | ----------------|
-| -finishline | 1/2 of image |  A column of all images is lined up. This gives a rough overview of the pictures from the whole night. With this parameter you can now choose another column. (Center of rotation, ...)|
-| -addRow | 0 |  In case of short nights or high resolution you will get thin keograms. 1: add the same row twice or more to get a "good" image. 2: add the neighbor column(s). So you can see the transit of one star.|
 
 
 ## Usage
