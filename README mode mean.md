@@ -1,4 +1,4 @@
-# Allsky Camera ![Release 0.7](https://img.shields.io/badge/Release-0.7-green.svg) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=MEBU2KN75G2NG&source=url)
+# Allsky Camera - Erweiterung AndreasLMeg
 
 
 
@@ -12,16 +12,32 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A), aus Interesse an Astronomie, Programmieren und Experimentieren, wollte ich mir das ständige Anpassen der Einstellungen ersparen. Dabei sind mir aber auch ein paar Verbesserungen und Erweiterungen eingefallen.
 Ich werde das Ursprungsprojekt von Thomas Jacquin (https://github.com/thomasjacquin/allsky) zwar weiter beobachten, aber nicht alle Anpassungen übernehmen. (Da fehlt mir wieder die Zeit dazu)
 
+### Anpassungen
+1. Es wird versucht ein optimal belichtetes Bild zu erzeugen. Dazu wird der Mittelwert des Bildes berechnet und die Belichtungszeit und Verstärkung entsprechend angepasst.
+2. Die Belichtungszeit und die Verstärkung ist in den EXIF Daten abgelegt (Autoren)
+3. Für die Berechnung des Mittelwerts wird nur die Mittes des Bilds herangezogen. Dadurch verschwinden die Einflüsse von Beleuchtungen, Autos, usw.
+4. Die Regelung erfolgt mit einer empirisch ermittelten Formel. Meine Versuche mit PID Reglern scheiterte.
+5. Es können bei Bedarf Bildbereiche geschwärzt werden (Schlafzimmerfenser vom Nachbarn,...)
+6. Zusatzparameter in config.sh.
+7. Keogram: Zusatzparameter in config.sh.
+8. Keogram: Wenn die Kamera nicht optimal nach Norden ausgereichtet ist, bzw. sich störende Elemente in der Bildmitte befinden, kann nun die Spalte des Bildes gewählt werden. Siehe auch https://github.com/thomasjacquin/allsky/issues/387
+9. Keogram: Es können nun Zusatzspalten eingefügt werden. Bei großer Auflösung und kurzen Nächten werden die Keogramme sonst sehr schmal.
+10. Keogram: Es wird nun auch der Datumswechsel angezeigt.
+11. Keogram: Die Schrift ist nun deutlicher zu lesen (Schwarzer Text ist hinterlegt)
+ 
 
 ## Installation
 
-
-Installation described in Readme should work (use https://github.com/AndreasLMeg/allsky.git)
+D/A/CH: Installation wie im readme beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
+EN: Installation described in Readme should work (but use https://github.com/AndreasLMeg/allsky.git)
 
 
 
 ## Configuration
 
+D/A/CH:
+
+E: (outdated)
 Here's a quick overview of the configuration files (only for new mode mean).
 
 the first one is called **settings.json**. It contains the camera parameters such as exposure, gain but also latitude, longitude, etc.
