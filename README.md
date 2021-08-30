@@ -444,4 +444,4 @@ If you've built an allsky camera, please send me a message and I'll add you to t
 
 If you found this project useful, here's a link to send me a cup of coffee :)
 
-[![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=MEBU2KN75G2NG&source=url)
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=44GLWL8SYVVXQ&source=url)
