@@ -27,7 +27,7 @@
 * D/A/CH: Installation wie im [readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
 * EN: Installation described in [Readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) should work (but use https://github.com/AndreasLMeg/allsky.git)
 
-## Configuration (via GUI = HTML Konfiguration)
+## Konfiguration (via GUI = HTML Konfiguration)
 
 * D/A/CH:
 Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wurde:
