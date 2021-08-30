@@ -101,7 +101,7 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wur
 ### Editor - [config.sh](https://github.com/AndreasLMeg/allsky/blob/master/config.sh.repo) 
 In dieser Datei müssen ein paar zusätzliche Zeilen eingetragen bzw. angepasst werden. 
 
-Für die Keogram Anpassungen:
+Für die Keogram Anpassungen:  [config.sh](https://github.com/AndreasLMeg/allsky/blob/master/config.sh.repo#L29)
 ```shell
 # Set to true to generate a keogram at the end of the night (image summary of the night)
 KEOGRAM=true
@@ -110,7 +110,7 @@ KEOGRAM=true
 KEOGRAM_ADD_PARAMS="-fontsize 2.0 -fontline 2 -fontcolor 255 255 255"
 ```
 
-Und am Ende noch die Anpassungen "Mode Mean"
+Und am Ende noch die Anpassungen "Mode Mean"  [config.sh](https://github.com/AndreasLMeg/allsky/blob/master/config.sh.repo#L84)
 ```shell
 # Additional parameter - mode mean
 #ADD_PARAMS="$ADD_PARAMS -mode 1 -mean-value 0.50 -mean-threshold 0.02 -mean-shuttersteps 6 -mean-fastforward 4.0 -mean-longplay 0 -mean-historySize 3 -mean-maskHorizon 0 -mean-info 1"
@@ -139,7 +139,7 @@ Hier ist eine Liste der möglichen Zusatzparameter
 |             | "-finishline 809" | Gibt an welche Spalte des Ursprungsbilds ins Keogramm übernommen wird (https://github.com/thomasjacquin/allsky/issues/387)
 |             | "-addRow 1" | 0: nur eine Spalte pro Bild - das ergibt aber meist sehr schmale Keogramme 1: Spalte wird mehrfach verwendet, um ein breiteres Bild zu erhalten. 2: Die Nachbarspalten werden verwendet. 
 
-### Editor - [allsky.sh](https://github.com/AndreasLMeg/allsky/blob/master/allsky.sh) 
+### Editor - [allsky.sh](https://github.com/AndreasLMeg/allsky/blob/master/allsky.sh#L80) 
 Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeilen manuell angepaßt werden.
 
 ```shell
@@ -160,7 +160,7 @@ echo "$ARGUMENTS">>log.txt
 
 
 
-### Editor - [endOfNight.sh](https://github.com/AndreasLMeg/allsky/blob/master/scripts/endOfNight.sh)
+### Editor - [endOfNight.sh](https://github.com/AndreasLMeg/allsky/blob/master/scripts/endOfNight.sh#L37)
 Diese Datei sollte die Zeile "../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeieln manuell angepaßt werden.
 
 ```shell
