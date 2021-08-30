@@ -98,7 +98,7 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wur
 | gain | 15 | Die maximal verwendete Verstärkung. [1..16] - Je nach Objektiv oder Filter (mit oder ohne IR Filter) sollte dieser Wert so eingestellt werden, dass bei einer dunklen Nacht die Milchstraße noch nicht im Rauschen untergeht.
 | autogain | No | No: kein Autogain, Yes: Wähle 1 um die automatische Regelung zu ermöglichen.|
 
-### Editor - config.sh 
+### Editor - [config.sh](https://github.com/AndreasLMeg/allsky/blob/master/config.sh.repo) 
 In dieser Datei müssen ein paar zusätzliche Zeilen eingetragen bzw. angepasst werden. 
 
 Für die Keogram Anpassungen:
@@ -127,8 +127,8 @@ Hier ist eine Liste der möglichen Zusatzparameter
 |             | "-mean-value 0.5" | Mittelwert des Bildes, es können werte von 0.0 bis 1.0 eingegeben werden
 |             | "-mean-threshold 0.2" | Ab dieser Abweichung vom Mittelwert startet die Regelung
 |             | "-mean-shuttersteps 6" | Wie von der Fotografie bekannt gibt es bestimmte Werte für die Belichtungszeit (0.5s, 1s, 2s, 4s, 8s,...) Die Einstellung ermöglicht auch Zwischenwerte, d.h. die Regelung kann präzisier erfolgen.
-|             | "-mean-fastforward 4.0" | Dieser Wert bestimmt wie stark auf regelabweichungen reagiert wird. (4.0 wurde empirisch ermittelt) Kleinere Werte führen zu einem langsamen Regelverhalten, größere Werte können aber schnell zu unerwünschten Schwingungen führen
-|             | "-mean-longplay 0" | [0]: Bei kürzeren Belichtungszeiten wird eine Pause eingelegt. 1: Keine Pause, daher in der Dämmerung mehr Bilder.
+|             | "-mean-fastforward 4.0" | Dieser Wert bestimmt wie stark auf Regelabweichungen reagiert wird. (4.0 wurde empirisch ermittelt) Kleinere Werte führen zu einem langsamen Regelverhalten, größere Werte können aber schnell zu unerwünschten Schwingungen führen
+|             | "-mean-longplay 0" | [0]: Bei kürzeren Belichtungszeiten wird eine Pause eingelegt. 1: Keine Pause, daher in der Dämmerung mehr Bilder und das Video wird länger.
 |             | "-mean-historySize 3" | Ab dieser Abweichung vom Mittelwert startet die Regelung
 |             | "-mean-maskHorizon 0" | 0: Keine Schwärzung 1: Es wird ein Bild (Maske) als Vorlage zur Verfügung gestellt. Mit einem Grafikprogramm deiner Wahl können unerwünschte Bereich geschwärzt werden. Eine genauere Beschreibung folgt...
 |             | "-mean-quickstart 10" | Um sich schneller Einzuregeln, werden 10 Bilder ohne Pause gemacht.
@@ -139,8 +139,8 @@ Hier ist eine Liste der möglichen Zusatzparameter
 |             | "-finishline 809" | Gibt an welche Spalte des Ursprungsbilds ins Keogramm übernommen wird (https://github.com/thomasjacquin/allsky/issues/387)
 |             | "-addRow 1" | 0: nur eine Spalte pro Bild - das ergibt aber meist sehr schmale Keogramme 1: Spalte wird mehrfach verwendet, um ein breiteres Bild zu erhalten. 2: Die Nachbarspalten werden verwendet. 
 
-### Editor - allsky.sh
-Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeieln manuell angepaßt werden.
+### Editor - [allsky.sh](https://github.com/AndreasLMeg/allsky/blob/master/allsky.sh) 
+Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeilen manuell angepaßt werden.
 
 ```shell
 ...
@@ -158,7 +158,9 @@ echo "$ARGUMENTS">>log.txt
 ...
 ```
 
-### Editor - endOfNight.sh
+
+
+### Editor - [endOfNight.sh](https://github.com/AndreasLMeg/allsky/blob/master/scripts/endOfNight.sh)
 Diese Datei sollte die Zeile "../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeieln manuell angepaßt werden.
 
 ```shell
