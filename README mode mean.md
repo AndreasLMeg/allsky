@@ -101,16 +101,15 @@ if [[ $KEOGRAM == "true" ]]; then
 ```
 
 
-## Usage
 
-### Activation
+## Aktivierung
 
-Change parameter in config.sh and camera settings.
+Nachdem config.sh und camera settings geändert wurden, MUSS Allsky neu gestartet werden (System - Stop Allsky - Start Allsky).
 
 
-### Exif information
+## Exif information
 
-All images should have exif information "Artist=li_1000000_1".  -> shuttertime: 1000000µs, gain=1  
+Alle gespeicherten Bilder enthalten nun eine zusätzliche EXIF Information "Artist=li_1000000_1".  -> shuttertime: 1000000µs, gain=1  
 
 ## Donation
 
