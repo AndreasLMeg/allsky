@@ -31,7 +31,7 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 
 ## Installation
 
-* D/A/CH: Installation wie im readme beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
+* D/A/CH: Installation wie im [readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
 * EN: Installation described in Readme should work (but use https://github.com/AndreasLMeg/allsky.git)
 
 ## Configuration
