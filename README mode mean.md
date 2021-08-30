@@ -34,12 +34,30 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wur
 ### Camera settings
 | Setting     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
-| exposure | 60000 | Die maximale Belichtungszeit [ms]. Kein Unterschied zwischen Tag und Nacht. Bei kürzeren Belichtungszeiten wird eine entsprechende Pause zwischen den Bildern eingelegt. |
-| gain | 15 | Die maximale Verstärkung. [1..16]|
+| exposure | 60000 | Die maximale Belichtungszeit [ms]. Kein Unterschied zwischen Tag und Nacht. Bei kürzeren Belichtungszeiten wird eine entsprechende Pause zwischen den Bildern eingelegt. Bei meinem Fisheye werden die Sterne bei 60s noch als Punkte abgebildet. |
+| gain | 15 | Die maximal verwendete Verstärkung. [1..16] - Je nach Objektiv oder Filter (mit oder ohne IR Filter) sollte dieser Wert so eingestellt werden, dass bei einer dunklen Nacht die Milchstraße noch nicht im Rauschen untergeht.
 | autogain | No | No: kein Autogain, Yes: Wähle 1 um die automatische Regelung zu ermöglichen.|
 
-### Editor - config.sh
+### Editor - config.sh 
+In dieser Datei müssen ein paar zusätzliche Zeilen eingetragen bzw. angepasst werden. 
 
+Für die Keogram Anpassungen:
+```shell
+# Set to true to generate a keogram at the end of the night (image summary of the night)
+KEOGRAM=true
+
+# keogram additional parameter
+KEOGRAM_ADD_PARAMS="-fontsize 2.0 -fontline 2 -fontcolor 255 255 255"
+```
+
+Und am Ende noch die Anpassungen "Mode Mean"
+```shell
+# Additional parameter - mode mean
+#ADD_PARAMS="$ADD_PARAMS -mode 1 -mean-value 0.50 -mean-threshold 0.02 -mean-shuttersteps 6 -mean-fastforward 4.0 -mean-longplay 0 -mean-historySize 3 -mean-maskHorizon 0 -mean-info 1"
+ADD_PARAMS="$ADD_PARAMS -mode 1 -mean-info 1"
+```
+
+Hier ist eine Liste der möglichen Zusatzparameter
 | Configuration     | Default     | Additional Info |
 | ----------- | ----------- | ----------------|
 | ADD_PARAMS  | "$ADD_PARAMS -mode 1 -mean-info 1" | Das ist der empfohlene Wert, es können aber auch weitere Parameter angegeben werden                |
@@ -93,6 +111,10 @@ if [[ $KEOGRAM == "true" ]]; then
 ...
 ```
 
+Hinweis: Diese .sh Dateien sind ausführbare Skripte. Das bedeutet, dass es bei Änderungen auch zu Fehlfunktionen kommen kann. Bei Problemen bitte immer die das Logging kontrollieren !
+```shell
+cat /var/log/allsky.log
+```
 
 
 ## Aktivierung
