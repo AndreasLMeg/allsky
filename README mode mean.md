@@ -1,12 +1,5 @@
 # Allsky Camera - Erweiterung AndreasLMeg
 
-
-
-This is the source code for the Wireless Allsky Camera project described [on Instructables](http://www.instructables.com/id/Wireless-All-Sky-Camera/).
-
-
-![](http://www.thomasjacquin.com/allsky-portal/screenshots/camera-header-photo.jpg)
-
 ## Warum wurde dieser Fork gemacht:
 
 * Angeregt von Daniel Nimmervoll (https://youtu.be/jBPuhz8ju6A) und aus Interesse an Astronomie, Programmieren und Experimentieren wollte ich mir das ständige Anpassen der Einstellungen ersparen und habe mir ein paar Verbesserungen und Erweiterungen einfallen lassen.
