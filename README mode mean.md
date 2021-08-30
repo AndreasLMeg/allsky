@@ -24,8 +24,68 @@
 
 ## Installation
 
+### Neuinstallation
 * D/A/CH: Installation wie im [readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
 * EN: Installation described in [Readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) should work (but use https://github.com/AndreasLMeg/allsky.git)
+
+### bestehende Installation anpassen
+Das Gelingen kann ich leider nicht garantieren, aber so könnte es funktionieren
+1. Allsky stoppen
+2. SSH Verbindung mit Raspberry erstellen (Putty)
+3. Sicherungskopie anlegen
+```shell
+cp allsky/capture_RPiHQ allsky/capture_RPiHQ_ori 
+cp allsky/keogram allsky/keogram_ori 
+```
+4. neue Software von Github holen 
+```shell
+git clone --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
+```
+5. neue Programme erstellen
+```shell
+cd allsky_li
+sudo make capture_RPiHQ
+sudo make keogram
+```
+6. neue Programme in allsky Verzeichnis kopieren
+```shell
+cp capture_RPiHQ ~/allsky/capture_RPiHQ 
+cp keogram ~/allsky/keogram 
+```
+7. Konfiguration wie unten beschrieben anpassen
+8. Wichtig: allsky.sh und endOfNight.sh - dort müssen die entsprechenden Zeilen unbedingt eingefügt werden
+9. Allsky starten
+10. Viel Glück    
+
+Hier mein Updatevorgang als Beweis ;-)
+```shell
+pi@allsky:~ $ cp allsky/capture_RPiHQ allsky/capture_RPiHQ_ori
+
+pi@allsky:~ $ cp allsky/keogram allsky/keogram_ori
+
+pi@allsky:~ $ git clone --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
+Klone nach 'allsky_li' ...
+remote: Enumerating objects: 1990, done.
+remote: Counting objects: 100% (427/427), done.
+remote: Compressing objects: 100% (212/212), done.
+remote: Total 1990 (delta 266), reused 320 (delta 198), pack-reused 1563
+Empfange Objekte: 100% (1990/1990), 57.27 MiB | 2.19 MiB/s, Fertig.
+Löse Unterschiede auf: 100% (1171/1171), Fertig.
+
+pi@allsky:~ $ cd allsky_li
+
+pi@allsky:~/allsky_li $ sudo make capture_RPiHQ
+g++    -c -o mode_RPiHQ_mean.o mode_RPiHQ_mean.cpp
+arm-linux-gnueabihf-g++  capture_RPiHQ.cpp mode_RPiHQ_mean.cpp -o capture_RPiHQ -Wall -Wno-psabi -g -D_LIN -D_DEBUG   -Llib/armv7 -I./include -lpthread  -DGLIBC_20 -I/usr/include/opencv -lopencv_shape -lopencv_stitching -lopencv_superres -lopencv_videostab -lopencv_aruco -lopencv_bgsegm -lopencv_bioinspired -lopencv_ccalib -lopencv_datasets -lopencv_dpm -lopencv_face -lopencv_freetype -lopencv_fuzzy -lopencv_hdf -lopencv_line_descriptor -lopencv_optflow -lopencv_video -lopencv_plot -lopencv_reg -lopencv_saliency -lopencv_stereo -lopencv_structured_light -lopencv_phase_unwrapping -lopencv_rgbd -lopencv_viz -lopencv_surface_matching -lopencv_text -lopencv_ximgproc -lopencv_calib3d -lopencv_features2d -lopencv_flann -lopencv_xobjdetect -lopencv_objdetect -lopencv_ml -lopencv_xphoto -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs -lopencv_photo -lopencv_imgproc -lopencv_core -lASICamera2 -I/usr/include/libusb-1.0 -lusb-1.0
+
+pi@allsky:~/allsky_li $ sudo make keogram
+arm-linux-gnueabihf-g++  keogram.cpp -o keogram -Wall -Wno-psabi -g -D_LIN -D_DEBUG   -Llib/armv7 -I./include -lpthread  -DGLIBC_20 -I/usr/include/opencv -lopencv_shape -lopencv_stitching -lopencv_superres -lopencv_videostab -lopencv_aruco -lopencv_bgsegm -lopencv_bioinspired -lopencv_ccalib -lopencv_datasets -lopencv_dpm -lopencv_face -lopencv_freetype -lopencv_fuzzy -lopencv_hdf -lopencv_line_descriptor -lopencv_optflow -lopencv_video -lopencv_plot -lopencv_reg -lopencv_saliency -lopencv_stereo -lopencv_structured_light -lopencv_phase_unwrapping -lopencv_rgbd -lopencv_viz -lopencv_surface_matching -lopencv_text -lopencv_ximgproc -lopencv_calib3d -lopencv_features2d -lopencv_flann -lopencv_xobjdetect -lopencv_objdetect -lopencv_ml -lopencv_xphoto -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs -lopencv_photo -lopencv_imgproc -lopencv_core
+
+pi@allsky:~/allsky_li $ cp capture_RPiHQ ~/allsky/capture_RPiHQ
+
+pi@allsky:~/allsky_li $ cp keogram ~/allsky/keogram
+```
+
 
 ## Konfiguration (via GUI = HTML Konfiguration)
 
@@ -80,7 +140,7 @@ Hier ist eine Liste der möglichen Zusatzparameter
 |             | "-addRow 1" | 0: nur eine Spalte pro Bild - das ergibt aber meist sehr schmale Keogramme 1: Spalte wird mehrfach verwendet, um ein breiteres Bild zu erhalten. 2: Die Nachbarspalten werden verwendet. 
 
 ### Editor - allsky.sh
-Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten:
+Diese Datei sollte die Zeile "ARGUMENTS="$ARGUMENTS $ADD_PARAMS"" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeieln manuell angepaßt werden.
 
 ```shell
 ...
@@ -99,7 +159,7 @@ echo "$ARGUMENTS">>log.txt
 ```
 
 ### Editor - endOfNight.sh
-Diese Datei sollte die Zeile "../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS" enthalten:
+Diese Datei sollte die Zeile "../keogram $ALLSKY_HOME/images/$LAST_NIGHT/ $EXTENSION $ALLSKY_HOME/images/$LAST_NIGHT/keogram/keogram-$LAST_NIGHT.$EXTENSION $KEOGRAM_ADD_PARAMS" enthalten. Bei einem Update einer bestehenden Installation müssen die Zeieln manuell angepaßt werden.
 
 ```shell
 ...
