@@ -32,9 +32,9 @@ This is the source code for the Wireless Allsky Camera project described [on Ins
 ## Installation
 
 * D/A/CH: Installation wie im [readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
-* EN: Installation described in Readme should work (but use https://github.com/AndreasLMeg/allsky.git)
+* EN: Installation described in [Readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) should work (but use https://github.com/AndreasLMeg/allsky.git)
 
-## Configuration
+## Configuration (via GUI = HTML Konfiguration)
 
 * D/A/CH:
 Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wurde:
@@ -43,7 +43,7 @@ Hier ein kurzer Überblick der neuen Möglichkeiten wenn der Modus aktiviert wur
 | ----------- | ----------- | ----------------|
 | exposure | 60000 | Die maximale Belichtungszeit [ms]. Kein Unterschied zwischen Tag und Nacht. Bei kürzeren Belichtungszeiten wird eine entsprechende Pause zwischen den Bildern eingelegt. |
 | gain | 15 | Die maximale Verstärkung. [1..16]|
-| autogain | 0 | 0: kein Autogain, 1: Wähle 1 um die automatische Regelung zu ermöglichen.|
+| autogain | No | No: kein Autogain, Yes: Wähle 1 um die automatische Regelung zu ermöglichen.|
 
 ### Editor - config.sh
 
