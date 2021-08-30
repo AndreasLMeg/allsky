@@ -112,3 +112,8 @@ Change parameter in config.sh and camera settings.
 
 All images should have exif information "Artist=li_1000000_1".  -> shuttertime: 1000000µs, gain=1  
 
+## Donation
+
+If you found this project useful, here's a link to send me a cup of coffee :)
+
+[![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=MEBU2KN75G2NG&source=url)
