@@ -29,6 +29,7 @@ int lastExposureChange = 0;
 int dExposureChange = 0;
 
 bool createMaskHorizon = true;
+bool fastforward = false;
 
 // remove same areas
 void RPiHQmask(const char* fileName)
@@ -213,7 +214,8 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 			    //std::cout <<  "mean_scalar.val[0] " << mean_scalar.val[0] << std::endl;
 			    //std::cout <<  "mean_scalar.val[1] " << mean_scalar.val[1] << std::endl;
 			    //std::cout <<  "mean_scalar.val[2] " << mean_scalar.val[2] << std::endl;
-                mean = cv::max(mean_scalar[0], cv::max(mean_scalar[1], mean_scalar[2]));
+                //mean = cv::max(mean_scalar[0], cv::max(mean_scalar[1], mean_scalar[2]));
+				mean = (mean_scalar[0] + mean_scalar[1] + mean_scalar[2]) / 3.0;
                 break;
         }
         // Scale to 0-1 range
@@ -271,19 +273,19 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 			printf("mean_diff: %1.4f\n", mean_diff);
     
 		int ExposureChange = currentModeMeanSetting.shuttersteps / 2;
-		if (mean_diff > (currentModeMeanSetting.mean_threshold)) {
-			ExposureChange = currentModeMeanSetting.shuttersteps / 2;
-		}
+		
 	    // fast forward
-		if (mean_diff > (currentModeMeanSetting.mean_threshold * 2.0)) {
+		if ((fastforward) || (mean_diff > (currentModeMeanSetting.mean_threshold * 2.0))) {
 			ExposureChange = std::max(1.0, currentModeMeanSetting.shuttersteps + pow ((mean_diff * currentModeMeanSetting.fastforward * currentModeMeanSetting.shuttersteps),2.0));
 		}
 		// slow forward
 		else if (mean_diff > (currentModeMeanSetting.mean_threshold)) {
 			ExposureChange = currentModeMeanSetting.shuttersteps;
 		}
+
 		dExposureChange = ExposureChange-lastExposureChange;
 		lastExposureChange = ExposureChange;
+
 		if (currentModeMeanSetting.info >= 1)
 			printf("ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
 
@@ -315,6 +317,17 @@ void RPiHQcalcMean(const char* fileName, int asiExposure, double asiGain, int as
 		// Begrenzung 
 		currentModeMeanSetting.ExposureLevel = std::max(std::min((int)currentModeMeanSetting.ExposureLevel, (int)ExposureLevelMax), (int)ExposureLevelMin);
 
+		// fastforward ?
+		if ((currentModeMeanSetting.ExposureLevel == (int)ExposureLevelMax) || (currentModeMeanSetting.ExposureLevel == (int)ExposureLevelMin)) {
+			fastforward = true;
+			printf("FF aktiviert\n");
+		}
+		if ((abs(mean_history[idx] - currentModeMeanSetting.mean_value) < currentModeMeanSetting.mean_threshold) &&
+			(abs(mean_history[idxN1] - currentModeMeanSetting.mean_value) < currentModeMeanSetting.mean_threshold)) {
+			fastforward = false;
+			printf("FF deaktiviert\n");
+		}
+		
 		// gain or exposure ?
 		if (true) {
         	// change gain

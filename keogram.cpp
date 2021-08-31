@@ -32,6 +32,8 @@
 #define KCYN "\x1B[36m"
 #define KWHT "\x1B[37m"
 
+using namespace cv;
+
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
 
@@ -134,7 +136,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+
     cv::Mat accumulated;
+    Mat mask;
 
     int prevHour = -1;
     int expand = 1;
@@ -149,6 +153,10 @@ int main(int argc, char *argv[])
             continue;
         }
 
+        if (f==0) {
+           	mask = cv::Mat::zeros(imagesrc.size(), CV_8U);
+        	cv::circle(mask, cv::Point(mask.cols/2, mask.rows/2), mask.rows/3, cv::Scalar(255, 255, 255), -1, 8, 0);
+        }
         std::cout << "[" << f + 1 << "/" << files.gl_pathc << "] " << basename(files.gl_pathv[f]) << std::endl;
 
 	    //double angle = -36;
@@ -192,6 +200,72 @@ int main(int argc, char *argv[])
                 }
             }
         }
+//#########################################################
+        Scalar mean_scalar = cv::mean(imagesrc, mask);
+        Vec3b color;
+        double mean;
+        double mean_Sum;
+        double mean_maxValue;
+
+        // Scale to 0-1 range
+        switch (imagesrc.depth())
+        {
+            case CV_8U:
+                mean_maxValue = 255.0/100.0;
+                break;
+            case CV_16U:
+                mean_maxValue = 65535.0/100.0;
+                break;
+        }
+
+        switch (imagesrc.channels())
+        {
+            default: // mono case
+			    std::cout <<  "mean_scalar.val[0]" << mean_scalar.val[0] << std::endl;
+                mean = mean_scalar.val[0] / mean_maxValue;
+                break;
+            case 3: // for color choose maximum channel
+            case 4:
+			    std::cout <<  "imagesrc.channels() " << imagesrc.channels() << std::endl;
+			    //std::cout <<  "mean_scalar.val[0] " << mean_scalar.val[0] << std::endl;
+			    //std::cout <<  "mean_scalar.val[1] " << mean_scalar.val[1] << std::endl;
+			    //std::cout <<  "mean_scalar.val[2] " << mean_scalar.val[2] << std::endl;
+                //mean = cv::max(mean_scalar[0], cv::max(mean_scalar[1], mean_scalar[2]));
+                line( accumulated, Point(destCol,0), Point(destCol,100),  Scalar( 255, 255, 255 ), 1,  LINE_8 );
+                if (expand > 1) {
+                    for (int i=1; i < expand; i++) {
+                        line( accumulated, Point(destCol+i,0), Point(destCol+i,100),  Scalar( 255, 255, 255 ), 1,  LINE_8 );
+                    }
+                }
+                mean_Sum = 0;
+                for (int channel=0; channel <= 2; channel++) {
+                    mean = mean_scalar[channel] / mean_maxValue;
+                    mean_Sum += mean;
+                    color.val[0] = 0;
+                    color.val[1] = 0;
+                    color.val[2] = 0;
+                    color.val[channel] = 255;
+                    accumulated.at<cv::Vec3b>(Point(destCol,100-mean)) = color;
+                    if (expand > 1) {
+                        for (int i=1; i < expand; i++) {
+                            accumulated.at<cv::Vec3b>(Point(destCol+i,100-mean)) = color;
+                        }
+                    }
+                }
+                mean_Sum = mean_Sum / 3.0;
+                color.val[0] = 0;
+                color.val[1] = 0;
+                color.val[2] = 0;
+                accumulated.at<cv::Vec3b>(Point(destCol,100-mean_Sum)) = color;
+                if (expand > 1) {
+                    for (int i=1; i < expand; i++) {
+                        accumulated.at<cv::Vec3b>(Point(destCol+i,100-mean_Sum)) = color;
+                    }
+                }
+                break;
+        }
+
+//#########################################################
 
         if (labelsEnabled)
         {
