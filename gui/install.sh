@@ -46,7 +46,11 @@ cat $SCRIPTPATH/sudoers >> /etc/sudoers.d/allsky
 echo -en '\n'
 echo -e "${GREEN}* Retrieving github files to build admin portal${NC}"
 rm -rf /var/www/html
-git clone https://github.com/thomasjacquin/allsky-portal.git /var/www/html
+
+# clone "old" version
+git clone -n https://github.com/thomasjacquin/allsky-portal.git /var/www/html
+git -C /var/www/html checkout b75a01a759a0484e0c9bda394f11f97939a29869
+
 chown -R `logname`:www-data /var/www/html
 chmod -R 775 /var/www/html
 mkdir -p /etc/raspap
