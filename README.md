@@ -20,7 +20,16 @@ The Datyson T7 camera seems to be supported as well. The firmware needs to be up
 
 ## Installation
 
-**Known Issue: File attributes** Please set execute after clone
+**Known Issue: gui incompatible** hopefully fixed 
+
+```shell
+gui/install.sh
+# clone "old" version
+git clone -n https://github.com/thomasjacquin/allsky-portal.git /var/www/html
+git -C /var/www/html checkout b75a01a759a0484e0c9bda394f11f97939a29869
+```
+
+**Known Issue: File attributes** fixed ! Please set execute after clone 
 
 ```shell
 chmod +x install.sh
