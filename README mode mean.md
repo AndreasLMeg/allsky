@@ -25,8 +25,8 @@
 ## Installation
 
 ### Neuinstallation
-* D/A/CH: Installation wie im [readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) beschrieben (als Quelle verwende aber https://github.com/AndreasLMeg/allsky.git) 
-* EN: Installation described in [Readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) should work (but use https://github.com/AndreasLMeg/allsky.git)
+* D/A/CH: Installation wie im [readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) beschrieben (als Quelle verwende aber -b MEAN https://github.com/AndreasLMeg/allsky.git) 
+* EN: Installation described in [Readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) should work (but use -b MEAN https://github.com/AndreasLMeg/allsky.git)
 
 ### bestehende Installation anpassen
 Das Gelingen kann ich leider nicht garantieren, aber so könnte es funktionieren
@@ -39,7 +39,7 @@ cp allsky/keogram allsky/keogram_ori
 ```
 4. neue Software von Github holen 
 ```shell
-git clone --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
+git clone -b MEAN --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
 ```
 5. neue Programme erstellen
 ```shell
@@ -63,7 +63,7 @@ pi@allsky:~ $ cp allsky/capture_RPiHQ allsky/capture_RPiHQ_ori
 
 pi@allsky:~ $ cp allsky/keogram allsky/keogram_ori
 
-pi@allsky:~ $ git clone --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
+pi@allsky:~ $ git clone -b MEAN --recursive https://github.com/AndreasLMeg/allsky.git allsky_li
 Klone nach 'allsky_li' ...
 remote: Enumerating objects: 1990, done.
 remote: Counting objects: 100% (427/427), done.

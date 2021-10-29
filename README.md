@@ -51,10 +51,10 @@ sudo apt-get install git
 
 Now fetch the code from this GitHub page. Open the terminal and type the following:
 
-For **Modus mean** use "https://github.com/AndreasLMeg/allsky.git", for the original software use "https://github.com/thomasjacquin/allsky.git" 
+For **Modus mean** use "-b MEAN https://github.com/AndreasLMeg/allsky.git", for the original software use "https://github.com/thomasjacquin/allsky.git" 
 
 ```shell
-git clone --recursive https://github.com/AndreasLMeg/allsky.git
+git clone -b MEAN --recursive https://github.com/AndreasLMeg/allsky.git
 #git clone --recursive https://github.com/thomasjacquin/allsky.git
 ```
 
