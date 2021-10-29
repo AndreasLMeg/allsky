@@ -82,4 +82,4 @@ fi
 CAMERA_SETTINGS="$CAMERA_SETTINGS_DIR/settings_$CAMERA.json"
 
 # Additional parameter - mode mean
-ADD_PARAMS="$ADD_PARAMS -mode 1 -mean-info 1"
+ADD_PARAMS="$ADD_PARAMS -mode 1 -mean-info 1 -mean-value 0.3 -mean-threshold 0.02"
