@@ -31,7 +31,9 @@
 * EN: Installation described in [Readme](https://github.com/AndreasLMeg/allsky/blob/master/README.md) should work (but use -b MEAN https://github.com/AndreasLMeg/allsky.git)
 
 ### bestehende Installation anpassen
-Das Gelingen kann ich leider nicht garantieren, aber so könnte es funktionieren
+Das Gelingen kann ich leider nicht garantieren, aber so könnte es funktionieren.
+**Seit August 2021 wird die Software Allsky wieder verstärkt gewartet/verbessert Dadurch ergab sich auch eine Inkompatibilität mit der GUI. Eine bestehende Installation anzupassen wird dadurch sehr schwierig und man sollte gute Linux Kenntnisse haben und auch die Datei /var/log/allsky.log verstehen können***
+
 1. Allsky stoppen
 2. SSH Verbindung mit Raspberry erstellen (Putty)
 3. Sicherungskopie anlegen
