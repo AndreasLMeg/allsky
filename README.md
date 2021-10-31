@@ -1,3 +1,5 @@
+# For **Modus mean** use "-b MEAN https://github.com/AndreasLMeg/allsky.git"
+
 # Allsky Camera ![Release 0.7](https://img.shields.io/badge/Release-0.7-green.svg) [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=MEBU2KN75G2NG&source=url)
 
 
