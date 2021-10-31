@@ -1,3 +1,5 @@
+# For **Modus mean** use "-b MEAN https://github.com/AndreasLMeg/allsky.git"
+
 # Allsky Camera - Erweiterung AndreasLMeg
 
 ## Warum wurde dieser Fork gemacht:
