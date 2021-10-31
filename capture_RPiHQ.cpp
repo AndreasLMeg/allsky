@@ -564,7 +564,7 @@ int main(int argc, char *argv[])
 	int asiExposure       = 60000000;
 	int asiAutoExposure   = 0;
 	int asiAutoFocus      = 0;
-	double asiGain        = 4;
+	double asiGain        = 15;
 	int asiAutoGain       = 0;
 	int asiAutoAWB        = 0;
 	int delay             = 10;   // Delay in milliseconds. Default is 10ms
@@ -667,7 +667,8 @@ int main(int argc, char *argv[])
 				asiAutoFocus = atoi(argv[i + 1]);
 				i++;
 			}
-			else if (strcmp(argv[i], "-gain") == 0)
+			// new gui: new parameter nightgain
+			else if (strcmp(argv[i], "-nightgain") == 0 || strcmp(argv[i], "-gain") == 0)
 			{
 				asiGain = atof(argv[i + 1]);
 				i++;
