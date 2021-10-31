@@ -22,10 +22,14 @@ The Datyson T7 camera seems to be supported as well. The firmware needs to be up
 
 ## Installation
 
+**Known Issue: gui incompatible - gain limited with 4** 
+New GUI Parameter "neightgain" not supported with my software - defaultvalue is 4
+I'll change the default value to 15 
+
 **Known Issue: gui incompatible** hopefully fixed 
 
 ```shell
-gui/install.sh
+Changes in gui/install.sh
 # clone "old" version
 git clone -n https://github.com/thomasjacquin/allsky-portal.git /var/www/html
 git -C /var/www/html checkout b75a01a759a0484e0c9bda394f11f97939a29869
