@@ -21,6 +21,9 @@
 #include <fstream>
 #include <locale.h>
 
+#include "allsky.h"
+#include "mean.h"
+
 #define KNRM "\x1B[0m"
 #define KRED "\x1B[31m"
 #define KGRN "\x1B[32m"
@@ -37,7 +40,19 @@
 #define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
 
 //-------------------------------------------------------------------------------------------------------
+// class todo
+//  1. move all helper functions to allsky.cpp/h
+//  2. cleanup Variables, defines,...
+//  3. cleanup main, define fuctions for Allsky
+//  4. cleanup allsky -> camera (ASI/RPi)
+// ....
 //-------------------------------------------------------------------------------------------------------
+Allsky myAllsky;
+int Allsky::debugLevel = 0;
+int Allsky::iNumOfCtrl = 0;
+ASI_CONTROL_CAPS Allsky::ControlCaps;
+char Allsky::debug_text[500];		// buffer to hold debug messages displayed by displayDebugText()
+char Allsky::debug_text2[100];		// buffer to hold additional message
 
 cv::Mat pRgb;
 std::vector<int> compression_parameters;
@@ -56,11 +71,9 @@ pthread_cond_t cond_SatrtSave;
 
 // These are global so they can be used by other routines.
 #define NOT_SET -1	// signifies something isn't set yet
-ASI_CONTROL_CAPS ControlCaps;
 void *retval;
 int numErrors            = 0;	// Number of errors in a row.
 int gotSignal            = 0;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
-int iNumOfCtrl           = 0;
 int CamNum               = 0;
 pthread_t thread_display = 0;
 pthread_t hthdSave       = 0;
@@ -111,57 +124,6 @@ float histogramBoxPercentFromLeft = DEFAULT_BOX_FROM_LEFT;
 float histogramBoxPercentFromTop = DEFAULT_BOX_FROM_TOP;
 #endif	// USE_HISTOGRAM
 
-char debug_text[500];		// buffer to hold debug messages displayed by displayDebugText()
-char debug_text2[100];		// buffer to hold additional message
-int debugLevel = 0;
-/**
- * Helper function to display debug info
-**/
-void displayDebugText(const char * text, int requiredLevel) {
-    if (debugLevel >= requiredLevel) {
-        printf("%s", text);
-    }
-}
-
-// Make sure we don't try to update a non-updateable control, and check for errors.
-ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_BOOL makeAuto)
-{
-    ASI_ERROR_CODE ret = ASI_SUCCESS;
-    int i;
-    for (i = 0; i < iNumOfCtrl && i <= control; i++)    // controls are sorted 1 to n
-    {
-        ret = ASIGetControlCaps(CamNum, i, &ControlCaps);
-
-        if (ControlCaps.ControlType == control)
-        {
-            if (ControlCaps.IsWritable)
-            {
-                if (value > ControlCaps.MaxValue)
-                {
-                    printf("WARNING: Value of %ld greater than max value allowed (%ld) for control '%s' (#%d).\n", value, ControlCaps.MaxValue, ControlCaps.Name, ControlCaps.ControlType);
-                    value = ControlCaps.MaxValue;
-                } else if (value < ControlCaps.MinValue)
-                {
-                    printf("WARNING: Value of %ld less than min value allowed (%ld) for control '%s' (#%d).\n", value, ControlCaps.MinValue, ControlCaps.Name, ControlCaps.ControlType);
-                    value = ControlCaps.MinValue;
-                }
-                if (makeAuto == ASI_TRUE && ControlCaps.IsAutoSupported == ASI_FALSE)
-                {
-                    printf("WARNING: control '%s' (#%d) doesn't support auto mode.\n", ControlCaps.Name, ControlCaps.ControlType);
-                    makeAuto = ASI_FALSE;
-                }
-                ret = ASISetControlValue(CamNum, control, value, makeAuto);
-            } else {
-                printf("ERROR: ControlCap: '%s' (#%d) not writable; not setting to %ld.\n", ControlCaps.Name, ControlCaps.ControlType, value);
-                ret = ASI_ERROR_INVALID_MODE;	// this seemed like the closest error
-            }
-            return ret;
-        }
-    }
-    sprintf(debug_text, "NOTICE: Camera does not support ControlCap # %d; not setting to %ld.\n", control, value);
-    displayDebugText(debug_text, 3);
-    return ASI_ERROR_INVALID_CONTROL_TYPE;
-}
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -274,7 +236,7 @@ void *SaveImgThd(void *para)
 
 	char dT[500];	// Since we're in a thread, use our own copy of debugText
         sprintf(dT, "  > Saving %s image '%s'\n", taking_dark_frames ? "dark" : dayOrNight == "DAY" ? "DAY" : "NIGHT", fileName);
-        displayDebugText(dT, 1);
+        Allsky::displayDebugText(dT, 1);
         int64 st, et;
 
         bool result = false;
@@ -313,7 +275,7 @@ void *SaveImgThd(void *para)
 
         } else {
             // This can happen if the program is closed before the first picture.
-            displayDebugText("----- SaveImgThd(): pRgb.data is null\n", 2);
+            Allsky::displayDebugText("----- SaveImgThd(): pRgb.data is null\n", 2);
         }
         bSavingImg = false;
 
@@ -330,7 +292,7 @@ void *SaveImgThd(void *para)
             else
                x = "";
             sprintf(dT, "%s  > Image took %'.1f ms to save (average %'.1f ms).\n%s", x, diff, total_time_ms / total_saves, x);
-            displayDebugText(dT, 4);
+            Allsky::displayDebugText(dT, 4);
 	}
 
         pthread_mutex_unlock(&mtx_SaveImg);
@@ -481,8 +443,8 @@ int computeHistogram(unsigned char *imageBuffer, int width, int height, ASI_IMG_
 
     if (b == 0)
     {
-        sprintf(debug_text, "*** ERROR: calculating histogram: b==0\n");
-        displayDebugText(debug_text, 0);
+        sprintf(Allsky::Allsky::debug_text, "*** ERROR: calculating histogram: b==0\n");
+        Allsky::displayDebugText(Allsky::debug_text, 0);
         return(0);
     }
 
@@ -505,8 +467,8 @@ static void flush_buffered_image(int cameraId, void *buf, size_t size)
         if (status != ASI_SUCCESS)
             break; // no more buffered frames
 
-        sprintf(debug_text, "  > Cleared %u frame\n", num_cleared + 1);
-        displayDebugText(debug_text, 3);
+        sprintf(Allsky::debug_text, "  > Cleared %u frame\n", num_cleared + 1);
+        Allsky::displayDebugText(Allsky::debug_text, 3);
     }
 }
 
@@ -536,16 +498,16 @@ ASI_ERROR_CODE takeOneExposure(
 	// USB contention, such as that caused by heavy USB disk IO
     long timeout = ((exposure_time_ms * 2) / US_IN_MS) + 5000;	// timeout is in ms
 
-    sprintf(debug_text, "  > %s to %'ld us (%'.2f ms)",
+    sprintf(Allsky::debug_text, "  > %s to %'ld us (%'.2f ms)",
         wasAutoExposure == ASI_TRUE ? "Camera set auto exposure" : "Exposure set",
         exposure_time_ms, (float)exposure_time_ms/US_IN_MS);
-    displayDebugText(debug_text, 3);
-    sprintf(debug_text, ", timeout: %'ld ms", timeout);
-    displayDebugText(debug_text, 4);
-    sprintf(debug_text, "\n");
-    displayDebugText(debug_text, 3); // needs to be same debug level as "Exposure set to ..."
+    Allsky::displayDebugText(Allsky::debug_text, 3);
+    sprintf(Allsky::debug_text, ", timeout: %'ld ms", timeout);
+    Allsky::displayDebugText(Allsky::debug_text, 4);
+    sprintf(Allsky::debug_text, "\n");
+    Allsky::displayDebugText(Allsky::debug_text, 3); // needs to be same debug level as "Exposure set to ..."
 
-    setControl(cameraId, ASI_EXPOSURE, exposure_time_ms, currentAutoExposure);
+    Allsky::setControl(cameraId, ASI_EXPOSURE, exposure_time_ms, currentAutoExposure);
 
     flush_buffered_image(cameraId, imageBuffer, bufferSize);
 
@@ -559,28 +521,28 @@ ASI_ERROR_CODE takeOneExposure(
     if (status == ASI_SUCCESS) {
         status = ASIGetVideoData(cameraId, imageBuffer, bufferSize, timeout);
         if (status != ASI_SUCCESS) {
-            sprintf(debug_text, "  > ERROR: Failed getting image, status = %s\n", getRetCode(status));
-            displayDebugText(debug_text, 0);
+            sprintf(Allsky::debug_text, "  > ERROR: Failed getting image, status = %s\n", getRetCode(status));
+            Allsky::displayDebugText(Allsky::debug_text, 0);
         }
         else {
             numErrors = 0;
-            debug_text2[0] = '\0';
+            Allsky::debug_text2[0] = '\0';
 #ifdef USE_HISTOGRAM
             if (histogram != NULL && mean != NULL)
             {
                 *mean = computeHistogram(imageBuffer, width, height, imageType, histogram);
-                sprintf(debug_text2, ", mean %d", *mean);
+                sprintf(Allsky::debug_text2, ", mean %d", *mean);
             }
 #endif
             ASIGetControlValue(cameraId, ASI_EXPOSURE, &actual_exposure_us, &wasAutoExposure);
-            sprintf(debug_text, "  > Got image @ exposure: %'ld us (%'.2f ms)%s\n", actual_exposure_us, (float)actual_exposure_us/US_IN_MS, debug_text2);
-            displayDebugText(debug_text, 3);
+            sprintf(Allsky::debug_text, "  > Got image @ exposure: %'ld us (%'.2f ms)%s\n", actual_exposure_us, (float)actual_exposure_us/US_IN_MS, Allsky::debug_text2);
+            Allsky::displayDebugText(Allsky::debug_text, 3);
 
             // If this was a manual exposure, make sure it took the correct exposure.
             if (wasAutoExposure == ASI_FALSE && exposure_time_ms != actual_exposure_us)
             {
-                sprintf(debug_text, "  > WARNING: not correct exposure (requested: %'ld us, actual: %'ld us, diff: %'ld)\n", exposure_time_ms, actual_exposure_us, actual_exposure_us - exposure_time_ms);
-                displayDebugText(debug_text, 0);
+                sprintf(Allsky::debug_text, "  > WARNING: not correct exposure (requested: %'ld us, actual: %'ld us, diff: %'ld)\n", exposure_time_ms, actual_exposure_us, actual_exposure_us - exposure_time_ms);
+                Allsky::displayDebugText(Allsky::debug_text, 0);
                 status = (ASI_ERROR_CODE) -1;
             }
             ASIGetControlValue(cameraId, ASI_GAIN, &actualGain, &bAuto);
@@ -592,8 +554,8 @@ ASI_ERROR_CODE takeOneExposure(
 
     }
     else {
-        sprintf(debug_text, "  > ERROR: Not fetching exposure data because status is %s\n", getRetCode(status));
-        displayDebugText(debug_text, 0);
+        sprintf(Allsky::debug_text, "  > ERROR: Not fetching exposure data because status is %s\n", getRetCode(status));
+        Allsky::displayDebugText(Allsky::debug_text, 0);
     }
 
     return status;
@@ -681,8 +643,8 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 
     if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
     {
-        sprintf(debug_text, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
-        waitToFix(debug_text);
+        sprintf(Allsky::debug_text, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
+        waitToFix(Allsky::debug_text);
         closeUp(2);
     }
 }
@@ -754,22 +716,22 @@ int numGainChanges = 0;		// This is reset at every day/night and night/day trans
 bool resetGainTransitionVariables(int dayGain, int nightGain)
 {
     // Many of the "xxx" messages below will go away once we're sure gain transition works.
-    sprintf(debug_text, "xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, dayOrNight.c_str());
-    displayDebugText(debug_text, 4);
+    sprintf(Allsky::debug_text, "xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, dayOrNight.c_str());
+    Allsky::displayDebugText(Allsky::debug_text, 4);
 
     if (adjustGain == false)
     {
         // determineGainChange() will never be called so no need to set any variables.
-        sprintf(debug_text,"xxx will not adjust gain - adjustGain == false\n");
-        displayDebugText(debug_text, 4);
+        sprintf(Allsky::debug_text,"xxx will not adjust gain - adjustGain == false\n");
+        Allsky::displayDebugText(Allsky::debug_text, 4);
         return(false);
     }
 
     if (numExposures == 0)
     {
         // we don't adjust when the program first starts since there's nothing to transition from
-        sprintf(debug_text,"xxx will not adjust gain right now - numExposures == 0\n");
-        displayDebugText(debug_text, 4);
+        sprintf(Allsky::debug_text,"xxx will not adjust gain right now - numExposures == 0\n");
+        Allsky::displayDebugText(Allsky::debug_text, 4);
         return(false);
     }
 
@@ -783,23 +745,23 @@ bool resetGainTransitionVariables(int dayGain, int nightGain)
     if (dayOrNight == "DAY")
     {
         totalTimeInSec = (asi_day_exposure_us / US_IN_SEC) + (dayDelay / MS_IN_SEC);
-        sprintf(debug_text,"xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay=%'dms\n", totalTimeInSec, asi_day_exposure_us, dayDelay);
-        displayDebugText(debug_text, 4);
+        sprintf(Allsky::debug_text,"xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay=%'dms\n", totalTimeInSec, asi_day_exposure_us, dayDelay);
+        Allsky::displayDebugText(Allsky::debug_text, 4);
     }
     else	// NIGHT
     {
         // At nightime if the exposure is less than the max, we wait until max has expired,
         // so use it instead of the exposure time.
         totalTimeInSec = (asi_night_max_exposure_ms / MS_IN_SEC) + (nightDelay / MS_IN_SEC);
-        sprintf(debug_text, "xxx totalTimeInSec=%.1fs, asi_night_max_exposure_ms=%'dms, nightDelay=%'dms\n", totalTimeInSec, asi_night_max_exposure_ms, nightDelay);
-        displayDebugText(debug_text, 4);
+        sprintf(Allsky::debug_text, "xxx totalTimeInSec=%.1fs, asi_night_max_exposure_ms=%'dms, nightDelay=%'dms\n", totalTimeInSec, asi_night_max_exposure_ms, nightDelay);
+        Allsky::displayDebugText(Allsky::debug_text, 4);
     }
 
     gainTransitionImages = ceil(gainTransitionTime / totalTimeInSec);
     if (gainTransitionImages == 0)
     {
-        sprintf(debug_text, "*** INFORMATION: Not adjusting gain - your 'gaintransitiontime' (%d seconds) is less than the time to take one image plus its delay (%.1f seconds).\n", gainTransitionTime, totalTimeInSec);
-        displayDebugText(debug_text, 0);
+        sprintf(Allsky::debug_text, "*** INFORMATION: Not adjusting gain - your 'gaintransitiontime' (%d seconds) is less than the time to take one image plus its delay (%.1f seconds).\n", gainTransitionTime, totalTimeInSec);
+        Allsky::displayDebugText(Allsky::debug_text, 0);
 
         return(false);
     }
@@ -817,9 +779,9 @@ bool resetGainTransitionVariables(int dayGain, int nightGain)
 		gainTransitionImages++;		// this one will get the remaining amount
     }
 
-    sprintf(debug_text,"xxx gainTransitionImages=%d, gainTransitionTime=%ds, perImageAdjustGain=%d, totalAdjustGain=%d\n",
+    sprintf(Allsky::debug_text,"xxx gainTransitionImages=%d, gainTransitionTime=%ds, perImageAdjustGain=%d, totalAdjustGain=%d\n",
         gainTransitionImages, gainTransitionTime, perImageAdjustGain, totalAdjustGain);
-    displayDebugText(debug_text, 4);
+    Allsky::displayDebugText(Allsky::debug_text, 4);
 
     return(true);
 }
@@ -836,8 +798,8 @@ int determineGainChange(int dayGain, int nightGain)
     if (numGainChanges > gainTransitionImages || totalAdjustGain == 0)
     {
         // no more changes needed in this transition
-        sprintf(debug_text, "  xxxx No more gain changes needed.\n");
-        displayDebugText(debug_text, 4);
+        sprintf(Allsky::debug_text, "  xxxx No more gain changes needed.\n");
+        Allsky::displayDebugText(Allsky::debug_text, 4);
         currentAdjustGain = false;
         return(0);
     }
@@ -869,9 +831,9 @@ int determineGainChange(int dayGain, int nightGain)
         }
     }
 
-    sprintf(debug_text, "  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
+    sprintf(Allsky::debug_text, "  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
         dayOrNight.c_str(), amt, amt+currentGain, numGainChanges, gainTransitionImages);
-    displayDebugText(debug_text, 4);
+    Allsky::displayDebugText(Allsky::debug_text, 4);
     return(amt);
 }
 
@@ -1367,7 +1329,7 @@ const char *locale = DEFAULT_LOCALE;
             }
             else if (strcmp(argv[i], "-debuglevel") == 0)
             {
-                debugLevel = atoi(argv[++i]);
+                Allsky::debugLevel = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-showTime") == 0 || strcmp(argv[i], "-time") == 0)
             {
@@ -1549,8 +1511,8 @@ const char *locale = DEFAULT_LOCALE;
     }
     else
     {
-        sprintf(debug_text, "*** ERROR: Unsupported image extension (%s); only .jpg and .png are supported.\n", ext);
-        waitToFix(debug_text);
+        sprintf(Allsky::debug_text, "*** ERROR: Unsupported image extension (%s); only .jpg and .png are supported.\n", ext);
+        waitToFix(Allsky::debug_text);
     	exit(99);
     }
     compression_parameters.push_back(quality);
@@ -1669,39 +1631,39 @@ const char *locale = DEFAULT_LOCALE;
         closeUp(1);      // Can't do anything so might as well exit.
     }
 
-    ASIGetNumOfControls(CamNum, &iNumOfCtrl);
-    if (debugLevel >= 4)	// this is really only needed for debugging
+    ASIGetNumOfControls(CamNum, &Allsky::iNumOfCtrl);
+    if (Allsky::debugLevel >= 4)	// this is really only needed for debugging
     {
         printf("Control Caps:\n");
-        for (i = 0; i < iNumOfCtrl; i++)
+        for (i = 0; i < Allsky::iNumOfCtrl; i++)
         {
-            ASIGetControlCaps(CamNum, i, &ControlCaps);
-            printf("- %s:\n", ControlCaps.Name);
-            printf("   - MinValue = %ld\n", ControlCaps.MinValue);
-            printf("   - MaxValue = %ld\n", ControlCaps.MaxValue);
-            printf("   - DefaultValue = %ld\n", ControlCaps.DefaultValue);
-            printf("   - IsAutoSupported = %d\n", ControlCaps.IsAutoSupported);
-            printf("   - IsWritable = %d\n", ControlCaps.IsWritable);
-            printf("   - ControlType = %d\n", ControlCaps.ControlType);
+            ASIGetControlCaps(CamNum, i, &Allsky::ControlCaps);
+            printf("- %s:\n", Allsky::ControlCaps.Name);
+            printf("   - MinValue = %ld\n", Allsky::ControlCaps.MinValue);
+            printf("   - MaxValue = %ld\n", Allsky::ControlCaps.MaxValue);
+            printf("   - DefaultValue = %ld\n", Allsky::ControlCaps.DefaultValue);
+            printf("   - IsAutoSupported = %d\n", Allsky::ControlCaps.IsAutoSupported);
+            printf("   - IsWritable = %d\n", Allsky::ControlCaps.IsWritable);
+            printf("   - ControlType = %d\n", Allsky::ControlCaps.ControlType);
         }
     }
 
     // Get a few values from the camera that we need elsewhere.
-    asiRetCode = ASIGetControlCaps(CamNum, ASI_EXPOSURE, &ControlCaps);
+    asiRetCode = ASIGetControlCaps(CamNum, ASI_EXPOSURE, &Allsky::ControlCaps);
     if (asiRetCode == ASI_SUCCESS)
-        min_exposure_us = ControlCaps.MinValue;
+        min_exposure_us = Allsky::ControlCaps.MinValue;
 
 #ifdef USE_HISTOGRAM
     // Keep track of the camera's max auto exposure so we don't try to exceed it.
-    asiRetCode = ASIGetControlCaps(CamNum, ASI_AUTO_MAX_EXP, &ControlCaps);
+    asiRetCode = ASIGetControlCaps(CamNum, ASI_AUTO_MAX_EXP, &Allsky::ControlCaps);
     if (asiRetCode == ASI_SUCCESS)
     {
         // MaxValue is in MS so convert to microseconds
-        camera_max_auto_exposure_us = ControlCaps.MaxValue * US_IN_MS;
+        camera_max_auto_exposure_us = Allsky::ControlCaps.MaxValue * US_IN_MS;
     }
 #endif
 
-    if (debugLevel >= 4)
+    if (Allsky::debugLevel >= 4)
     {
         printf("Supported video formats:\n");
         for (i = 0; i < 8; i++)
@@ -1773,8 +1735,8 @@ const char *locale = DEFAULT_LOCALE;
     }
     else
     {
-        sprintf(debug_text, "*** ERROR: ASI_IMG_TYPE: %d\n", Image_type);
-        waitToFix(debug_text);
+        sprintf(Allsky::debug_text, "*** ERROR: ASI_IMG_TYPE: %d\n", Image_type);
+        waitToFix(Allsky::debug_text);
     	exit(99);
     }
 
@@ -1846,7 +1808,7 @@ const char *locale = DEFAULT_LOCALE;
     printf(" Show Brightness: %s\n", yesNo(showBrightness));
     printf(" Preview: %s\n", yesNo(preview));
     printf(" Taking Dark Frames: %s\n", yesNo(taking_dark_frames));
-    printf(" Debug Level: %d\n", debugLevel);
+    printf(" Debug Level: %d\n", Allsky::debugLevel);
     printf(" TTY: %s\n", yesNo(tty));
     printf(" Non-continuous Capture Method: %s\n", yesNo(use_new_exposure_algorithm));
     printf(" ZWO SDK version %s\n", ASIGetSDKVersion());
@@ -1855,24 +1817,24 @@ const char *locale = DEFAULT_LOCALE;
     //-------------------------------------------------------------------------------------------------------
     //-------------------------------------------------------------------------------------------------------
     // These configurations apply to both day and night.
-    // Other calls to setControl() are done after we know if we're in daytime or nighttime.
-    setControl(CamNum, ASI_BANDWIDTHOVERLOAD, asiBandwidth, asiAutoBandwidth == 1 ? ASI_TRUE : ASI_FALSE);
-    setControl(CamNum, ASI_HIGH_SPEED_MODE, 0, ASI_FALSE);  // ZWO sets this in their program
-    setControl(CamNum, ASI_WB_R, asiWBR, asiAutoWhiteBalance == 1 ? ASI_TRUE : ASI_FALSE);
-    setControl(CamNum, ASI_WB_B, asiWBB, asiAutoWhiteBalance == 1 ? ASI_TRUE : ASI_FALSE);
-    setControl(CamNum, ASI_GAMMA, asiGamma, ASI_FALSE);
-    setControl(CamNum, ASI_FLIP, asiFlip, ASI_FALSE);
+    // Other calls to Allsky::setControl() are done after we know if we're in daytime or nighttime.
+    Allsky::setControl(CamNum, ASI_BANDWIDTHOVERLOAD, asiBandwidth, asiAutoBandwidth == 1 ? ASI_TRUE : ASI_FALSE);
+    Allsky::setControl(CamNum, ASI_HIGH_SPEED_MODE, 0, ASI_FALSE);  // ZWO sets this in their program
+    Allsky::setControl(CamNum, ASI_WB_R, asiWBR, asiAutoWhiteBalance == 1 ? ASI_TRUE : ASI_FALSE);
+    Allsky::setControl(CamNum, ASI_WB_B, asiWBB, asiAutoWhiteBalance == 1 ? ASI_TRUE : ASI_FALSE);
+    Allsky::setControl(CamNum, ASI_GAMMA, asiGamma, ASI_FALSE);
+    Allsky::setControl(CamNum, ASI_FLIP, asiFlip, ASI_FALSE);
 
     if (ASICameraInfo.IsCoolerCam)
     {
-        asiRetCode = setControl(CamNum, ASI_COOLER_ON, asiCoolerEnabled == 1 ? ASI_TRUE : ASI_FALSE, ASI_FALSE);
+        asiRetCode = Allsky::setControl(CamNum, ASI_COOLER_ON, asiCoolerEnabled == 1 ? ASI_TRUE : ASI_FALSE, ASI_FALSE);
         if (asiRetCode != ASI_SUCCESS)
         {
             printf("%s", KRED);
             printf(" WARNING: Could not enable cooler: %s, but continuing without it.\n", getRetCode(asiRetCode));
             printf("%s", KNRM);
         }
-        asiRetCode = setControl(CamNum, ASI_TARGET_TEMP, asiTargetTemp, ASI_FALSE);
+        asiRetCode = Allsky::setControl(CamNum, ASI_TARGET_TEMP, asiTargetTemp, ASI_FALSE);
         if (asiRetCode != ASI_SUCCESS)
         {
             printf("%s", KRED);
@@ -1952,7 +1914,7 @@ const char *locale = DEFAULT_LOCALE;
                 currentBin = nightBin;
                 currentBrightness = asiNightBrightness;
 
-                displayDebugText("Taking dark frames...\n", 0);
+                Allsky::displayDebugText("Taking dark frames...\n", 0);
 
                 if (notificationImages) {
                     system("scripts/copy_notification_image.sh DarkFrames &");
@@ -1964,8 +1926,8 @@ const char *locale = DEFAULT_LOCALE;
             // Setup the daytime capture parameters
             if (endOfNight == true)	// Execute end of night script
             {
-                sprintf(debug_text, "Processing end of night data\n");
-                displayDebugText(debug_text, 0);
+                sprintf(Allsky::debug_text, "Processing end of night data\n");
+                Allsky::displayDebugText(Allsky::debug_text, 0);
                 system("scripts/endOfNight.sh &");
                 endOfNight = false;
                 displayedNoDaytimeMsg = 0;
@@ -1978,9 +1940,9 @@ const char *locale = DEFAULT_LOCALE;
                     if (notificationImages) {
                         system("scripts/copy_notification_image.sh CameraOffDuringDay &");
                     }
-                    sprintf(debug_text, "It's daytime... we're not saving images.\n%s\n",
+                    sprintf(Allsky::debug_text, "It's daytime... we're not saving images.\n%s\n",
                         tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
-                    displayDebugText(debug_text, 0);
+                    Allsky::displayDebugText(Allsky::debug_text, 0);
                     displayedNoDaytimeMsg = 1;
 
                     // sleep until almost nighttime, then wake up and sleep a short time
@@ -1999,8 +1961,8 @@ const char *locale = DEFAULT_LOCALE;
 
             else
             {
-                sprintf(debug_text, "==========\n=== Starting daytime capture ===\n==========\n");
-                displayDebugText(debug_text, 0);
+                sprintf(Allsky::debug_text, "==========\n=== Starting daytime capture ===\n==========\n");
+                Allsky::displayDebugText(Allsky::debug_text, 0);
 
                 // If we went from Night to Day, then current_exposure_us will be the last night
                 // exposure so leave it if we're using auto-exposure so there's a seamless change from
@@ -2013,16 +1975,16 @@ const char *locale = DEFAULT_LOCALE;
                 }
                 else
                 {
-                    sprintf(debug_text, "Using the last night exposure of %'ld us (%'.2lf ms)\n", current_exposure_us, (float)current_exposure_us / US_IN_MS);
-                    displayDebugText(debug_text, 2);
+                    sprintf(Allsky::debug_text, "Using the last night exposure of %'ld us (%'.2lf ms)\n", current_exposure_us, (float)current_exposure_us / US_IN_MS);
+                    Allsky::displayDebugText(Allsky::debug_text, 2);
                 }
 
 #ifdef USE_HISTOGRAM
                 // Don't use camera auto exposure since we mimic it ourselves.
                 if (asiDayAutoExposure)
                 {
-                    sprintf(debug_text, "Turning off daytime auto-exposure to use histogram exposure.\n");
-                    displayDebugText(debug_text, 2);
+                    sprintf(Allsky::debug_text, "Turning off daytime auto-exposure to use histogram exposure.\n");
+                    Allsky::displayDebugText(Allsky::debug_text, 2);
                     currentAutoExposure = ASI_FALSE;
                 }
 #else
@@ -2045,21 +2007,21 @@ const char *locale = DEFAULT_LOCALE;
                 }
                 currentAutoGain = asiDayAutoGain ? ASI_TRUE : ASI_FALSE;
                 // We don't have a separate asiDayMaxGain, so set to night one
-                setControl(CamNum, ASI_AUTO_MAX_GAIN, asiNightMaxGain, ASI_FALSE);
+                Allsky::setControl(CamNum, ASI_AUTO_MAX_GAIN, asiNightMaxGain, ASI_FALSE);
             }
         }
 
         else	// NIGHT
         {
-            sprintf(debug_text, "==========\n=== Starting nighttime capture ===\n==========\n");
-            displayDebugText(debug_text, 0);
+            sprintf(Allsky::debug_text, "==========\n=== Starting nighttime capture ===\n==========\n");
+            Allsky::displayDebugText(Allsky::debug_text, 0);
 
             // Setup the night time capture parameters
             if (numExposures == 0 || asiNightAutoExposure == ASI_FALSE)
             {
                 current_exposure_us = asi_night_exposure_us;
-                sprintf(debug_text, "Using night exposure (%ld ms)\n", asi_night_exposure_us / US_IN_MS);
-                displayDebugText(debug_text, 4);
+                sprintf(Allsky::debug_text, "Using night exposure (%ld ms)\n", asi_night_exposure_us / US_IN_MS);
+                Allsky::displayDebugText(Allsky::debug_text, 4);
             }
 
             currentAutoExposure = asiNightAutoExposure ? ASI_TRUE : ASI_FALSE;
@@ -2079,13 +2041,13 @@ const char *locale = DEFAULT_LOCALE;
                 gainChange = 0;
             }
             currentAutoGain = asiNightAutoGain ? ASI_TRUE : ASI_FALSE;
-            setControl(CamNum, ASI_AUTO_MAX_GAIN, asiNightMaxGain, ASI_FALSE);
+            Allsky::setControl(CamNum, ASI_AUTO_MAX_GAIN, asiNightMaxGain, ASI_FALSE);
         }
 
-        setControl(CamNum, ASI_GAIN, currentGain + gainChange, currentAutoGain);
-        setControl(CamNum, ASI_BRIGHTNESS, currentBrightness, ASI_FALSE); // ASI_BRIGHTNESS == ASI_OFFSET
+        Allsky::setControl(CamNum, ASI_GAIN, currentGain + gainChange, currentAutoGain);
+        Allsky::setControl(CamNum, ASI_BRIGHTNESS, currentBrightness, ASI_FALSE); // ASI_BRIGHTNESS == ASI_OFFSET
 #ifndef USE_HISTOGRAM
-        setControl(CamNum, ASI_EXPOSURE, current_exposure_us, currentAutoExposure);
+        Allsky::setControl(CamNum, ASI_EXPOSURE, current_exposure_us, currentAutoExposure);
 #endif
 
         // Adjusting variables for chosen binning
@@ -2099,8 +2061,8 @@ const char *locale = DEFAULT_LOCALE;
         if (numExposures > 0 && dayBin != nightBin)
         {
             // No need to print after first time if the binning didn't change.
-            sprintf(debug_text, "Buffer size: %ld\n", bufferSize);
-            displayDebugText(debug_text, 4);
+            sprintf(Allsky::debug_text, "Buffer size: %ld\n", bufferSize);
+            Allsky::displayDebugText(Allsky::debug_text, 4);
         }
 
         if (Image_type == ASI_IMG_RAW16)
@@ -2134,7 +2096,7 @@ const char *locale = DEFAULT_LOCALE;
         // Only do this once.
         if ( 0 && numExposures == 0) {
 #define SHORT_EXPOSURE 30000
-            displayDebugText("===Taking 3 images to clear buffer...\n", 2);
+            Allsky::displayDebugText("===Taking 3 images to clear buffer...\n", 2);
             // turn off auto exposure
             ASI_BOOL savedAutoExposure = currentAutoExposure;
             currentAutoExposure = ASI_FALSE;
@@ -2145,8 +2107,8 @@ const char *locale = DEFAULT_LOCALE;
                 if (asiRetCode != ASI_SUCCESS)
                 {
                     // takeOneExposure() already output the error number
-                    sprintf(debug_text, "buffer clearing exposure %d failed\n", i);
-                    displayDebugText(debug_text, 0);
+                    sprintf(Allsky::debug_text, "buffer clearing exposure %d failed\n", i);
+                    Allsky::displayDebugText(Allsky::debug_text, 0);
                     numErrors++;
                     sleep(2);	// sometimes sleeping keeps errors from reappearing
                 }
@@ -2155,16 +2117,16 @@ const char *locale = DEFAULT_LOCALE;
             {
                 bMain = false;
                 exitCode = 2;
-		        sprintf(debug_text, "Maximum number of consecutive errors of %d reached; exiting...\n", maxErrors);
-                displayDebugText(debug_text, 0);
+		        sprintf(Allsky::debug_text, "Maximum number of consecutive errors of %d reached; exiting...\n", maxErrors);
+                Allsky::displayDebugText(Allsky::debug_text, 0);
                 break;
             }
 
             // Restore correct exposure times and auto-exposure mode.
             currentAutoExposure = savedAutoExposure;
-            setControl(CamNum, ASI_EXPOSURE, current_exposure_us, currentAutoExposure);
-            sprintf(debug_text, "...DONE.  Reset exposure to %'ld us\n", current_exposure_us);
-            displayDebugText(debug_text, 2);
+            Allsky::setControl(CamNum, ASI_EXPOSURE, current_exposure_us, currentAutoExposure);
+            sprintf(Allsky::debug_text, "...DONE.  Reset exposure to %'ld us\n", current_exposure_us);
+            Allsky::displayDebugText(Allsky::debug_text, 2);
             // END of bug code
         }
 
@@ -2188,8 +2150,8 @@ const char *locale = DEFAULT_LOCALE;
             char exposureStart[128];
             char f[10] = "%F %T";
             sprintf(exposureStart, "%s", formatTime(t, f));
-            sprintf(debug_text, "STARTING EXPOSURE at: %s\n", exposureStart);
-            displayDebugText(debug_text, 0);
+            sprintf(Allsky::debug_text, "STARTING EXPOSURE at: %s\n", exposureStart);
+            Allsky::displayDebugText(Allsky::debug_text, 0);
 
             // Get start time for overlay.  Make sure it has the same time as exposureStart.
             if (showTime == 1)
@@ -2271,8 +2233,8 @@ const char *locale = DEFAULT_LOCALE;
                             // which is ok - it just means the multiplier will be less than 1.
                             numMultiples = (float)(asiDayBrightness - DEFAULT_BRIGHTNESS) / DEFAULT_BRIGHTNESS;
                             exposureAdjustment = 1 + (numMultiples * adjustmentAmountPerMultiple);
-                            sprintf(debug_text, "  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
-                            displayDebugText(debug_text, 3);
+                            sprintf(Allsky::debug_text, "  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
+                            Allsky::displayDebugText(Allsky::debug_text, 3);
                             showedMessage = 1;
                         }
 
@@ -2290,7 +2252,7 @@ const char *locale = DEFAULT_LOCALE;
                         attempts++;
                         why = "";
 
-                        sprintf(debug_text, "  > Attempt %i, exposure %'ld us @ mean %d, temp_min_exposure_us %'ld us, temp_max_exposure_us %'ld us", attempts, current_exposure_us, mean, temp_min_exposure_us, temp_max_exposure_us);
+                        sprintf(Allsky::debug_text, "  > Attempt %i, exposure %'ld us @ mean %d, temp_min_exposure_us %'ld us, temp_max_exposure_us %'ld us", attempts, current_exposure_us, mean, temp_min_exposure_us, temp_max_exposure_us);
 
                         int num = 0;
                          if (mean >= 254) {
@@ -2355,9 +2317,9 @@ const char *locale = DEFAULT_LOCALE;
                          new_exposure_us = std::max(temp_min_exposure_us, new_exposure_us);
                          new_exposure_us = std::min(current_max_exposure_us, new_exposure_us);
 
-                         sprintf(debug_text2, ", new_exposure_us %'ld us\n", new_exposure_us);
-                         strcat(debug_text, debug_text2);
-                         displayDebugText(debug_text, 3);
+                         sprintf(Allsky::debug_text2, ", new_exposure_us %'ld us\n", new_exposure_us);
+                         strcat(Allsky::debug_text, Allsky::debug_text2);
+                         Allsky::displayDebugText(Allsky::debug_text, 3);
 
                          if (new_exposure_us == current_exposure_us)
                          {
@@ -2366,8 +2328,8 @@ const char *locale = DEFAULT_LOCALE;
                              // use the most recent exposure that was OK.
                              if (mean >= 254 && 0) {	// xxxxx This needs work so disabled
                                  current_exposure_us = last_OK_exposure_us;
-                                 sprintf(debug_text, "  > !!! Resetting to last OK exposure of '%ld us\n", current_exposure_us);
-                                 displayDebugText(debug_text, 3);
+                                 sprintf(Allsky::debug_text, "  > !!! Resetting to last OK exposure of '%ld us\n", current_exposure_us);
+                                 Allsky::displayDebugText(Allsky::debug_text, 3);
                                  asiRetCode = takeOneExposure(CamNum, current_exposure_us, pRgb.data, width, height, (ASI_IMG_TYPE) Image_type, histogram, &mean);
                              }
                              break;
@@ -2379,8 +2341,8 @@ const char *locale = DEFAULT_LOCALE;
                              break;
                          }
 
-                         sprintf(debug_text, "  > !!! Retrying @ %'ld us because 'mean (%d) %s (%d)'\n", current_exposure_us, mean, why.c_str(), num);
-                         displayDebugText(debug_text, 3);
+                         sprintf(Allsky::debug_text, "  > !!! Retrying @ %'ld us because 'mean (%d) %s (%d)'\n", current_exposure_us, mean, why.c_str(), num);
+                         Allsky::displayDebugText(Allsky::debug_text, 3);
                          asiRetCode = takeOneExposure(CamNum, current_exposure_us, pRgb.data, width, height, (ASI_IMG_TYPE) Image_type, histogram, &mean);
                          if (asiRetCode == ASI_SUCCESS)
                          {
@@ -2390,8 +2352,8 @@ const char *locale = DEFAULT_LOCALE;
 
                     if (asiRetCode != ASI_SUCCESS)
                     {
-                        sprintf(debug_text,"  > Sleeping %s from failed exposure\n", length_in_units(currentDelay));
-                        displayDebugText(debug_text, 2);
+                        sprintf(Allsky::debug_text,"  > Sleeping %s from failed exposure\n", length_in_units(currentDelay));
+                        Allsky::displayDebugText(Allsky::debug_text, 2);
                         usleep(currentDelay * US_IN_MS);
                         // Don't save the file or do anything below.
                         continue;
@@ -2399,35 +2361,35 @@ const char *locale = DEFAULT_LOCALE;
 
                     if (mean >= minAcceptableHistogram && mean <= maxAcceptableHistogram)
                     {
-                        sprintf(debug_text, "  > Good image: mean %d within range (%d to %d)\n", mean, minAcceptableHistogram, maxAcceptableHistogram);
+                        sprintf(Allsky::debug_text, "  > Good image: mean %d within range (%d to %d)\n", mean, minAcceptableHistogram, maxAcceptableHistogram);
                     }
                     else if (attempts > maxHistogramAttempts)
                     {
-                         sprintf(debug_text, "  > max attempts reached - using exposure of %'ld us with mean %d\n", current_exposure_us, mean);
+                         sprintf(Allsky::debug_text, "  > max attempts reached - using exposure of %'ld us with mean %d\n", current_exposure_us, mean);
                     }
                     else if (attempts >= 1)
                     {
                          if (current_exposure_us > current_max_exposure_us)
                          {
-                             sprintf(debug_text, "  > Stopped trying: new exposure of %'ld us would be over max of %'ld\n", current_exposure_us, current_max_exposure_us);
+                             sprintf(Allsky::debug_text, "  > Stopped trying: new exposure of %'ld us would be over max of %'ld\n", current_exposure_us, current_max_exposure_us);
                          }
                          else if (current_exposure_us == current_max_exposure_us)
                          {
-                             sprintf(debug_text, "  > Stopped trying: hit max exposure limit of %'ld, mean %d\n", current_max_exposure_us, mean);
+                             sprintf(Allsky::debug_text, "  > Stopped trying: hit max exposure limit of %'ld, mean %d\n", current_max_exposure_us, mean);
                          }
                          else if (new_exposure_us == current_exposure_us)
                          {
-                             sprintf(debug_text, "  > Stopped trying: new_exposure_us == current_exposure_us (%'ld)\n", current_exposure_us);
+                             sprintf(Allsky::debug_text, "  > Stopped trying: new_exposure_us == current_exposure_us (%'ld)\n", current_exposure_us);
                          }
                          else
                          {
-                             sprintf(debug_text, "  > Stopped trying, using exposure of %'ld us with mean %d, min=%d, max=%d\n", current_exposure_us, mean, minAcceptableHistogram, maxAcceptableHistogram);
+                             sprintf(Allsky::debug_text, "  > Stopped trying, using exposure of %'ld us with mean %d, min=%d, max=%d\n", current_exposure_us, mean, minAcceptableHistogram, maxAcceptableHistogram);
                          }
                     } else if (current_exposure_us == current_max_exposure_us)
                     {
-                         sprintf(debug_text, "  > Did not make any additional attempts - at max exposure limit of %'ld, mean %d\n", current_max_exposure_us, mean);
+                         sprintf(Allsky::debug_text, "  > Did not make any additional attempts - at max exposure limit of %'ld, mean %d\n", current_max_exposure_us, mean);
                     }
-                    displayDebugText(debug_text, 3);
+                    Allsky::displayDebugText(Allsky::debug_text, 3);
                     actual_exposure_us = current_exposure_us;
                 } else {
                     current_exposure_us = actual_exposure_us;
@@ -2515,7 +2477,7 @@ const char *locale = DEFAULT_LOCALE;
                         // Determine if we need to change the gain on the next image.
                         // This must come AFTER the "showGain" above.
                         gainChange = determineGainChange(asiDayGain, asiNightGain);
-                        setControl(CamNum, ASI_GAIN, currentGain + gainChange, currentAutoGain);
+                        Allsky::setControl(CamNum, ASI_GAIN, currentGain + gainChange, currentAutoGain);
                     }
 
                     if (showBrightness == 1)
@@ -2593,9 +2555,9 @@ const char *locale = DEFAULT_LOCALE;
                         // issue while we're running.
                         if (access(ImgExtraText, F_OK ) == -1 ) {
                             bUseExtraFile = false;
-                            displayDebugText("  > *** WARNING: Extra Text File Does Not Exist So Ignoring It\n", 1);
+                            Allsky::displayDebugText("  > *** WARNING: Extra Text File Does Not Exist So Ignoring It\n", 1);
                         } else if (access(ImgExtraText, R_OK ) == -1 ) {
-                            displayDebugText("  > *** ERROR: Cannot Read From Extra Text File So Ignoring It\n", 1);
+                            Allsky::displayDebugText("  > *** ERROR: Cannot Read From Extra Text File So Ignoring It\n", 1);
                             bUseExtraFile = false;
                         }
 
@@ -2611,20 +2573,20 @@ const char *locale = DEFAULT_LOCALE;
 
                                         time_t now = time(NULL);
                                         double ageInSeconds = difftime(now, mktime(&modifiedTime));
-                                        sprintf(debug_text, "  > Extra Text File (%s) Modified %.1f seconds ago", ImgExtraText, ageInSeconds);
-                                        displayDebugText(debug_text, 2);
+                                        sprintf(Allsky::debug_text, "  > Extra Text File (%s) Modified %.1f seconds ago", ImgExtraText, ageInSeconds);
+                                        Allsky::displayDebugText(Allsky::debug_text, 2);
                                         if (ageInSeconds < extraFileAge) {
-                                            displayDebugText(", so Using It\n", 1);
+                                            Allsky::displayDebugText(", so Using It\n", 1);
                                             bAddExtra = true;
                                         } else {
-                                            displayDebugText(", so Ignoring\n", 1);
+                                            Allsky::displayDebugText(", so Ignoring\n", 1);
                                         }
                                     } else {
-                                        displayDebugText("  > *** ERROR: Stat Of Extra Text File Failed !\n", 0);
+                                        Allsky::displayDebugText("  > *** ERROR: Stat Of Extra Text File Failed !\n", 0);
                                     }
                                 } else {
                                     // xxx Should really only display this once, maybe at program start.
-                                    displayDebugText("  > Extra Text File Age Disabled So Displaying Anyway\n", 1);
+                                    Allsky::displayDebugText("  > Extra Text File Age Disabled So Displaying Anyway\n", 1);
                                     bAddExtra = true;
                                 }
                                 if (bAddExtra) {
@@ -2645,7 +2607,7 @@ const char *locale = DEFAULT_LOCALE;
                                 }
                                 fclose(fp);
                             } else {
-                                displayDebugText("  > *** WARNING: Failed To Open Extra Text File\n", 0);
+                                Allsky::displayDebugText("  > *** WARNING: Failed To Open Extra Text File\n", 0);
                             }
                         }
                     }
@@ -2672,8 +2634,8 @@ const char *locale = DEFAULT_LOCALE;
                     // Hopefully the user can use the time it took to save a file to disk
                     // to help determine why they are getting this warning.
                     // Perhaps their disk is very slow or their delay is too short.
-                    sprintf(debug_text, "  > WARNING: currently saving an image; can't save new one at %s.\n", exposureStart);
-                    displayDebugText(debug_text, 0);
+                    sprintf(Allsky::debug_text, "  > WARNING: currently saving an image; can't save new one at %s.\n", exposureStart);
+                    Allsky::displayDebugText(Allsky::debug_text, 0);
 
                     // TODO: wait for the prior image to finish saving.
                 }
@@ -2681,8 +2643,8 @@ const char *locale = DEFAULT_LOCALE;
                 if (asiNightAutoGain == 1 && dayOrNight == "NIGHT" && ! taking_dark_frames)
                 {
                     ASIGetControlValue(CamNum, ASI_GAIN, &actualGain, &bAuto);
-                    sprintf(debug_text, "  > Auto Gain value: %ld\n", actualGain);
-                    displayDebugText(debug_text, 1);
+                    sprintf(Allsky::debug_text, "  > Auto Gain value: %ld\n", actualGain);
+                    Allsky::displayDebugText(Allsky::debug_text, 1);
                     writeToLog((int)actualGain);
                 }
 
@@ -2706,16 +2668,16 @@ const char *locale = DEFAULT_LOCALE;
                         // This doesn't apply during the day since we don't have a max time then.
                         int s = (asi_night_max_exposure_ms * US_IN_MS) - actual_exposure_us; // to get to max
                         s += currentDelay * US_IN_MS;   // Add standard delay amount
-                        sprintf(debug_text,"  > Sleeping: %s\n", length_in_units(s / US_IN_MS));
-                        displayDebugText(debug_text, 0);
+                        sprintf(Allsky::debug_text,"  > Sleeping: %s\n", length_in_units(s / US_IN_MS));
+                        Allsky::displayDebugText(Allsky::debug_text, 0);
                         usleep(s);	// usleep() is in microseconds
                     }
                     else
                     {
                         // Sleep even if taking dark frames so the sensor can cool between shots like it would
                         // do on a normal night.  With no delay the sensor may get hotter than it would at night.
-                        sprintf(debug_text,"  > Sleeping %s from %s exposure\n", length_in_units(currentDelay), taking_dark_frames ? "dark frame" : "auto");
-                        displayDebugText(debug_text, 0);
+                        sprintf(Allsky::debug_text,"  > Sleeping %s from %s exposure\n", length_in_units(currentDelay), taking_dark_frames ? "dark frame" : "auto");
+                        Allsky::displayDebugText(Allsky::debug_text, 0);
                         usleep(currentDelay * US_IN_MS);
                     }
                 }
@@ -2730,8 +2692,8 @@ const char *locale = DEFAULT_LOCALE;
                     if (usedHistogram == 1)
                         s = "histogram";
 #endif
-                    sprintf(debug_text,"  > Sleeping %s from %s exposure\n", length_in_units(currentDelay), s.c_str());
-                    displayDebugText(debug_text, 0);
+                    sprintf(Allsky::debug_text,"  > Sleeping %s from %s exposure\n", length_in_units(currentDelay), s.c_str());
+                    Allsky::displayDebugText(Allsky::debug_text, 0);
                     usleep(currentDelay * US_IN_MS);
                 }
                 calculateDayOrNight(latitude, longitude, angle);
@@ -2745,8 +2707,8 @@ const char *locale = DEFAULT_LOCALE;
                 {
                     bMain = false;  // get out of inner and outer loop
                     exitCode = 2;
-                    sprintf(debug_text, "Maximum number of consecutive errors of %d reached; exiting...\n", maxErrors);
-                    displayDebugText(debug_text, 0);
+                    sprintf(Allsky::debug_text, "Maximum number of consecutive errors of %d reached; exiting...\n", maxErrors);
+                    Allsky::displayDebugText(Allsky::debug_text, 0);
                 }
             }
         }
