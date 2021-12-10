@@ -1,6 +1,3 @@
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <sys/time.h>
 //#include <time.h>
 #include <unistd.h>
@@ -19,21 +16,8 @@
 #include <fstream>
 #include <stdarg.h>
 
-// new includes (MEAN)
-#include "include/RPiHQ_raspistill.h"
-#include "include/mode_RPiHQ_mean.h"
+#include "allsky.h"
 
-#ifndef ASI_IMG_RAW8
-#define ASI_IMG_RAW8	0
-#define ASI_IMG_RGB24	1
-#define ASI_IMG_RAW16	2
-#define ASI_IMG_Y8		3
-#endif
-
-#ifndef ASI_TRUE
-#define ASI_TRUE true
-#define ASI_FALSE false
-#endif
 
 using namespace std;
 
@@ -46,12 +30,55 @@ using namespace std;
 #define KCYN "\x1B[36m"
 #define KWHT "\x1B[37m"
 
-#define US_IN_MS 1000                     // microseconds in a millisecond
-#define MS_IN_SEC 1000                    // milliseconds in a second
-#define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
+//Allsky myAllsky;
+int Allsky::showTime = DEFAULT_SHOWTIME;
+cv::Mat Allsky::pRgb;	// the image
+char Allsky::bufTime[128] = { 0 };
+int Allsky::iTextX = DEFAULT_ITEXTX;
+int Allsky::iTextY = DEFAULT_ITEXTY;
+int Allsky::currentBin = NOT_SET;
+double Allsky::fontsize = DEFAULT_FONTSIZE;
+int Allsky::linewidth = DEFAULT_LINEWIDTH;
+int Allsky::linetype[3] = { cv::LINE_AA, 8, 4 };
+int Allsky::linenumber = DEFAULT_LINENUMBER;
+int Allsky::fontname[] = { cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
+					   cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
+					   cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
+// All the font settings apply to both day and night.
+int Allsky::fontnumber = DEFAULT_FONTNUMBER;
+int Allsky::fontcolor[3] = { 255, 0, 0 };
+int Allsky::smallFontcolor[3] = { 0, 0, 255 };
+int Allsky::Image_type = DEFAULT_IMAGE_TYPE;
+int Allsky::outlinefont = DEFAULT_OUTLINEFONT;
+int Allsky::iTextLineHeight = DEFAULT_ITEXTLINEHEIGHT;
+char const *Allsky::ImgText   = "";
+modeMeanSetting Allsky::myModeMeanSetting;
+raspistillSetting Allsky::myRaspistillSetting;
+char Allsky::bufTemp[128] = { 0 };
+char Allsky::bufTemp2[50] = { 0 };
+int Allsky::showTemp = 0;
+int Allsky::showExposure = 0;
+int Allsky::showGain = 0;
+int Allsky::showBrightness = 0;
+int Allsky::showMean = 0;
+int Allsky::showFocus = 0;
+int Allsky::currentExposure_us = NOT_SET;
+int Allsky::currentBrightness = NOT_SET;
+int Allsky::currentAutoGain = NOT_SET;
+double Allsky::currentGain = NOT_SET;
+double Allsky::lastGain = NOT_SET;
+float Allsky::lastMean = -1;
+int Allsky::currentAutoExposure= 0;
+long Allsky::actualTemp = 0;	// actual sensor temp, per the camera
+char const *Allsky::tempType       = "C";	// Celsius
+char Allsky::debugText[500];		// buffer to hold debug messages
+int Allsky::debugLevel = 0;
+char const *Allsky::ImgExtraText = "";
+int Allsky::extraFileAge = 0;   // 0 disables it
+
 
 #define DEFAULT_FILENAME     "image.jpg"
 char const *fileName       = DEFAULT_FILENAME;
@@ -71,36 +98,16 @@ int default_brightness;
 
 // Some command-line and other option definitions needed outside of main():
 bool tty					= false;	// are we on a tty?
-#define NOT_SET				  -1		// signifies something isn't set yet
 #define DEFAULT_NOTIFICATIONIMAGES 1
 int notificationImages		= DEFAULT_NOTIFICATIONIMAGES;
 
 //bool bSavingImg = false;
 
-raspistillSetting myRaspistillSetting;
-modeMeanSetting myModeMeanSetting;
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
 
-char debugText[500];		// buffer to hold debug messages
-int debugLevel = 0;
 
-/**
- * Helper function to display debug info
-**/
-// [[gnu::format(printf, 2, 3)]]
-void Log(int required_level, const char *fmt, ...)
-{
-    if (debugLevel >= required_level) {
-		char msg[8192];
-		snprintf(msg, sizeof(msg), "%s", fmt);
-		va_list va;
-		va_start(va, fmt);
-		vfprintf(stdout, msg, va);
-		va_end(va);
-	}
-}
 
 // Return the string for the specified color, or "" if we're not on a tty.
 char const *c(char const *color)
@@ -113,32 +120,6 @@ char const *c(char const *color)
 	{
 		return("");
 	}
-}
-
-// Create Hex value from RGB
-unsigned long createRGB(int r, int g, int b)
-{
-    return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-}
-
-void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname,
-            int fontcolor[], int imgtype, int outlinefont)
-{
-    int outline_size = std::max(2.0, (fontsize/4));	// need smaller outline when font size is smaller
-    if (imgtype == ASI_IMG_RAW16)
-    {
-        unsigned long fontcolor16 = createRGB(fontcolor[2], fontcolor[1], fontcolor[0]);
-        if (outlinefont)
-            cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0), linewidth+outline_size, linetype);
-        cv::putText(img, text, cv::Point(x, y), fontname, fontsize, fontcolor16, linewidth, linetype);
-    }
-    else
-    {
-        if (outlinefont)
-            cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0, 255), linewidth+outline_size, linetype);
-        cv::putText(img, text, cv::Point(x, y), fontname, fontsize,
-                    cv::Scalar(fontcolor[0], fontcolor[1], fontcolor[2], 255), linewidth, linetype);
-    }
 }
 
 // Return the numeric time.
@@ -314,8 +295,8 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 
 	if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
 	{
-		sprintf(debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
-		waitToFix(debugText);
+		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
+		waitToFix(Allsky::debugText);
 		closeUp(2);
 	}
 }
@@ -375,7 +356,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 	char kcmd[kill.length() + 1];		// Define char variable
 	strcpy(kcmd, kill.c_str());			// Convert command to character variable
 
-	Log(4, " > Kill command: %s\n", kcmd);
+	Allsky::Log(4, " > Kill command: %s\n", kcmd);
 	system(kcmd);						// Stop any currently running process
 
 	stringstream ss;
@@ -403,7 +384,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 		// normally short so the camera can home in on the correct exposure quickly.
 		if (auto_exposure)
 		{
-			if (myModeMeanSetting.mode_mean)
+			if (Allsky::myModeMeanSetting.mode_mean)
 			{
 				// We do our own auto-exposure so no need to wait at all.
 				ss << 1;
@@ -473,8 +454,8 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 		}
 	}
 
-	if (myModeMeanSetting.mode_mean)
-		*exposure_us = myRaspistillSetting.shutter_us;
+	if (Allsky::myModeMeanSetting.mode_mean)
+		*exposure_us = Allsky::myRaspistillSetting.shutter_us;
 
 	if (*exposure_us < 1)
 	{
@@ -489,7 +470,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 	// Check if automatic determined exposure time is selected
 	if (auto_exposure)
 	{
-		if (myModeMeanSetting.mode_mean) {
+		if (Allsky::myModeMeanSetting.mode_mean) {
 			ss.str("");
 			ss << *exposure_us;
 			if (! libcamera)
@@ -515,10 +496,10 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 	// Check if auto gain is selected
 	if (auto_gain)
 	{
-		if (myModeMeanSetting.mode_mean)
+		if (Allsky::myModeMeanSetting.mode_mean)
 		{
 			ss.str("");
-			ss << myRaspistillSetting.analoggain;
+			ss << Allsky::myRaspistillSetting.analoggain;
 			if (libcamera)
 				command += " --gain " + ss.str();
 			else
@@ -527,9 +508,9 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 //xxxx libcamera just has "gain".  If it's higher than what the camera supports,
 // the excess is the "digital" gain.
 if (! libcamera) { // TODO: need to fix this for libcamera
-			if (myRaspistillSetting.digitalgain > 1.0) {
+			if (Allsky::myRaspistillSetting.digitalgain > 1.0) {
 				ss.str("");
-				ss << myRaspistillSetting.digitalgain;
+				ss << Allsky::myRaspistillSetting.digitalgain;
 				command += " --digitalgain " + ss.str();
 			}
 }
@@ -559,11 +540,11 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 			command += " --analoggain " + ss.str();
 	}
 
-	if (myModeMeanSetting.mode_mean) {
+	if (Allsky::myModeMeanSetting.mode_mean) {
 	   	stringstream Str_ExposureTime;
    		stringstream Str_Reinforcement;
-   		Str_ExposureTime <<  myRaspistillSetting.shutter_us;
-		Str_Reinforcement << myRaspistillSetting.analoggain;
+   		Str_ExposureTime <<  Allsky::myRaspistillSetting.shutter_us;
+		Str_Reinforcement << Allsky::myRaspistillSetting.analoggain;
 		
    		command += " --exif IFD0.Artist=li_" + Str_ExposureTime.str() + "_" + Str_Reinforcement.str();
 	}
@@ -585,7 +566,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 //xxx libcamera: if the red and blue numbers are given it turns off AWB.
 //xxx I don't think the check for myModeMeanSetting.mode_mean is needed anymore.
 	// Check if R and B component are given
-	if (myModeMeanSetting.mode_mean) {
+	if (Allsky::myModeMeanSetting.mode_mean) {
 		if (auto_AWB) {
   			command += " --awb auto";
 		}
@@ -701,9 +682,9 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 		if (strcmp(ImgText, "") != 0) {
 			ss.str("");
 			ss << " " << ImgText; 
-			if (debugLevel > 1) {
+			if (Allsky::debugLevel > 1) {
 				ss << " (li-" << __TIMESTAMP__ 
-				<< ") br:" << myRaspistillSetting.brightness 
+				<< ") br:" << Allsky::myRaspistillSetting.brightness 
 				<< " WBR:" << WBR 
 				<< " WBB:" << WBB;
 			}
@@ -730,13 +711,13 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 		ss << fontsize;
 
 		// xxxxxxxx use all 3
-		if (fontcolor[0] < 0)
-			fontcolor[0] = 0;
-		else if (fontcolor[0] > 255)
-			fontcolor[0] = 255;
+		if (Allsky::fontcolor[0] < 0)
+			Allsky::fontcolor[0] = 0;
+		else if (Allsky::fontcolor[0] > 255)
+			Allsky::fontcolor[0] = 255;
 
 		std::stringstream C;
-		C  << std::setfill ('0') << std::setw(2) << std::hex << fontcolor[0];
+		C  << std::setfill ('0') << std::setw(2) << std::hex << Allsky::fontcolor[0];
 
 		if (background < 0)
 			background = 0;
@@ -766,7 +747,7 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 	// Convert command to character variable
 	strcpy(cmd, command.c_str());
 
-	Log(1, "  > Capture command: %s\n", cmd);
+	Allsky::Log(1, "  > Capture command: %s\n", cmd);
 
 	// Execute the command.
 	int ret = system(cmd);
@@ -810,65 +791,25 @@ int main(int argc, char *argv[])
 	signal(SIGINT, IntHandle);
 	signal(SIGTERM, IntHandle);	// The service sends SIGTERM to end this program.
 
-	int fontname[] = { cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
-					   cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
-					   cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
 #define DEFAULT_LOCALE       "en_US.UTF-8"
 const char *locale         = DEFAULT_LOCALE;
-	// All the font settings apply to both day and night.
-#define DEFAULT_FONTNUMBER  0
-	int fontnumber        = DEFAULT_FONTNUMBER;
-#define DEFAULT_ITEXTX      15
-#define DEFAULT_ITEXTY      25
-	int iTextX            = DEFAULT_ITEXTX;
-	int iTextY            = DEFAULT_ITEXTY;
-#define DEFAULT_ITEXTLINEHEIGHT  30
-	int iTextLineHeight   = DEFAULT_ITEXTLINEHEIGHT;
-	char const *ImgText   = "";
-	char const *ImgExtraText   = "";
-	int extraFileAge           = 0;   // 0 disables it
-// The "extra text" file hasn't been implemented in RPiHQ.  The next line keeps the compiler quiet so users don't think there's a problem.
-if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   keep compiler quiet";
-#define DEFAULT_FONTSIZE    32
-	double fontsize       = DEFAULT_FONTSIZE;
-#define SMALLFONTSIZE_MULTIPLIER 0.08
-#define DEFAULT_LINEWIDTH   1
-	int linewidth         = DEFAULT_LINEWIDTH;
-#define DEFAULT_OUTLINEFONT 0
-	int outlinefont       = DEFAULT_OUTLINEFONT;
-	int fontcolor[3]      = { 255, 0, 0 };
 	int background        = 0;
-	int smallFontcolor[3] = { 0, 0, 255 };
-	int linetype[3]       = { cv::LINE_AA, 8, 4 };
-#define DEFAULT_LINENUMBER       0
-	int linenumber             =DEFAULT_LINENUMBER;
 
-	char bufTime[128]     = { 0 };
-	char bufTemp[128]     = { 0 };
-	char bufTemp2[50]     = { 0 };
 #define DEFAULT_WIDTH            0
 #define DEFAULT_HEIGHT           0
 	int width             = DEFAULT_WIDTH;		int originalWidth  = width;
 	int height            = DEFAULT_HEIGHT;		int originalHeight = height;
 	int dayBin            = 1;
 	int nightBin          = 1;
-	int currentBin        = NOT_SET;
 
-#define AUTO_IMAGE_TYPE     99	// needs to match what's in the camera_settings.json file
-#define DEFAULT_IMAGE_TYPE       AUTO_IMAGE_TYPE
-	int Image_type        = DEFAULT_IMAGE_TYPE;
 	int asiDayExposure_us = 32;
 	int asiNightExposure_us= 60 * US_IN_SEC;
-	int currentExposure_us= NOT_SET;
 	int asiNightAutoExposure= 0;
 	int asiDayAutoExposure= 1;
-	int currentAutoExposure= 0;
 	double asiNightGain   = 4.0;
 	double asiDayGain     = 1.0;
-	double currentGain    = NOT_SET;
 	int asiNightAutoGain  = 0;
 	int asiDayAutoGain    = 0;
-	int currentAutoGain   = NOT_SET;
 	int asiAutoAWB        = 0;
 	int nightDelay_ms     = 10;
 	int dayDelay_ms       = 15 * MS_IN_SEC;
@@ -904,19 +845,12 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 		min_brightness    = 0;
 		max_brightness    = 100;
 	}
-	int currentBrightness = NOT_SET;
 	int asiFlip           = 0;
 	int asiRotation       = 0;
 	char const *latitude  = "52.57N";
 	char const *longitude = "4.70E";
 	char const *angle     = "0"; // angle of the sun with the horizon (0=sunset, -6=civil twilight, -12=nautical twilight, -18=astronomical twilight)
 	int preview           = 0;
-	int showTime          = 0;
-	int showExposure      = 0;
-	int showGain          = 0;
-	int showBrightness    = 0;
-	int showMean          = 0;
-	int showFocus         = 0;
 	int darkframe         = 0;
 	int daytimeCapture    = 0;
 	int help              = 0;
@@ -927,7 +861,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 	bool endOfNight    = false;
 	//hread_t hthdSave = 0;
 	int retCode;
-	cv::Mat pRgb;	// the image
+	
 
 	//-------------------------------------------------------------------------------------------------------
 	//-------------------------------------------------------------------------------------------------------
@@ -960,11 +894,11 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 
 	if (argc > 1)
 	{
-		Log(4, "Found %d parameters...\n", argc - 1);
+		Allsky::Log(4, "Found %d parameters...\n", argc - 1);
 
 		for (i = 1; i <= argc - 1; i++)
 		{
-			Log(4, "Processing argument %2d: %s\n", i, argv[i]);
+			Allsky::Log(4, "Processing argument %2d: %s\n", i, argv[i]);
 
 			if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
 			{
@@ -988,7 +922,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-type") == 0)
 			{
-				Image_type = atoi(argv[++i]);
+				Allsky::Image_type = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-quality") == 0)
 			{
@@ -996,7 +930,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-focus") == 0 || strcmp(argv[i], "-autofocus") == 0)
 			{
-				showFocus = atoi(argv[++i]);
+				Allsky::showFocus = atoi(argv[++i]);
 			}
 			// check for old names as well - the "||" part is the old name
 			else if (strcmp(argv[i], "-dayexposure") == 0)
@@ -1080,32 +1014,32 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-mean-value") == 0)
 			{
-				myModeMeanSetting.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				Allsky::myModeMeanSetting.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
+				Allsky::myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-threshold") == 0)
 			{
-				myModeMeanSetting.mean_threshold = std::min(0.1,std::max(0.0001,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				Allsky::myModeMeanSetting.mean_threshold = std::min(0.1,std::max(0.0001,atof(argv[i + 1])));
+				Allsky::myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-p0") == 0)
 			{
-				myModeMeanSetting.mean_p0 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				Allsky::myModeMeanSetting.mean_p0 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				Allsky::myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-p1") == 0)
 			{
-				myModeMeanSetting.mean_p1 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				Allsky::myModeMeanSetting.mean_p1 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				Allsky::myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-p2") == 0)
 			{
-				myModeMeanSetting.mean_p2 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				Allsky::myModeMeanSetting.mean_p2 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				Allsky::myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 
@@ -1114,7 +1048,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			{
 				if (argumentsQuoted)
 				{
-					ImgText = argv[++i];
+					Allsky::ImgText = argv[++i];
 				}
 				else
 				{
@@ -1134,7 +1068,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 					while (strncmp(param, "-", 1) != 0)
 					{
 						// Copy Text into buffer
-						strncpy(buffer, ImgText, sizeof(buffer));
+						strncpy(buffer, Allsky::ImgText, sizeof(buffer));
 
 						// Add a space after each word (skip for first word)
 						if (j)
@@ -1144,7 +1078,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 						strncat(buffer, param, sizeof(buffer));
 
 						// Copy buffer into ImgText variable
-						ImgText = buffer;
+						Allsky::ImgText = buffer;
 
 						// Flag first word is entered
 						j = 1;
@@ -1156,27 +1090,27 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-extratext") == 0)
 			{
-				ImgExtraText = argv[++i];
+				Allsky::ImgExtraText = argv[++i];
 			}
 			else if (strcmp(argv[i], "-extratextage") == 0)
 			{
-				extraFileAge = atoi(argv[++i]);
+				Allsky::extraFileAge = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-textlineheight") == 0)
 			{
-				iTextLineHeight = atoi(argv[++i]);
+				Allsky::iTextLineHeight = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-textx") == 0)
 			{
-				iTextX = atoi(argv[++i]);
+				Allsky::iTextX = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-texty") == 0)
 			{
-				iTextY = atoi(argv[++i]);
+				Allsky::iTextY = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-fontname") == 0)
 			{
-				fontnumber = atoi(argv[++i]);
+				Allsky::fontnumber = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-background") == 0)
 			{
@@ -1184,38 +1118,38 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-fontcolor") == 0)
 			{
-				sscanf(argv[++i], "%d %d %d", &fontcolor[0], &fontcolor[1], &fontcolor[2]);
+				sscanf(argv[++i], "%d %d %d", &Allsky::fontcolor[0], &Allsky::fontcolor[1], &Allsky::fontcolor[2]);
 			}
 			else if (strcmp(argv[i], "-smallfontcolor") == 0)
 			{
 				if (argumentsQuoted)
 				{
-					sscanf(argv[++i], "%d %d %d", &smallFontcolor[0], &smallFontcolor[1], &smallFontcolor[2]);
+					sscanf(argv[++i], "%d %d %d", &Allsky::smallFontcolor[0], &Allsky::smallFontcolor[1], &Allsky::smallFontcolor[2]);
 				}
 				else
 				{
-					smallFontcolor[0] = atoi(argv[++i]);
-					smallFontcolor[1] = atoi(argv[++i]);
-					smallFontcolor[2] = atoi(argv[++i]);
+					Allsky::smallFontcolor[0] = atoi(argv[++i]);
+					Allsky::smallFontcolor[1] = atoi(argv[++i]);
+					Allsky::smallFontcolor[2] = atoi(argv[++i]);
 				}
 			}
 			else if (strcmp(argv[i], "-fonttype") == 0)
 			{
-				linenumber = atoi(argv[++i]);
+				Allsky::linenumber = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-fontsize") == 0)
 			{
-				fontsize = atof(argv[++i]);
+				Allsky::fontsize = atof(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-fontline") == 0)
 			{
-				linewidth = atoi(argv[++i]);
+				Allsky::linewidth = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-outlinefont") == 0)
 			{
-				outlinefont = atoi(argv[++i]);
-				if (outlinefont != 0)
-					outlinefont = 1;
+				Allsky::outlinefont = atoi(argv[++i]);
+				if (Allsky::outlinefont != 0)
+					Allsky::outlinefont = 1;
 			}
 			else if (strcmp(argv[i], "-rotation") == 0)
 			{
@@ -1247,11 +1181,11 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-debuglevel") == 0)
 			{
-				debugLevel = atoi(argv[++i]);
+				Allsky::debugLevel = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-showTime") == 0 || strcmp(argv[i], "-time") == 0)
 			{
-				showTime = atoi(argv[++i]);
+				Allsky::showTime = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-timeformat") == 0)
 			{
@@ -1263,23 +1197,23 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 			else if (strcmp(argv[i], "-showExposure") == 0)
 			{
-				showExposure = atoi(argv[++i]);
+				Allsky::showExposure = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-showGain") == 0)
 			{
-				showGain = atoi(argv[++i]);
+				Allsky::showGain = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-showBrightness") == 0)
 			{
-				showBrightness = atoi(argv[++i]);
+				Allsky::showBrightness = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-showMean") == 0)
 			{
-				showMean = atoi(argv[++i]);
+				Allsky::showMean = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-showFocus") == 0)
 			{
-				showFocus = atoi(argv[++i]);
+				Allsky::showFocus = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-daytime") == 0)
 			{
@@ -1395,11 +1329,11 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 		fileName = "dark.jpg";
 	}
 
-	// Handle "auto" Image_type.
-	if (Image_type == AUTO_IMAGE_TYPE)
+	// Handle "auto" image_type.
+	if (Allsky::Image_type == AUTO_IMAGE_TYPE)
 	{
 		// user will have to manually set for 8- or 16-bit mono mode
-		Image_type = ASI_IMG_RGB24;
+		Allsky::Image_type = ASI_IMG_RGB24;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
@@ -1425,16 +1359,16 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 	printf(" Binning (night): %d\n", nightBin);
 	printf(" Delay (day): %dms\n", dayDelay_ms);
 	printf(" Delay (night): %dms\n", nightDelay_ms);
-	printf(" Text Overlay: %s\n", ImgText);
-	printf(" Text Position: %dpx left, %dpx top\n", iTextX, iTextY);
-	printf(" Font Name:  %d\n", fontname[fontnumber]);
-	printf(" Font Color: %d, %d, %d\n", fontcolor[0], fontcolor[1], fontcolor[2]);
+	printf(" Text Overlay: %s\n", Allsky::ImgText);
+	printf(" Text Position: %dpx left, %dpx top\n", Allsky::iTextX, Allsky::iTextY);
+	printf(" Font Name:  %d\n", Allsky::fontname[Allsky::fontnumber]);
+	printf(" Font Color: %d, %d, %d\n", Allsky::fontcolor[0], Allsky::fontcolor[1], Allsky::fontcolor[2]);
 	printf(" Font Background Color: %d\n", background);
-	printf(" Small Font Color: %d, %d, %d\n", smallFontcolor[0], smallFontcolor[1], smallFontcolor[2]);
-	printf(" Font Line Type: %d\n", linetype[linenumber]);
-	printf(" Font Size: %1.1f\n", fontsize);
-	printf(" Font Line: %d\n", linewidth);
-	printf(" Outline Font : %s\n", yesNo(outlinefont));
+	printf(" Small Font Color: %d, %d, %d\n", Allsky::smallFontcolor[0], Allsky::smallFontcolor[1], Allsky::smallFontcolor[2]);
+	printf(" Font Line Type: %d\n", Allsky::linetype[Allsky::linenumber]);
+	printf(" Font Size: %1.1f\n", Allsky::fontsize);
+	printf(" Font Line: %d\n", Allsky::linewidth);
+	printf(" Outline Font : %s\n", yesNo(Allsky::outlinefont));
 	printf(" Rotation: %d\n", asiRotation);
 	printf(" Flip Image: %d\n", asiFlip);
 	printf(" Filename: %s\n", fileName);
@@ -1443,30 +1377,30 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 	printf(" Sun Elevation: %s\n", angle);
 	printf(" Locale: %s\n", locale);
 	printf(" Notification Images: %s\n", yesNo(notificationImages));
-	printf(" Show Time: %s (format: %s)\n", yesNo(showTime), timeFormat);
-	printf(" Show Exposure: %s\n", yesNo(showExposure));
-	printf(" Show Gain: %s\n", yesNo(showGain));
-	printf(" Show Brightness: %s\n", yesNo(showBrightness));
-	printf(" Show Focus Metric: %s\n", yesNo(showFocus));
+	printf(" Show Time: %s (format: %s)\n", yesNo(Allsky::showTime), timeFormat);
+	printf(" Show Exposure: %s\n", yesNo(Allsky::showExposure));
+	printf(" Show Gain: %s\n", yesNo(Allsky::showGain));
+	printf(" Show Brightness: %s\n", yesNo(Allsky::showBrightness));
+	printf(" Show Focus Metric: %s\n", yesNo(Allsky::showFocus));
 	printf(" Preview: %s\n", yesNo(preview));
 	printf(" Taking Dark Frames: %s\n", yesNo(darkframe));
-	printf(" Debug Level: %d\n", debugLevel);
+	printf(" Debug Level: %d\n", Allsky::debugLevel);
 	printf(" On TTY: %s\n", tty ? "Yes" : "No");
-	printf(" Mode Mean: %s\n", yesNo(myModeMeanSetting.mode_mean));
-	if (myModeMeanSetting.mode_mean) {
-		printf("    Mean Value: %1.3f\n", myModeMeanSetting.mean_value);
-		printf("    Threshold: %1.3f\n", myModeMeanSetting.mean_threshold);
-		printf("    p0: %1.3f\n", myModeMeanSetting.mean_p0);
-		printf("    p1: %1.3f\n", myModeMeanSetting.mean_p1);
-		printf("    p2: %1.3f\n", myModeMeanSetting.mean_p2);
+	printf(" Mode Mean: %s\n", yesNo(Allsky::myModeMeanSetting.mode_mean));
+	if (Allsky::myModeMeanSetting.mode_mean) {
+		printf("    Mean Value: %1.3f\n", Allsky::myModeMeanSetting.mean_value);
+		printf("    Threshold: %1.3f\n", Allsky::myModeMeanSetting.mean_threshold);
+		printf("    p0: %1.3f\n", Allsky::myModeMeanSetting.mean_p0);
+		printf("    p1: %1.3f\n", Allsky::myModeMeanSetting.mean_p1);
+		printf("    p2: %1.3f\n", Allsky::myModeMeanSetting.mean_p2);
 	}
 	printf("%s", c(KNRM));
 
 	// Initialization
-	int originalITextX = iTextX;
-	int originalITextY = iTextY;
-	int originalFontsize = fontsize;
-	int originalLinewidth = linewidth;
+	int originalITextX = Allsky::iTextX;
+	int originalITextY = Allsky::iTextY;
+	int originalFontsize = Allsky::fontsize;
+	int originalLinewidth = Allsky::linewidth;
 	// Have we displayed "not taking picture during day" message, if applicable?
 	int displayedNoDaytimeMsg = 0;
 
@@ -1482,26 +1416,26 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 
 		lastDayOrNight = dayOrNight;
 
-		if (myModeMeanSetting.mode_mean && numExposures > 0) {
+		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
 // TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
 
 // TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
 // xxxxxx and "currentGain" instead of "asiNightGain"?
-  			RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
+  			RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 		}
 
 		if (darkframe) {
 			// We're doing dark frames so turn off autoexposure and autogain, and use
 			// nightime gain, delay, exposure, and brightness to mimic a nightime shot.
-			currentAutoExposure = 0;
-			currentAutoGain = 0;
-			currentGain = asiNightGain;
+			Allsky::currentAutoExposure = 0;
+			Allsky::currentAutoGain = 0;
+			Allsky::currentGain = asiNightGain;
 			currentDelay_ms = nightDelay_ms;
-			currentExposure_us = asiNightExposure_us;
-			currentBrightness = asiNightBrightness;
-			currentBin = nightBin;
+			Allsky::currentExposure_us = asiNightExposure_us;
+			Allsky::currentBrightness = asiNightBrightness;
+			Allsky::currentBin = nightBin;
 
- 			Log(0, "Taking dark frames...\n");
+ 			Allsky::Log(0, "Taking dark frames...\n");
 			if (notificationImages) {
 				system("scripts/copy_notification_image.sh DarkFrames &");
 			}
@@ -1527,7 +1461,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 					if (notificationImages) {
 						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
 					}
-					Log(0, "It's daytime... we're not saving images.\n%s\n",
+					Allsky::Log(0, "It's daytime... we're not saving images.\n%s\n",
 						tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
 					displayedNoDaytimeMsg = 1;
 
@@ -1548,7 +1482,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			// Images should be captured during day-time
 			else
 			{
-				Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
+				Allsky::Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
 
                 // If we went from Night to Day, then currentExposure_us will be the last night
                 // exposure so leave it if we're using auto-exposure so there's a seamless change from
@@ -1557,61 +1491,61 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
                 // use what the user specified.
                 if (numExposures == 0 || ! asiDayAutoExposure)
                 {
-					currentExposure_us = asiDayExposure_us;
-					myRaspistillSetting.shutter_us = currentExposure_us;
+					Allsky::currentExposure_us = asiDayExposure_us;
+					Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
                 }
                 else
                 {
-                    Log(3, "Using the last night exposure of %'ld\n", currentExposure_us);
+                    Allsky::Log(3, "Using the last night exposure of %'ld\n", Allsky::currentExposure_us);
                 }
-				currentAutoExposure = asiDayAutoExposure;
-				currentBrightness = asiDayBrightness;
+				Allsky::currentAutoExposure = asiDayAutoExposure;
+				Allsky::currentBrightness = asiDayBrightness;
 				currentDelay_ms = dayDelay_ms;
-				currentBin = dayBin;
-				currentGain = asiDayGain;
-				currentAutoGain = asiDayAutoGain;
+				Allsky::currentBin = dayBin;
+				Allsky::currentGain = asiDayGain;
+				Allsky::currentAutoGain = asiDayAutoGain;
 			}
 		}
 
 		else	// NIGHT
 		{
-			Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
+			Allsky::Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
 
 			// Setup the night time capture parameters
 			if (numExposures == 0 || ! asiNightAutoExposure)
 			{
-				currentExposure_us = asiNightExposure_us;
-				Log(3, "Using night exposure (%'ld)\n", asiNightExposure_us);
-				myRaspistillSetting.shutter_us = currentExposure_us;
+				Allsky::currentExposure_us = asiNightExposure_us;
+				Allsky::Log(3, "Using night exposure (%'ld)\n", asiNightExposure_us);
+				Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
 			}
-			currentAutoExposure = asiNightAutoExposure;
-			currentBrightness = asiNightBrightness;
+			Allsky::currentAutoExposure = asiNightAutoExposure;
+			Allsky::currentBrightness = asiNightBrightness;
 			currentDelay_ms = nightDelay_ms;
-			currentBin = nightBin;
-			currentGain = asiNightGain;
-			currentAutoGain = asiNightAutoGain;
+			Allsky::currentBin = nightBin;
+			Allsky::currentGain = asiNightGain;
+			Allsky::currentAutoGain = asiNightAutoGain;
 		}
 
 		// Adjusting variables for chosen binning
-		height    = originalHeight / currentBin;
-		width     = originalWidth / currentBin;
-		iTextX    = originalITextX / currentBin;
-		iTextY    = originalITextY / currentBin;
-		fontsize  = originalFontsize / currentBin;
-		linewidth = originalLinewidth / currentBin;
+		height    = originalHeight / Allsky::currentBin;
+		width     = originalWidth / Allsky::currentBin;
+		Allsky::iTextX    = originalITextX / Allsky::currentBin;
+		Allsky::iTextY    = originalITextY / Allsky::currentBin;
+		Allsky::fontsize  = originalFontsize / Allsky::currentBin;
+		Allsky::linewidth = originalLinewidth / Allsky::currentBin;
 
 // TODO: if not the first time, should we free the old pRgb?
-		if (Image_type == ASI_IMG_RAW16)
+		if (Allsky::Image_type == ASI_IMG_RAW16)
 		{
-			pRgb.create(cv::Size(width, height), CV_16UC1);
+			Allsky::pRgb.create(cv::Size(width, height), CV_16UC1);
 		}
-		else if (Image_type == ASI_IMG_RGB24)
+		else if (Allsky::Image_type == ASI_IMG_RGB24)
 		{
-			pRgb.create(cv::Size(width, height), CV_8UC3);
+			Allsky::pRgb.create(cv::Size(width, height), CV_8UC3);
 		}
 		else // RAW8 and Y8
 		{
-			pRgb.create(cv::Size(width, height), CV_8UC1);
+			Allsky::pRgb.create(cv::Size(width, height), CV_8UC1);
 		}
 
 		if (tty)
@@ -1629,14 +1563,14 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			char exposureStart[128];
 			char f[10] = "%F %T";
 			snprintf(exposureStart, sizeof(exposureStart), "%s", formatTime(t, f));
-			Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, length_in_units(currentExposure_us, true));
+			Allsky::Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, length_in_units(Allsky::currentExposure_us, true));
 
 			// Get start time for overlay.  Make sure it has the same time as exposureStart.
-			if (showTime == 1)
-				sprintf(bufTime, "%s", formatTime(t, timeFormat));
+			if (Allsky::showTime == 1)
+				sprintf(Allsky::bufTime, "%s", formatTime(t, timeFormat));
 
 			// Capture and save image
-			retCode = RPiHQcapture(currentAutoExposure, &currentExposure_us, currentAutoGain, asiAutoAWB, currentGain, currentBin, asiWBR, asiWBB, asiRotation, asiFlip, saturation, currentBrightness, quality, fileName, showTime, ImgText, fontsize, fontcolor, background, darkframe, preview, width, height, is_libcamera, &pRgb);
+			retCode = RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, asiAutoAWB, Allsky::currentGain, Allsky::currentBin, asiWBR, asiWBB, asiRotation, asiFlip, saturation, Allsky::currentBrightness, quality, fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, background, darkframe, preview, width, height, is_libcamera, &Allsky::pRgb);
 			if (retCode == 0)
 			{
 				numExposures++;
@@ -1644,100 +1578,23 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 				// If taking_dark_frames is off, add overlay text to the image
 				if (! darkframe)
 				{
-					long last_exposure_us = currentExposure_us;
 
-					float actualGain = currentGain;	// to be compatible with ZWO - ZWO gain=0.1 dB , RPiHQ gain=factor
-					if (myModeMeanSetting.mode_mean)
-						actualGain =  myRaspistillSetting.analoggain;
-					int iYOffset = 0;
-					float mean = -1;
+					Allsky::lastGain = Allsky::currentGain;	// to be compatible with ZWO - ZWO gain=0.1 dB , RPiHQ gain=factor
+					if (Allsky::myModeMeanSetting.mode_mean)
+						Allsky::lastGain =  Allsky::myRaspistillSetting.analoggain;
 
-					if (myModeMeanSetting.mode_mean)
+					if (Allsky::myModeMeanSetting.mode_mean)
 					{
-						mean = RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
-						Log(2, "  > exposure: %d shutter: %1.4f s quickstart: %d\n", asiNightExposure_us, (double) myRaspistillSetting.shutter_us / US_IN_SEC, myModeMeanSetting.quickstart);
+						Allsky::lastMean = RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+						Allsky::Log(2, "  > exposure: %d shutter: %1.4f s quickstart: %d\n", asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, Allsky::myModeMeanSetting.quickstart);
 					}
 
-					if (showTime == 1)
-					{
-						// The time and ImgText are in the larger font; everything else is in smaller font.
-						cvText(pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * 0.1, linewidth,
-							linetype[linenumber], fontname[fontnumber], fontcolor,
-							Image_type, outlinefont);
-						iYOffset += iTextLineHeight;
-					}
+					Allsky::overlayText();
 
-					if (ImgText[0] != '\0')
-					{
-						cvText(pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * 0.1, linewidth,
-							linetype[linenumber], fontname[fontnumber], fontcolor,
-							Image_type, outlinefont);
-						iYOffset+=iTextLineHeight;
-					}
 
-					if (showExposure == 1)
+					//if (iYOffset > 0)	// if we added anything to overlay, write the file out
 					{
-						// display in seconds if >= 1 second, else in ms
-						if (last_exposure_us >= (1 * US_IN_SEC))
-							sprintf(bufTemp, "Exposure: %'.2f s%s", (float)last_exposure_us / US_IN_SEC, bufTemp2);
-						else
-							sprintf(bufTemp, "Exposure: %'.2f ms%s", (float)last_exposure_us / US_IN_MS, bufTemp2);
-						// Indicate if in auto-exposure mode.
-						if (currentAutoExposure == ASI_TRUE) strcat(bufTemp, " (auto)");
-						cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-						iYOffset += iTextLineHeight;
-					}
-
-					if (showGain == 1)
-					{
-						sprintf(bufTemp, "Gain: %1.2f", actualGain);
-						// Indicate if in auto gain mode.
-						if (currentAutoGain == ASI_TRUE) strcat(bufTemp, " (auto)");
-						cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-						iYOffset += iTextLineHeight;
-					}
-
-					if (showBrightness == 1)
-					{
-						sprintf(bufTemp, "Brightness: %d", currentBrightness);
-						cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-						iYOffset += iTextLineHeight;
-					}
-
-					if (showMean == 1 && myModeMeanSetting.mode_mean)
-					{
-						sprintf(bufTemp, "Mean: %.6f", mean);
-						cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-						iYOffset += iTextLineHeight;
-					}
-
-					if (showFocus == 1)
-					{
-						sprintf(bufTemp, "Focus: %.2f", get_focus_measure(pRgb, myModeMeanSetting));
-						cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-						iYOffset += iTextLineHeight;
-					}
-
-					if (iYOffset > 0)	// if we added anything to overlay, write the file out
-					{
-						bool result = cv::imwrite(fileName, pRgb, compression_params);
+						bool result = cv::imwrite(fileName, Allsky::pRgb, compression_params);
 						if (! result) printf("*** ERROR: Unable to write to '%s'\n", fileName);
 					}
 				}
@@ -1745,7 +1602,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			else
 			{
 				printf(" >>> Unable to take picture, return code=%d\n", (retCode >> 8));
-				Log(1, "  > Sleeping from failed exposure: %.1f seconds\n", (float)currentDelay_ms / MS_IN_SEC);
+				Allsky::Log(1, "  > Sleeping from failed exposure: %.1f seconds\n", (float)currentDelay_ms / MS_IN_SEC);
 				usleep(currentDelay_ms * US_IN_MS);
 				continue;
 			}
@@ -1763,19 +1620,19 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 
 			long s;
-			if (myModeMeanSetting.mode_mean && myModeMeanSetting.quickstart)
+			if (Allsky::myModeMeanSetting.mode_mean && Allsky::myModeMeanSetting.quickstart)
 			{
 				s = 1 * US_IN_SEC;
 			}
 			else if ((dayOrNight == "NIGHT"))
 			{
-				s = (asiNightExposure_us - myRaspistillSetting.shutter_us) + (nightDelay_ms * US_IN_MS);
+				s = (asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (nightDelay_ms * US_IN_MS);
 			}
 			else
 			{
 				s = currentDelay_ms * US_IN_MS;
 			}
-			Log(0, "Sleeping %.1f seconds...\n", (float)s / US_IN_SEC);
+			Allsky::Log(0, "Sleeping %.1f seconds...\n", (float)s / US_IN_SEC);
 			usleep(s);
 
 			// Check for day or night based on location and angle

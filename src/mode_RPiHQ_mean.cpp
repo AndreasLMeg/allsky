@@ -16,12 +16,11 @@
 #include <fstream>
 #include <algorithm> 
 
-void Log(int, const char *, ...);
+#include "allsky.h"
 
 #include "include/RPiHQ_raspistill.h"
 #include "include/mode_RPiHQ_mean.h"
 
-#define US_IN_SEC (1000000.0)  // microseconds in a second
 
 double mean_history [5] = {0.0,0.0,0.0,0.0,0.0};
 int exp_history [5] = {0,0,0,0,0};
@@ -47,7 +46,7 @@ double get_focus_measure(cv::Mat img, modeMeanSetting &currentModeMeanSetting)
 	cv::meanStdDev(lap, mu, sigma);
 
 	double focusMeasure = sigma.val[0]*sigma.val[0];
-	Log(3, "  > Focus: %'f\n", focusMeasure);
+	Allsky::Log(3, "  > Focus: %'f\n", focusMeasure);
 	return(focusMeasure);
 }
 
@@ -63,20 +62,20 @@ float RPiHQcalcMean(const char* fileName, int exposure_us, double gain, raspisti
 	// Init some values first
 	if (currentModeMeanSetting.init) {
 		currentModeMeanSetting.init = false;
-		currentModeMeanSetting.ExposureLevelMax = log(gain * exposure_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) + 1; 
-		currentModeMeanSetting.ExposureLevelMin = log(1.0  * 1.0        /US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
+		currentModeMeanSetting.ExposureLevelMax = log(gain * exposure_us/(double) US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) + 1; 
+		currentModeMeanSetting.ExposureLevelMin = log(1.0  * 1.0        /(double) US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
 		// only for the output
 		for (int i=0; i < currentModeMeanSetting.historySize; i++) {
 			mean_history[i] = currentModeMeanSetting.mean_value;
-			exp_history[i] = log(1.0  * currentRaspistillSetting.shutter_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
+			exp_history[i] = log(1.0  * currentRaspistillSetting.shutter_us/(double) US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
 		}
 		// first exposure with currentRaspistillSetting.shutter_us, so we have to calculate the startpoint for ExposureLevel 
-		currentModeMeanSetting.ExposureLevel = log(1.0  * currentRaspistillSetting.shutter_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
-		Log(1, "  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
+		currentModeMeanSetting.ExposureLevel = log(1.0  * currentRaspistillSetting.shutter_us/(double) US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
+		Allsky::Log(1, "  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
 	}
 
 	// get old ExposureTime
-	double ExposureTime_s = (double) currentRaspistillSetting.shutter_us/US_IN_SEC;
+	double ExposureTime_s = (double) currentRaspistillSetting.shutter_us/(double) US_IN_SEC;
 
 	cv::Mat image = cv::imread(fileName, cv::IMREAD_UNCHANGED);
 	if (!image.data) {
@@ -114,7 +113,7 @@ if (0)
 	switch (image.channels())
 	{
 		default: // mono case
-			Log(3, "  > mean_scalar.val[0] %d\n", mean_scalar.val[0]);
+			Allsky::Log(3, "  > mean_scalar.val[0] %d\n", mean_scalar.val[0]);
 			mean = mean_scalar.val[0];
 			break;
 		case 3: // for color use average of the channels
@@ -133,18 +132,18 @@ if (0)
 			break;
 	}
 		 
-	Log(1, "  > %s: %.1f sec, mean: %f %f\n", basename(fileName), ExposureTime_s, mean, (currentModeMeanSetting.mean_value - mean));
+	Allsky::Log(1, "  > %s: %.1f sec, mean: %f %f\n", basename(fileName), ExposureTime_s, mean, (currentModeMeanSetting.mean_value - mean));
 	this_mean = mean;	// return current image's mean
 
 	// avg of mean history 
-	Log(3, "  > MeanCnt: %d, mean_historySize: %d\n", MeanCnt, currentModeMeanSetting.historySize);
+	Allsky::Log(3, "  > MeanCnt: %d, mean_historySize: %d\n", MeanCnt, currentModeMeanSetting.historySize);
 
 	mean_history[MeanCnt % currentModeMeanSetting.historySize] = mean;
 	int values = 0;
 	mean=0.0;
 	for (int i=1; i <= currentModeMeanSetting.historySize; i++) {
 		int idx =  (MeanCnt + i) % currentModeMeanSetting.historySize;
-		Log(1, "  > i=%d: idx=%d mean=%1.4f exp=%d\n", i, idx, mean_history[idx], exp_history[idx]);
+		Allsky::Log(1, "  > i=%d: idx=%d mean=%1.4f exp=%d\n", i, idx, mean_history[idx], exp_history[idx]);
 		mean += mean_history[idx] * (double) i;
 		values += i;
 	} 
@@ -158,16 +157,16 @@ if (0)
 	// forcast (m_forcast = m_neu + diff = m_neu + m_neu - m_alt = 2*m_neu - m_alt)
 	double mean_forecast = 2.0 * mean_history[idx] - mean_history[idxN1];
 	mean_forecast = std::min((double) std::max((double) mean_forecast, 0.0), 1.0);
-	Log(2, "  > mean_forecast: %1.4f\n", mean_forecast);
+	Allsky::Log(2, "  > mean_forecast: %1.4f\n", mean_forecast);
 	// gleiche Wertigkeit wie aktueller Wert
 	mean += mean_forecast * currentModeMeanSetting.historySize;
 	values += currentModeMeanSetting.historySize;
 
-	Log(2, "  > values: %d\n", values);
+	Allsky::Log(2, "  > values: %d\n", values);
 	
 	mean = mean / (double) values;
 	mean_diff = abs(mean - currentModeMeanSetting.mean_value);
-	Log(2, "  > mean_diff: %1.4f\n", mean_diff);
+	Allsky::Log(2, "  > mean_diff: %1.4f\n", mean_diff);
 
 	int ExposureChange = currentModeMeanSetting.shuttersteps / 2;
 		
@@ -183,7 +182,7 @@ if (0)
 	dExposureChange = ExposureChange-lastExposureChange;
 	lastExposureChange = ExposureChange;
 
-	Log(2, "  > ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
+	Allsky::Log(2, "  > ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
 
 	if (mean < (currentModeMeanSetting.mean_value - (currentModeMeanSetting.mean_threshold))) {
 		if ((currentRaspistillSetting.analoggain < gain) || (currentRaspistillSetting.shutter_us < exposure_us)) {  // obere Grenze durch Gaim und shutter
@@ -191,8 +190,8 @@ if (0)
 		}
 	}
 	if (mean > (currentModeMeanSetting.mean_value + currentModeMeanSetting.mean_threshold))  {
-		if (ExposureTime_s <= 1 / US_IN_SEC) { // untere Grenze durch shuttertime
-			Log(2, "  > ExposureTime_s too low - stop !\n");
+		if (ExposureTime_s <= 1 / (double) US_IN_SEC) { // untere Grenze durch shuttertime
+			Allsky::Log(2, "  > ExposureTime_s too low - stop !\n");
 		}
 		else {
 			currentModeMeanSetting.ExposureLevel -= ExposureChange;
@@ -205,17 +204,17 @@ if (0)
 	// fastforward ?
 	if ((currentModeMeanSetting.ExposureLevel == (int)currentModeMeanSetting.ExposureLevelMax) || (currentModeMeanSetting.ExposureLevel == (int)currentModeMeanSetting.ExposureLevelMin)) {
 		fastforward = true;
-		Log(2, "  > FF aktiviert\n");
+		Allsky::Log(2, "  > FF aktiviert\n");
 	}
 	if ((abs(mean_history[idx] - currentModeMeanSetting.mean_value) < currentModeMeanSetting.mean_threshold) &&
 		(abs(mean_history[idxN1] - currentModeMeanSetting.mean_value) < currentModeMeanSetting.mean_threshold)) {
 		fastforward = false;
-		Log(2, "  > FF deaktiviert\n");
+		Allsky::Log(2, "  > FF deaktiviert\n");
 	}
 		
 	//#############################################################################################################
 	// calculate gain und exposuretime
-	double newGain = std::min(gain, std::max(1.0, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (exposure_us/US_IN_SEC))); 
+	double newGain = std::min(gain, std::max(1.0, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (exposure_us/(double) US_IN_SEC))); 
 	double deltaGain = newGain - currentRaspistillSetting.analoggain; 
 	if (deltaGain > 2.0) {
 		currentRaspistillSetting.analoggain += 2.0;
@@ -227,14 +226,14 @@ if (0)
 		currentRaspistillSetting.analoggain = newGain;
 	}
 	// min=1 us, max=exposure_us
-	Log(5, "XXXX exposure_US/US_IN_SEC: %.2f, ExposureLevel:%d, shuttersteps: %.2f, analoggain: %.1f, pow=%.2f\n",
-		exposure_us/US_IN_SEC,
+	Allsky::Log(5, "XXXX exposure_US/US_IN_SEC: %.2f, ExposureLevel:%d, shuttersteps: %.2f, analoggain: %.1f, pow=%.2f\n",
+		exposure_us/(double) US_IN_SEC,
 		currentModeMeanSetting.ExposureLevel,
 		currentModeMeanSetting.shuttersteps,
 		currentRaspistillSetting.analoggain,
 		pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)));
 
-	ExposureTime_s = std::min(exposure_us/US_IN_SEC, std::max(1 / US_IN_SEC, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain));
+	ExposureTime_s = std::min(exposure_us/(double)US_IN_SEC, std::max(1.0 / (double) US_IN_SEC, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain));
 
 	//#############################################################################################################
 	// prepare for the next measurement
@@ -247,8 +246,8 @@ if (0)
 	MeanCnt++;
 	exp_history[MeanCnt % currentModeMeanSetting.historySize] = currentModeMeanSetting.ExposureLevel;
 
-	currentRaspistillSetting.shutter_us = ExposureTime_s * US_IN_SEC;
-	Log(2, "  > Mean: %f, diff: %f, Exposure level:%d (%d), Exposure time:%1.8f s, analoggain:%1.2f\n", mean, mean_diff, currentModeMeanSetting.ExposureLevel, currentModeMeanSetting.ExposureLevel-exp_history[idx], ExposureTime_s, currentRaspistillSetting.analoggain);
+	currentRaspistillSetting.shutter_us = ExposureTime_s * (double) US_IN_SEC;
+	Allsky::Log(2, "  > Mean: %f, diff: %f, Exposure level:%d (%d), Exposure time:%1.8f s, analoggain:%1.2f\n", mean, mean_diff, currentModeMeanSetting.ExposureLevel, currentModeMeanSetting.ExposureLevel-exp_history[idx], ExposureTime_s, currentRaspistillSetting.analoggain);
 
 	return(this_mean);
 }

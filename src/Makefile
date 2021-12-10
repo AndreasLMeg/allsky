@@ -119,12 +119,12 @@ sunwait:
 
 capture:capture.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC)  $@.cpp -o $@ $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
+	@$(CC)  $@.cpp -o $@  allsky.cpp $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
 	@echo `date +%F\ %R:%S` Done.
 
 capture_RPiHQ:capture_RPiHQ.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC)  $@.cpp -o $@ mode_RPiHQ_mean.cpp $(CFLAGS) $(OPENCV)
+	@$(CC)  $@.cpp -o $@  allsky.cpp mode_RPiHQ_mean.cpp $(CFLAGS) $(OPENCV)
 	@echo `date +%F\ %R:%S` Done.
 
 keogram:keogram.cpp
