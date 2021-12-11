@@ -76,6 +76,8 @@ char Allsky::debugText[500];		// buffer to hold debug messages
 int Allsky::debugLevel = 0;
 char const *Allsky::ImgExtraText = "";
 int Allsky::extraFileAge = 0;   // 0 disables it
+bool Allsky::tty = false;	// are we on a tty?
+int Allsky::notificationImages = DEFAULT_NOTIFICATIONIMAGES;
 
 std::vector<int> compression_parameters;
 // In version 0.8 we introduced a different way to take exposures.  Instead of turning video mode on at
@@ -108,9 +110,6 @@ long current_exposure_us   = NOT_SET;
 int taking_dark_frames     = 0;
 
 // Some command-line and other option definitions needed outside of main():
-bool tty                   = false;	// are we on a tty?
-#define DEFAULT_NOTIFICATIONIMAGES 1
-int notificationImages     = DEFAULT_NOTIFICATIONIMAGES;
 #define DEFAULT_FILENAME     "image.jpg"
 char const *fileName       = DEFAULT_FILENAME;
 #define DEFAULT_TIMEFORMAT   "%Y%m%d %H:%M:%S"	// format the time should be displayed in
@@ -149,7 +148,7 @@ float histogramBoxPercentFromTop = DEFAULT_BOX_FROM_TOP;
 // Return the string for the specified color, or "" if we're not on a tty.
 char const *c(char const *color)
 {
-	if (tty)
+	if (Allsky::tty)
 	{
 		return(color);
 	}
@@ -671,7 +670,7 @@ void closeUp(int e)
 	// Unfortunately we don't know if the service is stopping us, or restarting us.
 	// If it was restarting there'd be no reason to copy a notification image since it
 	// will soon be overwritten.  Since we don't know, always copy it.
-	if (notificationImages) {
+	if (Allsky::notificationImages) {
 		system("scripts/copy_notification_image.sh NotRunning &");
 		// Sleep to give it a chance to print any messages so they (hopefully) get printed
 		// before the one below.  This is only so it looks nicer in the log file.
@@ -688,24 +687,6 @@ void IntHandle(int i)
 	closeUp(0);
 }
 
-// A user error was found.  Wait for the user to fix it.
-void waitToFix(char const *msg)
-{
-	printf("**********\n");
-	printf("%s\n", msg);
-	printf("*** After fixing, ");
-	if (tty)
-		printf("restart allsky.sh.\n");
-	else
-		printf("restart the allsky service.\n");
-	if (notificationImages)
-		system("scripts/copy_notification_image.sh Error &");
-	sleep(5);	// give time for image to be copied
-	printf("*** Sleeping until you fix the problem.\n");
-	printf("**********\n");
-	sleep(100000);	// basically, sleep forever until the user fixes this.
-}
-
 // Calculate if it is day or night
 void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
 {
@@ -717,7 +698,7 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 	if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
 	{
 		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight == "" ? "[empty]" : dayOrNight.c_str());
-		waitToFix(Allsky::debugText);
+		Allsky::waitToFix(Allsky::debugText);
 		closeUp(2);
 	}
 }
@@ -914,7 +895,7 @@ bool check_max_errors(int *e, int max_errors)
 
 int main(int argc, char *argv[])
 {
-	tty = isatty(fileno(stdout)) ? true : false;
+	Allsky::tty = isatty(fileno(stdout)) ? true : false;
 	signal(SIGINT, IntHandle);
 	signal(SIGTERM, IntHandle);	// The service sends SIGTERM to end this program.
 	pthread_mutex_init(&mtx_SaveImg, 0);
@@ -1098,7 +1079,7 @@ const char *locale = DEFAULT_LOCALE;
 			}
 			else if (strcmp(argv[i], "-tty") == 0)	// overrides what was automatically determined
 			{
-				tty = atoi(argv[++i]) ? true : false;
+				Allsky::tty = atoi(argv[++i]) ? true : false;
 			}
 			else if (strcmp(argv[i], "-width") == 0)
 			{
@@ -1287,7 +1268,7 @@ const char *locale = DEFAULT_LOCALE;
 			}
 			else if (strcmp(argv[i], "-notificationimages") == 0)
 			{
-				notificationImages = atoi(argv[++i]);
+				Allsky::notificationImages = atoi(argv[++i]);
 			}
 #ifdef USE_HISTOGRAM
 			else if (strcmp(argv[i], "-histogrambox") == 0)
@@ -1481,7 +1462,7 @@ const char *locale = DEFAULT_LOCALE;
 	{
 		if (Allsky::Image_type == ASI_IMG_RAW16)
 		{
-			waitToFix("*** ERROR: RAW16 images only work with .png files; either change the Image Type or the Filename.\n");
+			Allsky::waitToFix("*** ERROR: RAW16 images only work with .png files; either change the Image Type or the Filename.\n");
 			exit(2);
 		}
 
@@ -1517,7 +1498,7 @@ const char *locale = DEFAULT_LOCALE;
 	else
 	{
 		sprintf(Allsky::debugText, "*** ERROR: Unsupported image extension (%s); only .jpg and .png are supported.\n", ext);
-		waitToFix(Allsky::debugText);
+		Allsky::waitToFix(Allsky::debugText);
 		exit(100);
 	}
 	compression_parameters.push_back(quality);
@@ -1804,7 +1785,7 @@ const char *locale = DEFAULT_LOCALE;
 	else
 	{
 		sprintf(Allsky::debugText, "*** ERROR: ASI_IMG_TYPE: %d\n", Allsky::Image_type);
-		waitToFix(Allsky::debugText);
+		Allsky::waitToFix(Allsky::debugText);
 		exit(100);
 	}
 
@@ -1864,7 +1845,7 @@ const char *locale = DEFAULT_LOCALE;
 	printf(" Latitude: %s, Longitude: %s\n", latitude, longitude);
 	printf(" Sun Elevation: %s\n", angle);
 	printf(" Locale: %s\n", locale);
-	printf(" Notification Images: %s\n", yesNo(notificationImages));
+	printf(" Notification Images: %s\n", yesNo(Allsky::notificationImages));
 #ifdef USE_HISTOGRAM
 	printf(" Histogram Box: %d %d %0.0f %0.0f, center: %dx%d, upper left: %dx%d, lower right: %dx%d\n",
 		histogramBoxSizeX, histogramBoxSizeY,
@@ -1882,7 +1863,7 @@ const char *locale = DEFAULT_LOCALE;
 	printf(" Preview: %s\n", yesNo(preview));
 	printf(" Taking Dark Frames: %s\n", yesNo(taking_dark_frames));
 	printf(" Debug Level: %d\n", Allsky::debugLevel);
-	printf(" On TTY: %s\n", tty ? "Yes" : "No");
+	printf(" On TTY: %s\n", Allsky::tty ? "Yes" : "No");
 	printf(" Video OFF Between Images: %s\n", yesNo(use_new_exposure_algorithm));
 	printf(" ZWO SDK version %s\n", ASIGetSDKVersion());
 	printf("%s\n", c(KNRM));
@@ -1956,7 +1937,7 @@ const char *locale = DEFAULT_LOCALE;
 		Allsky::Log(1, "Extra Text File Age Disabled So Displaying Anyway\n");
 	}
 
-	if (tty)
+	if (Allsky::tty)
 		printf("*** Press Ctrl+C to stop ***\n\n");
 	else
 		printf("*** Stop the allsky service to end this process. ***\n\n");
@@ -2002,7 +1983,7 @@ const char *locale = DEFAULT_LOCALE;
 
 				Allsky::Log(0, "Taking dark frames...\n");
 
-				if (notificationImages) {
+				if (Allsky::notificationImages) {
 					system("scripts/copy_notification_image.sh DarkFrames &");
 				}
 		}
@@ -2022,11 +2003,11 @@ const char *locale = DEFAULT_LOCALE;
 			{
 				// Only display messages once a day.
 				if (displayedNoDaytimeMsg == 0) {
-					if (notificationImages) {
+					if (Allsky::notificationImages) {
 						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
 					}
 					Allsky::Log(0, "It's daytime... we're not saving images.\n*** %s ***\n",
-						tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
+						Allsky::tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
 					displayedNoDaytimeMsg = 1;
 
 					// sleep until almost nighttime, then wake up and sleep a short time

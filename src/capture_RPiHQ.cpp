@@ -68,6 +68,8 @@ char Allsky::debugText[500];		// buffer to hold debug messages
 int Allsky::debugLevel = 0;
 char const *Allsky::ImgExtraText = "";
 int Allsky::extraFileAge = 0;   // 0 disables it
+bool Allsky::tty = false;	// are we on a tty?
+int Allsky::notificationImages = DEFAULT_NOTIFICATIONIMAGES;
 
 
 #define DEFAULT_FILENAME     "image.jpg"
@@ -86,11 +88,6 @@ int min_brightness;					// what user enters on command line
 int max_brightness;
 int default_brightness;
 
-// Some command-line and other option definitions needed outside of main():
-bool tty					= false;	// are we on a tty?
-#define DEFAULT_NOTIFICATIONIMAGES 1
-int notificationImages		= DEFAULT_NOTIFICATIONIMAGES;
-
 //bool bSavingImg = false;
 
 
@@ -102,7 +99,7 @@ int notificationImages		= DEFAULT_NOTIFICATIONIMAGES;
 // Return the string for the specified color, or "" if we're not on a tty.
 char const *c(char const *color)
 {
-	if (tty)
+	if (Allsky::tty)
 	{
 		return(color);
 	}
@@ -188,7 +185,7 @@ void closeUp(int e)
 	// Unfortunately we don't know if the service is stopping us, or restarting us.
 	// If it was restarting there'd be no reason to copy a notification image since it
 	// will soon be overwritten.  Since we don't know, always copy it.
-	if (notificationImages) {
+	if (Allsky::notificationImages) {
 		system("scripts/copy_notification_image.sh NotRunning &");
 		// Sleep to give it a chance to print any messages so they (hopefully) get printed
 		// before the one below.  This is only so it looks nicer in the log file.
@@ -203,24 +200,6 @@ void IntHandle(int i)
 {
 	bMain = false;
 	closeUp(0);
-}
-
-// A user error was found.  Wait for the user to fix it.
-void waitToFix(char const *msg)
-{
-		printf("**********\n");
-		printf("%s\n", msg);
-		printf("*** After fixing, ");
-		if (tty)
-				printf("restart allsky.sh.\n");
-		else
-				printf("restart the allsky service.\n");
-		if (notificationImages)
-				system("scripts/copy_notification_image.sh Error &");
-		sleep(5);	// give time for image to be copied
-		printf("*** Sleeping until you fix the problem.\n");
-		printf("**********\n");
-		sleep(100000);	// basically, sleep forever until the user fixes this.
 }
 
 // Calculate if it is day or night
@@ -238,7 +217,7 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 	if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
 	{
 		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
-		waitToFix(Allsky::debugText);
+		Allsky::waitToFix(Allsky::debugText);
 		closeUp(2);
 	}
 }
@@ -729,7 +708,7 @@ int main(int argc, char *argv[])
 	else
 		is_libcamera = false;
 
-	tty = isatty(fileno(stdout)) ? true : false;
+	Allsky::tty = isatty(fileno(stdout)) ? true : false;
 	signal(SIGINT, IntHandle);
 	signal(SIGTERM, IntHandle);	// The service sends SIGTERM to end this program.
 
@@ -1163,11 +1142,11 @@ const char *locale         = DEFAULT_LOCALE;
 			}
 			else if (strcmp(argv[i], "-notificationimages") == 0)
 			{
-				notificationImages = atoi(argv[++i]);
+				Allsky::notificationImages = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-tty") == 0)
 			{
-				tty = atoi(argv[++i]) ? true : false;
+				Allsky::tty = atoi(argv[++i]) ? true : false;
 			}
 		}
 	}
@@ -1318,7 +1297,7 @@ const char *locale         = DEFAULT_LOCALE;
 	printf(" Longitude: %s\n", longitude);
 	printf(" Sun Elevation: %s\n", angle);
 	printf(" Locale: %s\n", locale);
-	printf(" Notification Images: %s\n", yesNo(notificationImages));
+	printf(" Notification Images: %s\n", yesNo(Allsky::notificationImages));
 	printf(" Show Time: %s (format: %s)\n", yesNo(Allsky::showTime), timeFormat);
 	printf(" Show Exposure: %s\n", yesNo(Allsky::showExposure));
 	printf(" Show Gain: %s\n", yesNo(Allsky::showGain));
@@ -1327,7 +1306,7 @@ const char *locale         = DEFAULT_LOCALE;
 	printf(" Preview: %s\n", yesNo(preview));
 	printf(" Taking Dark Frames: %s\n", yesNo(darkframe));
 	printf(" Debug Level: %d\n", Allsky::debugLevel);
-	printf(" On TTY: %s\n", tty ? "Yes" : "No");
+	printf(" On TTY: %s\n", Allsky::tty ? "Yes" : "No");
 	printf(" Mode Mean: %s\n", yesNo(Allsky::myModeMeanSetting.mode_mean));
 	if (Allsky::myModeMeanSetting.mode_mean) {
 		printf("    Mean Value: %1.3f\n", Allsky::myModeMeanSetting.mean_value);
@@ -1378,7 +1357,7 @@ const char *locale         = DEFAULT_LOCALE;
 			Allsky::currentBin = nightBin;
 
  			Allsky::Log(0, "Taking dark frames...\n");
-			if (notificationImages) {
+			if (Allsky::notificationImages) {
 				system("scripts/copy_notification_image.sh DarkFrames &");
 			}
 		}
@@ -1400,11 +1379,11 @@ const char *locale         = DEFAULT_LOCALE;
 			{
 				// Only display messages once a day.
 				if (displayedNoDaytimeMsg == 0) {
-					if (notificationImages) {
+					if (Allsky::notificationImages) {
 						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
 					}
 					Allsky::Log(0, "It's daytime... we're not saving images.\n%s\n",
-						tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
+						Allsky::tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
 					displayedNoDaytimeMsg = 1;
 
 					// sleep until almost nighttime, then wake up and sleep a short time
@@ -1490,7 +1469,7 @@ const char *locale         = DEFAULT_LOCALE;
 			Allsky::pRgb.create(cv::Size(width, height), CV_8UC1);
 		}
 
-		if (tty)
+		if (Allsky::tty)
 			printf("Press Ctrl+Z to stop\n\n");	// xxx ECC: Ctrl-Z stops a process, it doesn't kill it
 		else
 			printf("Stop the allsky service to end this process.\n\n");

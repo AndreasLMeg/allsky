@@ -49,8 +49,7 @@
 #define SMALLFONTSIZE_MULTIPLIER 0.08
 #define DEFAULT_OUTLINEFONT 0
 #define DEFAULT_ITEXTLINEHEIGHT  30
-
-
+#define DEFAULT_NOTIFICATIONIMAGES 1
 
 class Allsky {
 	public:
@@ -94,6 +93,8 @@ class Allsky {
 		static int debugLevel;
 		static char const *ImgExtraText;
 		static int extraFileAge;   // 0 disables it
+		static bool tty;	// are we on a tty?
+		static int notificationImages;
 
 #ifdef CAM_RPIHQ
 		static modeMeanSetting myModeMeanSetting;
@@ -105,6 +106,7 @@ class Allsky {
 		static unsigned long createRGB(int r, int g, int b);
 		static void Log(int required_level, const char *fmt, ...);
 		static char *length_in_units(long us, bool multi);
+		static void waitToFix(char const *msg);
 };
 
 #endif
