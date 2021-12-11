@@ -37,9 +37,9 @@
 #define DEFAULT_ITEXTX      15
 #define DEFAULT_ITEXTY      25
 #ifdef CAM_RPIHQ
-  #define DEFAULT_FONTSIZE    32  
+	#define DEFAULT_FONTSIZE    32  
 #else
-  #define DEFAULT_FONTSIZE    7
+	#define DEFAULT_FONTSIZE    7
 #endif
 #define DEFAULT_LINEWIDTH   1
 #define DEFAULT_LINENUMBER       0
@@ -53,63 +53,57 @@
 
 
 class Allsky {
-  public:
-    static int showTime;
-    static cv::Mat pRgb;	// the image
-    static char bufTime[128];
-    static int iTextX;
-	  static int iTextY;
-    static int currentBin;
-    static double fontsize;
-	  static int linewidth;
-   	static int linetype[3];
-    static int linenumber;
-    static int fontname[];
-    static char const *fontnames[];
-	  static int fontnumber;
-	  static int fontcolor[3];
-    static int smallFontcolor[3];
-	  static int Image_type;
-	  static int outlinefont;
-	  static int iTextLineHeight;
-    static char const *ImgText;
-  	static char bufTemp[128];
-	  static char bufTemp2[50];
-    static int showTemp;
-    static int showExposure;
-    static int showGain;
-    static int showBrightness;
-    static int showMean;
-    static int showFocus;
-    static int currentExposure_us;
-   	static int currentBrightness;
-    static int currentAutoGain;
-    static double currentGain;
-    static double lastGain;
-    static float lastMean;
-    static int currentAutoExposure;
-    static long actualTemp;	// actual sensor temp, per the camera
-    static char const *tempType;	// Celsius
-    static char debugText[500];		// buffer to hold debug messages
-    static int debugLevel;
-    static char const *ImgExtraText;
-    static int extraFileAge;   // 0 disables it
-
-
-
-
+	public:
+		static int showTime;
+		static cv::Mat pRgb;	// the image
+		static char bufTime[128];
+		static int iTextX;
+		static int iTextY;
+		static int currentBin;
+		static double fontsize;
+		static int linewidth;
+	 	static int linetype[3];
+		static int linenumber;
+		static int fontname[];
+		static char const *fontnames[];
+		static int fontnumber;
+		static int fontcolor[3];
+		static int smallFontcolor[3];
+		static int Image_type;
+		static int outlinefont;
+		static int iTextLineHeight;
+		static char const *ImgText;
+		static char bufTemp[128];
+		static char bufTemp2[50];
+		static int showTemp;
+		static int showExposure;
+		static int showGain;
+		static int showBrightness;
+		static int showMean;
+		static int showFocus;
+		static int currentExposure_us;
+	 	static int currentBrightness;
+		static int currentAutoGain;
+		static double currentGain;
+		static double lastGain;
+		static float lastMean;
+		static int currentAutoExposure;
+		static long actualTemp;	// actual sensor temp, per the camera
+		static char const *tempType;	// Celsius
+		static char debugText[500];		// buffer to hold debug messages
+		static int debugLevel;
+		static char const *ImgExtraText;
+		static int extraFileAge;   // 0 disables it
 
 #ifdef CAM_RPIHQ
-    static modeMeanSetting myModeMeanSetting;
-    static raspistillSetting myRaspistillSetting;
+		static modeMeanSetting myModeMeanSetting;
+		static raspistillSetting myRaspistillSetting;
 #endif
 
-
-    static void overlayText(int &);
-    static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname,
-            int fontcolor[], int imgtype, int outlinefont);
-    static unsigned long createRGB(int r, int g, int b);
-    static void Log(int required_level, const char *fmt, ...);
+		static void overlayText(int &);
+		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
+		static unsigned long createRGB(int r, int g, int b);
+		static void Log(int required_level, const char *fmt, ...);
 };
 
 #endif

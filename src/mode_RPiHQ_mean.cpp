@@ -39,7 +39,7 @@ bool fastforward = false;
 // https://drive.google.com/file/d/0B6UHr3GQEkQwYnlDY2dKNTdudjg/view?resourcekey=0-a73PvBnc3a2B5wztAV0QaA
 double get_focus_measure(cv::Mat img, modeMeanSetting &currentModeMeanSetting)
 {
- 	cv::Mat lap;
+	cv::Mat lap;
 	cv::Laplacian(img, lap, CV_64F);
 
 	cv::Scalar mu, sigma;

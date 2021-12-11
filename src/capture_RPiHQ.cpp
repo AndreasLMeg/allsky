@@ -36,8 +36,8 @@ int Allsky::linewidth = DEFAULT_LINEWIDTH;
 int Allsky::linetype[3] = { cv::LINE_AA, 8, 4 };
 int Allsky::linenumber = DEFAULT_LINENUMBER;
 int Allsky::fontname[] = { cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
-					   cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
-					   cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
+						 cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
+						 cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
 int Allsky::fontnumber = DEFAULT_FONTNUMBER;
 int Allsky::fontcolor[3] = { 255, 0, 0 };
 int Allsky::smallFontcolor[3] = { 0, 0, 255 };
@@ -115,23 +115,23 @@ char const *c(char const *color)
 // Return the numeric time.
 timeval getTimeval()
 {
-    timeval curTime;
-    gettimeofday(&curTime, NULL);
-    return(curTime);
+		timeval curTime;
+		gettimeofday(&curTime, NULL);
+		return(curTime);
 }
 
 // Format a numeric time as a string.
 char *formatTime(timeval t, char const *tf)
 {
-    static char TimeString[128];
-    strftime(TimeString, 80, tf, localtime(&t.tv_sec));
-    return(TimeString);
+		static char TimeString[128];
+		strftime(TimeString, 80, tf, localtime(&t.tv_sec));
+		return(TimeString);
 }
 
 // Return the current time as a string.  Uses both functions above.
 char *getTime(char const *tf)
 {
-    return(formatTime(getTimeval(), tf));
+		return(formatTime(getTimeval(), tf));
 }
 
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
@@ -256,19 +256,19 @@ void IntHandle(int i)
 // A user error was found.  Wait for the user to fix it.
 void waitToFix(char const *msg)
 {
-    printf("**********\n");
-    printf("%s\n", msg);
-    printf("*** After fixing, ");
-    if (tty)
-        printf("restart allsky.sh.\n");
-    else
-        printf("restart the allsky service.\n");
-    if (notificationImages)
-        system("scripts/copy_notification_image.sh Error &");
-    sleep(5);	// give time for image to be copied
-    printf("*** Sleeping until you fix the problem.\n");
-    printf("**********\n");
-    sleep(100000);	// basically, sleep forever until the user fixes this.
+		printf("**********\n");
+		printf("%s\n", msg);
+		printf("*** After fixing, ");
+		if (tty)
+				printf("restart allsky.sh.\n");
+		else
+				printf("restart the allsky service.\n");
+		if (notificationImages)
+				system("scripts/copy_notification_image.sh Error &");
+		sleep(5);	// give time for image to be copied
+		printf("*** Sleeping until you fix the problem.\n");
+		printf("**********\n");
+		sleep(100000);	// basically, sleep forever until the user fixes this.
 }
 
 // Calculate if it is day or night
@@ -294,30 +294,30 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 // Calculate how long until nighttime.
 int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle)
 {
-    std::string t;
-    char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
-    sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", angle, latitude, longitude);
-    t = exec(sunwaitCommand);
-    t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
+		std::string t;
+		char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
+		sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", angle, latitude, longitude);
+		t = exec(sunwaitCommand);
+		t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
 
-    int h=0, m=0, secs;
-    sscanf(t.c_str(), "%d:%d", &h, &m);
-    secs = (h*60*60) + (m*60);
+		int h=0, m=0, secs;
+		sscanf(t.c_str(), "%d:%d", &h, &m);
+		secs = (h*60*60) + (m*60);
 
-    char *now = getTime("%H:%M");
-    int hNow=0, mNow=0, secsNow;
-    sscanf(now, "%d:%d", &hNow, &mNow);
-    secsNow = (hNow*60*60) + (mNow*60);
+		char *now = getTime("%H:%M");
+		int hNow=0, mNow=0, secsNow;
+		sscanf(now, "%d:%d", &hNow, &mNow);
+		secsNow = (hNow*60*60) + (mNow*60);
 
-    // Handle the (probably rare) case where nighttime is tomorrow
-    if (secsNow > secs)
-    {
-        return(secs + (60*60*24) - secsNow);
-    }
-    else
-    {
-        return(secs - secsNow);
-    }
+		// Handle the (probably rare) case where nighttime is tomorrow
+		if (secsNow > secs)
+		{
+				return(secs + (60*60*24) - secsNow);
+		}
+		else
+		{
+				return(secs - secsNow);
+		}
 }
 
 // write value to log file
@@ -416,7 +416,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 	// 3      4056x3040    4:3           0.005-10fps  Full     None            <<< bin==1
 	// 4      1332x990     74:55         50.1-120fps  Partial  2x2 binned      <<< else 
 	//
-  // TODO: please change gui description !
+	// TODO: please change gui description !
 
 //xxx libcamera doesn't have --mode; it only uses width and height
 	if (libcamera)
@@ -531,12 +531,12 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 	}
 
 	if (Allsky::myModeMeanSetting.mode_mean) {
-	   	stringstream Str_ExposureTime;
-   		stringstream Str_Reinforcement;
-   		Str_ExposureTime <<  Allsky::myRaspistillSetting.shutter_us;
+		 	stringstream Str_ExposureTime;
+	 		stringstream Str_Reinforcement;
+	 		Str_ExposureTime <<  Allsky::myRaspistillSetting.shutter_us;
 		Str_Reinforcement << Allsky::myRaspistillSetting.analoggain;
 		
-   		command += " --exif IFD0.Artist=li_" + Str_ExposureTime.str() + "_" + Str_Reinforcement.str();
+	 		command += " --exif IFD0.Artist=li_" + Str_ExposureTime.str() + "_" + Str_Reinforcement.str();
 	}
 
 	// White balance
@@ -558,7 +558,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 	// Check if R and B component are given
 	if (Allsky::myModeMeanSetting.mode_mean) {
 		if (auto_AWB) {
-  			command += " --awb auto";
+				command += " --awb auto";
 		}
 		else {
 			ss.str("");
@@ -757,10 +757,10 @@ char const *yes = "1 (yes)";
 char const *no  = "0 (no)";
 char const *yesNo(int flag)
 {
-    if (flag)
-        return(yes);
-    else
-        return(no);
+		if (flag)
+				return(yes);
+		else
+				return(no);
 }
 
 
@@ -1253,7 +1253,7 @@ const char *locale         = DEFAULT_LOCALE;
 		printf(" -flip                              - Default = 0 - 0 = Orig, 1 = Horiz, 2 = Verti, 3 = Both\n");
 		printf("\n");
 		printf(" -text                              - Default =      - Character/Text Overlay. Use Quotes.  Ex. -c "
-			   "\"Text Overlay\"\n");
+				 "\"Text Overlay\"\n");
 		printf(" -textx                             - Default = 15   - Text Placement Horizontal from LEFT in Pixels\n");
 		printf(" -texty = Text Y                    - Default = 25   - Text Placement Vertical from TOP in Pixels\n");
 		printf(" -fontname = Font Name              - Default = 0    - Font Types (0-7), Ex. 0 = simplex, 4 = triplex, 7 = script\n");
@@ -1268,7 +1268,7 @@ const char *locale         = DEFAULT_LOCALE;
 		printf(" -latitude                          - Default = 60.7N (Whitehorse)   - Latitude of the camera.\n");
 		printf(" -longitude                         - Default = 135.05W (Whitehorse) - Longitude of the camera\n");
 		printf(" -angle                             - Default = -6 - Angle of the sun below the horizon. -6=civil "
-			   "twilight, -12=nautical twilight, -18=astronomical twilight\n");
+				 "twilight, -12=nautical twilight, -18=astronomical twilight\n");
 		printf("\n");
 		printf(" -preview                           - set to 1 to preview the captured images. Only works with a Desktop Environment\n");
 		printf(" -darkframe                         - Set to 1 to grab dark frame and cover your camera\n");
@@ -1334,7 +1334,7 @@ const char *locale         = DEFAULT_LOCALE;
 	printf(" Command: %s\n", is_libcamera ? "libcamera-still" : "raspistill");
 	printf(" Resolution (before any binning): %dx%d\n", width, height);
 	printf(" Quality: %d\n", quality);
-    printf(" Daytime capture: %s\n", yesNo(daytimeCapture));
+		printf(" Daytime capture: %s\n", yesNo(daytimeCapture));
 	printf(" Exposure (night): %1.0fms\n", round(asiNightExposure_us / US_IN_MS));
 	printf(" Auto Exposure (night): %s\n", yesNo(asiNightAutoExposure));
 	printf(" Gain (night): %1.2f\n", asiNightGain);
@@ -1411,7 +1411,7 @@ const char *locale         = DEFAULT_LOCALE;
 
 // TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
 // xxxxxx and "currentGain" instead of "asiNightGain"?
-  			RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+				RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 		}
 
 		if (darkframe) {
@@ -1474,20 +1474,20 @@ const char *locale         = DEFAULT_LOCALE;
 			{
 				Allsky::Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
 
-                // If we went from Night to Day, then currentExposure_us will be the last night
-                // exposure so leave it if we're using auto-exposure so there's a seamless change from
-                // Night to Day, i.e., if the exposure was fine a minute ago it will likely be fine now.
-                // On the other hand, if this program just started or we're using manual exposures,
-                // use what the user specified.
-                if (numExposures == 0 || ! asiDayAutoExposure)
-                {
+								// If we went from Night to Day, then currentExposure_us will be the last night
+								// exposure so leave it if we're using auto-exposure so there's a seamless change from
+								// Night to Day, i.e., if the exposure was fine a minute ago it will likely be fine now.
+								// On the other hand, if this program just started or we're using manual exposures,
+								// use what the user specified.
+								if (numExposures == 0 || ! asiDayAutoExposure)
+								{
 					Allsky::currentExposure_us = asiDayExposure_us;
 					Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
-                }
-                else
-                {
-                    Allsky::Log(3, "Using the last night exposure of %'ld\n", Allsky::currentExposure_us);
-                }
+								}
+								else
+								{
+										Allsky::Log(3, "Using the last night exposure of %'ld\n", Allsky::currentExposure_us);
+								}
 				Allsky::currentAutoExposure = asiDayAutoExposure;
 				Allsky::currentBrightness = asiDayBrightness;
 				currentDelay_ms = dayDelay_ms;
