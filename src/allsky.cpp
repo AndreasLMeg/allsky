@@ -386,6 +386,15 @@ void Allsky::init(int argc, char *argv[])
 			{
 				asiWBB = atof(argv[++i]);
 			}
+			else if (strcmp(argv[i], "-showMean") == 0)
+			{
+				Allsky::showMean = atoi(argv[++i]);
+			}
+			else if (strcmp(argv[i], "-showFocus") == 0)
+			{
+				Allsky::showFocus = atoi(argv[++i]);
+			}
+
 #else
 			else if (strcmp(argv[i], "-wbr") == 0)
 			{
