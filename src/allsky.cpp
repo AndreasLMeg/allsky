@@ -900,3 +900,144 @@ char const *Allsky::c(char const *color)
 		return("");
 	}
 }
+
+// Return the numeric time.
+timeval Allsky::getTimeval()
+{
+	timeval curTime;
+	gettimeofday(&curTime, NULL);
+	return(curTime);
+}
+
+// Format a numeric time as a string.
+char *Allsky::formatTime(timeval t, char const *tf)
+{
+		static char TimeString[128];
+		strftime(TimeString, 80, tf, localtime(&t.tv_sec));
+		return(TimeString);
+}
+
+// Return the current time as a string.  Uses both functions above.
+char *Allsky::getTime(char const *tf)
+{
+		return(formatTime(Allsky::getTimeval(), tf));
+}
+
+std::string Allsky::exec(const char *cmd)
+{
+	std::tr1::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+	if (!pipe)
+		return "ERROR";
+	char buffer[128];
+	std::string result = "";
+	while (!feof(pipe.get()))
+	{
+		if (fgets(buffer, 128, pipe.get()) != NULL)
+		{
+			result += buffer;
+		}
+	}
+	return result;
+}
+
+void Allsky::IntHandle(int i)
+{
+	gotSignal = 1;
+	closeUp(0);
+}
+
+// Exit the program gracefully.
+void Allsky::closeUp(int e)
+{
+	static int closingUp = 0;		// indicates if we're in the process of exiting.
+	// For whatever reason, we're sometimes called twice, but we should only execute once.
+	if (closingUp) return;
+
+	closingUp = 1;
+
+#ifdef CAM_RPIHQ
+#else
+	ASIStopVideoCapture(CamNum);
+
+	// Seems to hang on ASICloseCamera() if taking a picture when the signal is sent,
+	// until the exposure finishes, then it never returns so the remaining code doesn't
+	// get executed.  Don't know a way around that, so don't bother closing the camera.
+	// Prior versions of allsky didn't do any cleanup, so it should be ok not to close the camera.
+	//    ASICloseCamera(CamNum);
+
+	if (bDisplay)
+	{
+		bDisplay = 0;
+		pthread_join(thread_display, &retval);
+	}
+
+	if (bSaveRun)
+	{
+		bSaveRun = false;
+		pthread_mutex_lock(&mtx_SaveImg);
+		pthread_cond_signal(&cond_SatrtSave);
+		pthread_mutex_unlock(&mtx_SaveImg);
+		pthread_join(hthdSave, 0);
+	}
+#endif
+
+	// If we're not on a tty assume we were started by the service.
+	// Unfortunately we don't know if the service is stopping us, or restarting us.
+	// If it was restarting there'd be no reason to copy a notification image since it
+	// will soon be overwritten.  Since we don't know, always copy it.
+	if (Allsky::notificationImages) {
+		system("scripts/copy_notification_image.sh NotRunning &");
+		// Sleep to give it a chance to print any messages so they (hopefully) get printed
+		// before the one below.  This is only so it looks nicer in the log file.
+		sleep(3);
+	}
+
+	printf("     ***** Stopping AllSky *****\n");
+	exit(e);
+}
+
+// Calculate if it is day or night
+void Allsky::calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
+{
+	char sunwaitCommand[128];
+	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
+	dayOrNight = Allsky::exec(sunwaitCommand);
+	dayOrNight.erase(std::remove(dayOrNight.begin(), dayOrNight.end(), '\n'), dayOrNight.end());
+
+	if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
+	{
+		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight == "" ? "[empty]" : dayOrNight.c_str());
+		Allsky::waitToFix(Allsky::debugText);
+		Allsky::closeUp(2);
+	}
+}
+
+// Calculate how long until nighttime.
+int Allsky::calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle)
+{
+	std::string t;
+	char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
+	sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", angle, latitude, longitude);
+	t = Allsky::exec(sunwaitCommand);
+	t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
+
+	int h=0, m=0, secs;
+// xxxx TODO: Check - this might be getting time to DAY, not NIGHT
+	sscanf(t.c_str(), "%d:%d", &h, &m);
+	secs = (h*60*60) + (m*60);
+
+	char *now = Allsky::getTime("%H:%M");
+	int hNow=0, mNow=0, secsNow;
+	sscanf(now, "%d:%d", &hNow, &mNow);
+	secsNow = (hNow*60*60) + (mNow*60);
+
+	// Handle the (probably rare) case where nighttime is tomorrow
+	if (secsNow > secs)
+	{
+		return(secs + (60*60*24) - secsNow);
+	}
+	else
+	{
+		return(secs - secsNow);
+	}
+}

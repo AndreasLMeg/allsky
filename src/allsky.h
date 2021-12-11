@@ -161,6 +161,9 @@ class Allsky {
 		static int asiNightAutoExposure;	// is it on or off for nighttime?
 		static int asiDayAutoExposure;	// is it on or off for daylight?
 		static int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
+		static int gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
+		static std::string dayOrNight;
+
 
 #ifdef CAM_RPIHQ
 		static modeMeanSetting myModeMeanSetting;
@@ -196,6 +199,16 @@ class Allsky {
 		static int asi_day_max_autoexposure_ms;
 		static long asi_night_exposure_us;
 		static int asiGamma;
+		static int CamNum;
+		static bool bDisplay;
+		static pthread_t thread_display;
+		static pthread_t hthdSave;
+		static void *retval;
+		static bool bSaveRun;
+		static pthread_mutex_t mtx_SaveImg;
+		static pthread_cond_t cond_SatrtSave;
+
+
 
 #endif
 
@@ -209,6 +222,16 @@ class Allsky {
 		static void info(void);
 		static char const *yesNo(int flag);
 		static char const *c(char const *color);
+		static timeval getTimeval();
+		static char *formatTime(timeval t, char const *tf);
+		static char *getTime(char const *tf);
+		static std::string exec(const char *cmd);
+		static void IntHandle(int i);
+		static void closeUp(int e);
+		static void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle);
+		static int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle);
+
+
 
 };
 

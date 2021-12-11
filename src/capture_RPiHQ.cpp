@@ -108,11 +108,12 @@ int Allsky::dayDelay_ms = 15;	// Delay in milliseconds.
 int Allsky::dayBin = DEFAULT_DAYBIN;
 int Allsky::nightBin  = DEFAULT_NIGHTBIN;
 int Allsky::showDetails = 0;
-	
+int Allsky::gotSignal = 0;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
+std::string Allsky::dayOrNight;
+
 
 bool bMain					= true;
 //ol bDisplay = false;
-std::string dayOrNight;
 int numExposures			= 0;	// how many valid pictures have we taken so far?
 float min_saturation;				// produces black and white
 float max_saturation;
@@ -129,41 +130,7 @@ int default_brightness;
 
 
 
-// Return the string for the specified color, or "" if we're not on a tty.
-char const *c(char const *color)
-{
-	if (Allsky::tty)
-	{
-		return(color);
-	}
-	else
-	{
-		return("");
-	}
-}
-
-// Return the numeric time.
-timeval getTimeval()
-{
-		timeval curTime;
-		gettimeofday(&curTime, NULL);
-		return(curTime);
-}
-
-// Format a numeric time as a string.
-char *formatTime(timeval t, char const *tf)
-{
-		static char TimeString[128];
-		strftime(TimeString, 80, tf, localtime(&t.tv_sec));
-		return(TimeString);
-}
-
-// Return the current time as a string.  Uses both functions above.
-char *getTime(char const *tf)
-{
-		return(formatTime(getTimeval(), tf));
-}
-
+/*
 std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
 	size_t start_pos = 0;
 	while((start_pos = str.find(from, start_pos)) != std::string::npos) {
@@ -172,7 +139,8 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
 	}
 	return str;
 }
-
+*/
+/*
 std::string exec(const char *cmd)
 {
 	std::tr1::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
@@ -189,6 +157,8 @@ std::string exec(const char *cmd)
 	}
 	return result;
 }
+*/
+
 /*
 void *Display(void *params)
 {
@@ -204,7 +174,7 @@ void *Display(void *params)
 	return (void *)0;
 }
 */
-
+/*
 // Exit the program gracefully.
 void closeUp(int e)
 {
@@ -234,7 +204,9 @@ void IntHandle(int i)
 	bMain = false;
 	closeUp(0);
 }
+*/
 
+/*
 // Calculate if it is day or night
 void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
 {
@@ -242,7 +214,7 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 
 	// Log data.  Don't need "exit" or "set".
 	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
-	dayOrNight = exec(sunwaitCommand);
+	dayOrNight = Allsky::exec(sunwaitCommand);
 
 	// RMu, I have no clue what this does...
 	dayOrNight.erase(std::remove(dayOrNight.begin(), dayOrNight.end(), '\n'), dayOrNight.end());
@@ -251,7 +223,7 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 	{
 		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
 		Allsky::waitToFix(Allsky::debugText);
-		closeUp(2);
+		Allsky::closeUp(2);
 	}
 }
 
@@ -261,14 +233,14 @@ int calculateTimeToNightTime(const char *latitude, const char *longitude, const 
 		std::string t;
 		char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
 		sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", angle, latitude, longitude);
-		t = exec(sunwaitCommand);
+		t = Allsky::exec(sunwaitCommand);
 		t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
 
 		int h=0, m=0, secs;
 		sscanf(t.c_str(), "%d:%d", &h, &m);
 		secs = (h*60*60) + (m*60);
 
-		char *now = getTime("%H:%M");
+		char *now = Allsky::getTime("%H:%M");
 		int hNow=0, mNow=0, secsNow;
 		sscanf(now, "%d:%d", &hNow, &mNow);
 		secsNow = (hNow*60*60) + (mNow*60);
@@ -283,7 +255,9 @@ int calculateTimeToNightTime(const char *latitude, const char *longitude, const 
 				return(secs - secsNow);
 		}
 }
+*/
 
+/*
 // write value to log file
 void writeToLog(int val)
 {
@@ -294,6 +268,7 @@ void writeToLog(int val)
 	outfile << val;
 	outfile << "\n";
 }
+*/
 
 // Build capture command to capture the image from the HQ camera
 int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera, cv::Mat *image)
@@ -343,7 +318,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 				// We do our own auto-exposure so no need to wait at all.
 				ss << 1;
 			}
-			else if (dayOrNight == "DAY")
+			else if (Allsky::dayOrNight == "DAY")
 			{
 				ss << 1000;
 			}
@@ -715,6 +690,7 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 	return(ret);
 }
 
+/*
 // Simple function to make flags easier to read for humans.
 char const *yes = "1 (yes)";
 char const *no  = "0 (no)";
@@ -725,7 +701,7 @@ char const *yesNo(int flag)
 		else
 				return(no);
 }
-
+*/
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -741,8 +717,8 @@ int main(int argc, char *argv[])
 		is_libcamera = false;
 
 	Allsky::tty = isatty(fileno(stdout)) ? true : false;
-	signal(SIGINT, IntHandle);
-	signal(SIGTERM, IntHandle);	// The service sends SIGTERM to end this program.
+	signal(SIGINT, Allsky::IntHandle);
+	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
 
 
 
@@ -1332,12 +1308,12 @@ int main(int argc, char *argv[])
 		std::string lastDayOrNight;
 
 		// Find out if it is currently DAY or NIGHT
-		calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
+		Allsky::calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
 
 // Next line is present for testing purposes
 // dayOrNight.assign("NIGHT");
 
-		lastDayOrNight = dayOrNight;
+		lastDayOrNight = Allsky::dayOrNight;
 
 		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
 // TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
@@ -1364,7 +1340,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		else if (dayOrNight == "DAY")
+		else if (Allsky::dayOrNight == "DAY")
 		{
 			if (endOfNight == true)		// Execute end of night script
 			{
@@ -1389,7 +1365,7 @@ int main(int argc, char *argv[])
 					displayedNoDaytimeMsg = 1;
 
 					// sleep until almost nighttime, then wake up and sleep a short time
-					int secsTillNight = calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
+					int secsTillNight = Allsky::calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
 					sleep(secsTillNight - 10);
 				}
 				else
@@ -1477,20 +1453,20 @@ int main(int argc, char *argv[])
 			printf("Stop the allsky service to end this process.\n\n");
 
 		// Wait for switch day time -> night time or night time -> day time
-		while (bMain && lastDayOrNight == dayOrNight)
+		while (bMain && lastDayOrNight == Allsky::dayOrNight)
 		{
 			// date/time is added to many log entries to make it easier to associate them
 			// with an image (which has the date/time in the filename).
 			timeval t;
-			t = getTimeval();
+			t = Allsky::getTimeval();
 			char exposureStart[128];
 			char f[10] = "%F %T";
-			snprintf(exposureStart, sizeof(exposureStart), "%s", formatTime(t, f));
+			snprintf(exposureStart, sizeof(exposureStart), "%s", Allsky::formatTime(t, f));
 			Allsky::Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(Allsky::currentExposure_us, true));
 
 			// Get start time for overlay.  Make sure it has the same time as exposureStart.
 			if (Allsky::showTime == 1)
-				sprintf(Allsky::bufTime, "%s", formatTime(t, Allsky::timeFormat));
+				sprintf(Allsky::bufTime, "%s", Allsky::formatTime(t, Allsky::timeFormat));
 
 			// Capture and save image
 			retCode = RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, is_libcamera, &Allsky::pRgb);
@@ -1531,7 +1507,7 @@ int main(int argc, char *argv[])
 			}
 
 			// Check for night time
-			if (dayOrNight == "NIGHT")
+			if (Allsky::dayOrNight == "NIGHT")
 			{
 				// Preserve image during night time
 				system("scripts/saveImageNight.sh &");
@@ -1547,7 +1523,7 @@ int main(int argc, char *argv[])
 			{
 				s = 1 * US_IN_SEC;
 			}
-			else if ((dayOrNight == "NIGHT"))
+			else if ((Allsky::dayOrNight == "NIGHT"))
 			{
 				s = (asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (Allsky::nightDelay_ms * US_IN_MS);
 			}
@@ -1559,7 +1535,7 @@ int main(int argc, char *argv[])
 			usleep(s);
 
 			// Check for day or night based on location and angle
-			calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
+			Allsky::calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
 		}
 
 		// Check for night situation
@@ -1570,5 +1546,5 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	closeUp(0);
+	Allsky::closeUp(0);
 }
