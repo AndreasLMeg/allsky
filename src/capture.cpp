@@ -535,53 +535,6 @@ return;
 	}
 }
 
-// Display a length of time in different units, depending on the length's value.
-// If the "multi" flag is set, display in multiple units if appropriate.
-char *length_in_units(long us, bool multi)	// microseconds
-{
-	const int l = 50;
-	static char length[l];
-	if (us == 0)
-	{
-		snprintf(length, l, "0 us");
-	}
-	else
-	{
-		double us_in_ms = (double)us / US_IN_MS;
-		// The boundaries on when to display one or two units are really a matter of taste.
-		if (us_in_ms < 0.5)						// less than 0.5 ms
-		{
-			snprintf(length, l, "%'ld us", us);
-		}
-		else if (us_in_ms < 1.5)				// between 0.5 and 1.5 ms
-		{
-			if (multi)
-				snprintf(length, l, "%'ld us (%.3f ms)", us, us_in_ms);
-			else
-				snprintf(length, l, "%'ld us", us);
-		}
-		else if (us_in_ms < (0.5 * MS_IN_SEC))	// 1.5 ms to 0.5 sec
-		{
-			if (multi)
-				snprintf(length, l, "%.2f ms (%.2lf sec)", us_in_ms, (double)us / US_IN_SEC);
-			else
-				snprintf(length, l, "%.2f ms", us_in_ms);
-		}
-		else if (us_in_ms < (1.0 * MS_IN_SEC))	// between 0.5 sec and 1 sec
-		{
-			if (multi)
-				snprintf(length, l, "%.2f ms (%.2lf sec)", us_in_ms, (double)us / US_IN_SEC);
-			else
-				snprintf(length, l, "%.1f ms", us_in_ms);
-		}
-		else									// over 1 sec
-		{
-			snprintf(length, l, "%.1lf sec", (double)us / US_IN_SEC);
-		}
-
-	}
-	return(length);
-}
 
 long last_exposure_us = 0;		// last exposure taken
 long reported_exposure_us = 0;	// exposure reported by the camera, either actual exposure or suggested next one
@@ -614,8 +567,8 @@ ASI_ERROR_CODE takeOneExposure(
 	{
 		// If we call length_in_units() twice in same command line they both return the last value.
 		char x[100];
-		snprintf(x, sizeof(x), "%s", length_in_units(exposure_time_us, true));
-		Allsky::Log(0, "*** WARNING: exposure_time_us requested [%s] > current_max_autoexposure_us [%s]\n", x, length_in_units(current_max_autoexposure_us, true));
+		snprintf(x, sizeof(x), "%s", Allsky::length_in_units(exposure_time_us, true));
+		Allsky::Log(0, "*** WARNING: exposure_time_us requested [%s] > current_max_autoexposure_us [%s]\n", x, Allsky::length_in_units(current_max_autoexposure_us, true));
 		exposure_time_us = current_max_autoexposure_us;
 	}
 
@@ -623,7 +576,7 @@ ASI_ERROR_CODE takeOneExposure(
 	// starting a new exposure, and below we display the result when the exposure is done.
 	Allsky::Log(4, "  > %s to %s, timeout: %'ld ms\n",
 		wasAutoExposure == ASI_TRUE ? "Camera set auto-exposure" : "Exposure set",
-		length_in_units(exposure_time_us, true), timeout);
+		Allsky::length_in_units(exposure_time_us, true), timeout);
 
 	setControl(cameraId, ASI_EXPOSURE, exposure_time_us, (ASI_BOOL)Allsky::currentAutoExposure);
 
@@ -659,7 +612,7 @@ ASI_ERROR_CODE takeOneExposure(
 			// When in auto-exposure mode, the returned exposure length is what the driver thinks the
 			// next exposure should be, and will eventually converge on the correct exposure.
 			ASIGetControlValue(cameraId, ASI_EXPOSURE, &reported_exposure_us, &wasAutoExposure);
-			Allsky::Log(3, "  > Got image%s.  Reported exposure: %s, auto=%s\n", Allsky::debugText, length_in_units(reported_exposure_us, true), wasAutoExposure == ASI_TRUE ? "yes" : "no");
+			Allsky::Log(3, "  > Got image%s.  Reported exposure: %s, auto=%s\n", Allsky::debugText, Allsky::length_in_units(reported_exposure_us, true), wasAutoExposure == ASI_TRUE ? "yes" : "no");
 
 			// If this was a manual exposure, make sure it took the correct exposure.
 			// Per ZWO, this should never happen.
@@ -2107,15 +2060,15 @@ const char *locale = DEFAULT_LOCALE;
 				{
 					if (asiDayAutoExposure && asi_day_exposure_us > asi_day_max_autoexposure_ms*US_IN_MS)
 					{
-						snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", length_in_units(asi_day_exposure_us, true));
-						Allsky::Log(0, "*** WARNING: daytime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, length_in_units(asi_day_max_autoexposure_ms*US_IN_MS, true));
+						snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", Allsky::length_in_units(asi_day_exposure_us, true));
+						Allsky::Log(0, "*** WARNING: daytime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, Allsky::length_in_units(asi_day_max_autoexposure_ms*US_IN_MS, true));
 						asi_day_exposure_us = asi_day_max_autoexposure_ms * US_IN_MS;
 					}
 					current_exposure_us = asi_day_exposure_us;
 				}
 				else
 				{
-					Allsky::Log(2, "Using the last night exposure of %s\n", length_in_units(current_exposure_us, true));
+					Allsky::Log(2, "Using the last night exposure of %s\n", Allsky::length_in_units(current_exposure_us, true));
 				}
 
 				current_max_autoexposure_us = asi_day_max_autoexposure_ms * US_IN_MS;
@@ -2166,12 +2119,12 @@ const char *locale = DEFAULT_LOCALE;
 			{
 				if (asiNightAutoExposure && asi_night_exposure_us > asi_night_max_autoexposure_ms*US_IN_MS)
 				{
-					snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", length_in_units(asi_night_exposure_us, true));
-					Allsky::Log(0, "*** WARNING: nighttime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, length_in_units(asi_night_max_autoexposure_ms*US_IN_MS, true));
+					snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", Allsky::length_in_units(asi_night_exposure_us, true));
+					Allsky::Log(0, "*** WARNING: nighttime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, Allsky::length_in_units(asi_night_max_autoexposure_ms*US_IN_MS, true));
 					asi_night_exposure_us = asi_night_max_autoexposure_ms * US_IN_MS;
 				}
 				current_exposure_us = asi_night_exposure_us;
-				Allsky::Log(4, "Using night exposure (%s)\n", length_in_units(asi_night_exposure_us, true));
+				Allsky::Log(4, "Using night exposure (%s)\n", Allsky::length_in_units(asi_night_exposure_us, true));
 			}
 
 			Allsky::currentAutoExposure = asiNightAutoExposure ? ASI_TRUE : ASI_FALSE;
@@ -2270,7 +2223,7 @@ const char *locale = DEFAULT_LOCALE;
 			char exposureStart[128];
 			char f[10] = "%F %T";
 			sprintf(exposureStart, "%s", formatTime(t, f));
-			Allsky::Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, length_in_units(current_exposure_us, true));
+			Allsky::Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(current_exposure_us, true));
 
 			// Get start time for overlay.  Make sure it has the same time as exposureStart.
 			if (showTime == 1)
@@ -2571,7 +2524,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 
 					if (asiRetCode != ASI_SUCCESS)
 					{
-						Allsky::Log(2,"  > Sleeping %s from failed exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false));
+						Allsky::Log(2,"  > Sleeping %s from failed exposure\n", Allsky::length_in_units(currentDelay_ms * US_IN_MS, false));
 						usleep(currentDelay_ms * US_IN_MS);
 						// Don't save the file or do anything below.
 						continue;
@@ -2584,13 +2537,13 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					}
 					else if (attempts > maxHistogramAttempts)
 					{
-						 Allsky::Log(3, "  > max attempts reached - using exposure of %s us with mean %d\n", length_in_units(current_exposure_us, true), mean);
+						 Allsky::Log(3, "  > max attempts reached - using exposure of %s us with mean %d\n", Allsky::length_in_units(current_exposure_us, true), mean);
 					}
 					else if (attempts >= 1)
 					{
 						 if (current_exposure_us > current_max_autoexposure_us)
 						 {
-							 Allsky::Log(3, "  > Stopped trying: new exposure of %s would be over max of %s\n", length_in_units(current_exposure_us, false), length_in_units(current_max_autoexposure_us, false));
+							 Allsky::Log(3, "  > Stopped trying: new exposure of %s would be over max of %s\n", Allsky::length_in_units(current_exposure_us, false), Allsky::length_in_units(current_max_autoexposure_us, false));
 
 							 long diff = (long)((float)current_exposure_us * (1/(float)percent_change));
 							 current_exposure_us -= diff;
@@ -2598,7 +2551,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						 }
 						 else if (current_exposure_us == current_max_autoexposure_us)
 						 {
-							 Allsky::Log(3, "  > Stopped trying: hit max exposure limit of %s, mean %d\n", length_in_units(current_max_autoexposure_us, false), mean);
+							 Allsky::Log(3, "  > Stopped trying: hit max exposure limit of %s, mean %d\n", Allsky::length_in_units(current_max_autoexposure_us, false), mean);
 							 // If current_exposure_us causes too high of a mean, decrease exposure
 							 // so on the next loop we'll adjust it.
 							 if (mean > maxAcceptableMean)
@@ -2606,16 +2559,16 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						 }
 						 else if (new_exposure_us == current_exposure_us)
 						 {
-							 Allsky::Log(3, "  > Stopped trying: new_exposure_us == current_exposure_us == %s\n", length_in_units(current_exposure_us, false));
+							 Allsky::Log(3, "  > Stopped trying: new_exposure_us == current_exposure_us == %s\n", Allsky::length_in_units(current_exposure_us, false));
 						 }
 						 else
 						 {
-							 Allsky::Log(3, "  > Stopped trying, using exposure of %s us with mean %d, min=%d, max=%d\n", length_in_units(current_exposure_us, false), mean, minAcceptableMean, maxAcceptableMean);
+							 Allsky::Log(3, "  > Stopped trying, using exposure of %s us with mean %d, min=%d, max=%d\n", Allsky::length_in_units(current_exposure_us, false), mean, minAcceptableMean, maxAcceptableMean);
 						 }
 					}
 					else if (current_exposure_us == current_max_autoexposure_us)
 					{
-						 Allsky::Log(3, "  > Did not make any additional attempts - at max exposure limit of %s, mean %d\n", length_in_units(current_max_autoexposure_us, false), mean);
+						 Allsky::Log(3, "  > Did not make any additional attempts - at max exposure limit of %s, mean %d\n", Allsky::length_in_units(current_max_autoexposure_us, false), mean);
 					}
 					// xxxx TODO: this was "actual_exposure_us = ..."    reported_exposure_us = current_exposure_us;
 
@@ -2756,14 +2709,14 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						// This doesn't apply during the day since we don't have a max time then.
 						long s_us = (asi_night_max_autoexposure_ms * US_IN_MS) - last_exposure_us; // to get to max
 						s_us += currentDelay_ms * US_IN_MS;   // Add standard delay amount
-						Allsky::Log(0, "  > Sleeping: %s\n", length_in_units(s_us, false));
+						Allsky::Log(0, "  > Sleeping: %s\n", Allsky::length_in_units(s_us, false));
 						usleep(s_us);	// usleep() is in us (microseconds)
 					}
 					else
 					{
 						// Sleep even if taking dark frames so the sensor can cool between shots like it would
 						// do on a normal night.  With no delay the sensor may get hotter than it would at night.
-						Allsky::Log(0, "  > Sleeping %s from %s exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false), taking_dark_frames ? "dark frame" : "auto");
+						Allsky::Log(0, "  > Sleeping %s from %s exposure\n", Allsky::length_in_units(currentDelay_ms * US_IN_MS, false), taking_dark_frames ? "dark frame" : "auto");
 						usleep(currentDelay_ms * US_IN_MS);
 					}
 				}
@@ -2778,7 +2731,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					if (usedHistogram == 1)
 						s = "histogram";
 #endif
-					Allsky::Log(0, "  > Sleeping %s from %s exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false), s.c_str());
+					Allsky::Log(0, "  > Sleeping %s from %s exposure\n", Allsky::length_in_units(currentDelay_ms * US_IN_MS, false), s.c_str());
 					usleep(currentDelay_ms * US_IN_MS);
 				}
 				calculateDayOrNight(latitude, longitude, angle);

@@ -104,6 +104,7 @@ class Allsky {
 		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
 		static unsigned long createRGB(int r, int g, int b);
 		static void Log(int required_level, const char *fmt, ...);
+		static char *length_in_units(long us, bool multi);
 };
 
 #endif
