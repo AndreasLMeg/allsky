@@ -38,6 +38,10 @@ int Allsky::linenumber = DEFAULT_LINENUMBER;
 int Allsky::fontname[] = { cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
 						 cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
 						 cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
+char const *Allsky::fontnames[] = {		// Character representation of names for clarity:
+		"SIMPLEX",                      "PLAIN",                       "DUPEX",
+		"COMPLEX",                      "TRIPLEX",                     "COMPLEX_SMALL",
+		"SCRIPT_SIMPLEX",               "SCRIPT_COMPLEX" };
 int Allsky::fontnumber = DEFAULT_FONTNUMBER;
 int Allsky::fontcolor[3] = { 255, 0, 0 };
 int Allsky::smallFontcolor[3] = { 0, 0, 255 };
@@ -70,12 +74,41 @@ char const *Allsky::ImgExtraText = "";
 int Allsky::extraFileAge = 0;   // 0 disables it
 bool Allsky::tty = false;	// are we on a tty?
 int Allsky::notificationImages = DEFAULT_NOTIFICATIONIMAGES;
-
-
-#define DEFAULT_FILENAME     "image.jpg"
-char const *fileName       = DEFAULT_FILENAME;
-#define DEFAULT_TIMEFORMAT   "%Y%m%d %H:%M:%S"	// format the time should be displayed in
-char const *timeFormat     = DEFAULT_TIMEFORMAT;
+int Allsky::asiNightBrightness = DEFAULT_BRIGHTNESS;
+int Allsky::asiDayBrightness = DEFAULT_BRIGHTNESS;
+int Allsky::asiNightAutoExposure = DEFAULT_NIGHTAUTOEXPOSURE;	// is it on or off for nighttime?
+int Allsky::asiDayAutoExposure = DEFAULT_DAYAUTOEXPOSURE;	// is it on or off for daylight?
+int Allsky::asiAutoAWB = DEFAULT_AUTOWHITEBALANCE;	// is Auto White Balance on or off?
+int Allsky::asiNightAutoGain = DEFAULT_NIGHTAUTOGAIN;	// is Auto Gain on or off for nighttime?
+double Allsky::asiWBR         = 2.5;
+double Allsky::asiWBB         = 2;
+double Allsky::asiNightGain   = 4.0;
+double Allsky::asiDayGain     = 1.0;
+const char *Allsky::locale = DEFAULT_LOCALE;
+const char *Allsky::sType;		// displayed in output
+int Allsky::width = DEFAULT_WIDTH;		
+int Allsky::height = DEFAULT_HEIGHT;	
+int Allsky::quality = NOT_SET;
+int Allsky::daytimeCapture = DEFAULT_DAYTIMECAPTURE;  // are we capturing daytime pictures?
+char const *Allsky::angle = DEFAULT_ANGLE;
+char const *Allsky::latitude = DEFAULT_LATITUDE;
+char const *Allsky::longitude = DEFAULT_LONGITUDE;
+char const *Allsky::fileName = DEFAULT_FILENAME;
+int Allsky::taking_dark_frames = 0;
+int Allsky::preview = 0;
+int Allsky::asiFlip = 0;
+int Allsky::asiRotation = 0;
+int Allsky::originalHeight = DEFAULT_HEIGHT;
+int Allsky::originalWidth = DEFAULT_WIDTH;
+int Allsky::background = 0;
+float Allsky::saturation = 0;
+char const *Allsky::timeFormat = DEFAULT_TIMEFORMAT;
+int Allsky::nightDelay_ms = 10;	// Delay in milliseconds.
+int Allsky::dayDelay_ms = 15;	// Delay in milliseconds.
+int Allsky::dayBin = DEFAULT_DAYBIN;
+int Allsky::nightBin  = DEFAULT_NIGHTBIN;
+int Allsky::showDetails = 0;
+	
 
 bool bMain					= true;
 //ol bDisplay = false;
@@ -263,7 +296,7 @@ void writeToLog(int val)
 }
 
 // Build capture command to capture the image from the HQ camera
-int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int brightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int darkframe, int preview, int width, int height, bool libcamera, cv::Mat *image)
+int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera, cv::Mat *image)
 {
 	// Define command line.
 	string command;
@@ -282,7 +315,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 
 	stringstream ss;
 
-	ss << fileName;
+	ss << Allsky::fileName;
 	command += " --output '" + ss.str() + "'";
 	if (libcamera)
 		// xxx TODO: does this do anything?
@@ -291,10 +324,10 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 		command += " --thumb none --burst -st";
 
 	// --timeout (in MS) determines how long the video will run before it takes a picture.
-	if (preview)
+	if (Allsky::preview)
 	{
 		stringstream wh;
-		wh << width << "," << height;
+		wh << Allsky::width << "," << Allsky::height;
 		command += " --timeout 5000";
 		command += " --preview '0,0," + wh.str() + "'";	// x,y,width,height
 	}
@@ -536,51 +569,50 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 		command += " --vflip";
 	}
 
-	if (saturation < min_saturation)
-		saturation = min_saturation;
-	else if (saturation > max_saturation)
-		saturation = max_saturation;
+	if (Allsky::saturation < min_saturation)
+		Allsky::saturation = min_saturation;
+	else if (Allsky::saturation > max_saturation)
+		Allsky::saturation = max_saturation;
 	ss.str("");
-	ss << saturation;
+	ss << Allsky::saturation;
 	command += " --saturation "+ ss.str();
 
 	ss.str("");
-	if (brightness < min_brightness)
+	if (Allsky::currentBrightness < min_brightness)
 	{
-		brightness = min_brightness;
+		Allsky::currentBrightness = min_brightness;
 	}
-	else if (brightness > max_brightness)
+	else if (Allsky::currentBrightness > max_brightness)
 	{
-		brightness = max_brightness;
+		Allsky::currentBrightness = max_brightness;
 	}
 	if (libcamera)
 	{
 		// User enters -100 to 100.  Convert to -1.0 to 1.0.
-		ss << (float) brightness / 100;
+		ss << (float) Allsky::currentBrightness / 100;
 	}
 	else
 	{
-		ss << brightness;
+		ss << Allsky::currentBrightness;
 	}
 	command += " --brightness " + ss.str();
 
-	if (quality < 0)
+	if (Allsky::quality < 0)
 	{
-		quality = 0;
+		Allsky::quality = 0;
 	}
-	else if (quality > 100)
+	else if (Allsky::quality > 100)
 	{
-		quality = 100;
+		Allsky::quality = 100;
 	}
 	ss.str("");
-	ss << quality;
+	ss << Allsky::quality;
 	command += " --quality " + ss.str();
 
-	if (!darkframe) {
+	if (!Allsky::taking_dark_frames) {
 		string info_text = "";
 
-		bool showDetails = false;	// will be removed in the future
-		if (showDetails)
+		if (Allsky::showDetails)
 		{
 			if (libcamera)
 				info_text += " Exposure: %exp, Gain: %ag, Focus: %focus, red: %rg, blue: %bg";
@@ -593,7 +625,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 			if (libcamera)
 			{
 				ss.str("");
-				ss << timeFormat;
+				ss << Allsky::timeFormat;
 				info_text += " Time: " + ss.str();
 			}
 			else
@@ -640,13 +672,13 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 		std::stringstream C;
 		C  << std::setfill ('0') << std::setw(2) << std::hex << Allsky::fontcolor[0];
 
-		if (background < 0)
-			background = 0;
-		else if (background > 255)
-			background = 255;
+		if (Allsky::background < 0)
+			Allsky::background = 0;
+		else if (Allsky::background > 255)
+			Allsky::background = 255;
 
 		std::stringstream B;
-		B  << std::setfill ('0') << std::setw(2) << std::hex << background;
+		B  << std::setfill ('0') << std::setw(2) << std::hex << Allsky::background;
 
 		command += " -ae " + ss.str() + ",0x" + C.str() + ",0x8080" + B.str();
 }
@@ -675,9 +707,9 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 
 	if (ret == 0)
 	{
-		*image = cv::imread(fileName, cv::IMREAD_UNCHANGED);
+		*image = cv::imread(Allsky::fileName, cv::IMREAD_UNCHANGED);
 		if (! image->data) {
-			printf("WARNING: Error re-reading file '%s'; skipping further processing.\n", basename(fileName));
+			printf("WARNING: Error re-reading file '%s'; skipping further processing.\n", basename(Allsky::fileName));
 		}
 	}
 	return(ret);
@@ -712,80 +744,46 @@ int main(int argc, char *argv[])
 	signal(SIGINT, IntHandle);
 	signal(SIGTERM, IntHandle);	// The service sends SIGTERM to end this program.
 
-#define DEFAULT_LOCALE       "en_US.UTF-8"
-const char *locale         = DEFAULT_LOCALE;
-	int background        = 0;
 
-#define DEFAULT_WIDTH            0
-#define DEFAULT_HEIGHT           0
-	int width             = DEFAULT_WIDTH;		int originalWidth  = width;
-	int height            = DEFAULT_HEIGHT;		int originalHeight = height;
-	int dayBin            = 1;
-	int nightBin          = 1;
 
 	int asiDayExposure_us = 32;
 	int asiNightExposure_us= 60 * US_IN_SEC;
-	int asiNightAutoExposure= 0;
-	int asiDayAutoExposure= 1;
-	double asiNightGain   = 4.0;
-	double asiDayGain     = 1.0;
-	int asiNightAutoGain  = 0;
 	int asiDayAutoGain    = 0;
-	int asiAutoAWB        = 0;
-	int nightDelay_ms     = 10;
-	int dayDelay_ms       = 15 * MS_IN_SEC;
 	int currentDelay_ms   = NOT_SET;
-	double asiWBR         = 2.5;
-	double asiWBB         = 2;
-	float saturation;
-	int asiDayBrightness;
-	int asiNightBrightness;
 	if (is_libcamera)
 	{
 		default_saturation= 1.0;
-		saturation        = default_saturation;
+		Allsky::saturation        = default_saturation;
 		min_saturation    = 0.0;
 		max_saturation    = 2.0;
 
-		default_brightness= 0;
-		asiDayBrightness  = default_brightness;
-		asiNightBrightness= default_brightness;
+		default_brightness= DEFAULT_BRIGHTNESS_LIBCAMERA;
+		Allsky::asiDayBrightness  = default_brightness;
+		Allsky::asiNightBrightness= default_brightness;
 		min_brightness    = -100;
 		max_brightness    = 100;
 	}
 	else
 	{
 		default_saturation= 0.0;
-		saturation        = default_saturation;
+		Allsky::saturation        = default_saturation;
 		min_saturation    = -100.0;
 		max_saturation    = 100.0;
 
-		default_brightness= 50;
-		asiDayBrightness  = default_brightness;
-		asiNightBrightness= default_brightness;
+		default_brightness= DEFAULT_BRIGHTNESS;
+		Allsky::asiDayBrightness  = default_brightness;
+		Allsky::asiNightBrightness= default_brightness;
 		min_brightness    = 0;
 		max_brightness    = 100;
 	}
-	int asiFlip           = 0;
-	int asiRotation       = 0;
-	char const *latitude  = "52.57N";
-	char const *longitude = "4.70E";
-	char const *angle     = "0"; // angle of the sun with the horizon (0=sunset, -6=civil twilight, -12=nautical twilight, -18=astronomical twilight)
-	int preview           = 0;
-	int darkframe         = 0;
-	int daytimeCapture    = 0;
-	int help              = 0;
-	int quality           = 90;
-
-	int i;
-	//id *retval;
 	bool endOfNight    = false;
-	//hread_t hthdSave = 0;
 	int retCode;
 	
 
 	//-------------------------------------------------------------------------------------------------------
+	Allsky::init(argc, argv);
 	//-------------------------------------------------------------------------------------------------------
+/*
 	setlinebuf(stdout);   // Line buffer output so entries appear in the log immediately.
 	if (setlocale(LC_NUMERIC, locale) == NULL)
 		printf("*** WARNING: Could not set locale to %s ***\n", locale);
@@ -895,7 +893,7 @@ const char *locale         = DEFAULT_LOCALE;
 			else if (strcmp(argv[i], "-brightness") == 0)// old "-brightness" applied to day and night
 			{
 				asiDayBrightness = atoi(argv[++i]);
-				asiNightBrightness = asiDayBrightness;
+				Allsky::asiNightBrightness = asiDayBrightness;
 			}
 			else if (strcmp(argv[i], "-daybrightness") == 0)
 			{
@@ -903,7 +901,7 @@ const char *locale         = DEFAULT_LOCALE;
 			}
 			else if (strcmp(argv[i], "-nightbrightness") == 0)
 			{
-				asiNightBrightness = atoi(argv[++i]);
+				Allsky::asiNightBrightness = atoi(argv[++i]);
 			}
  			else if (strcmp(argv[i], "-daybin") == 0)
 			{
@@ -1220,17 +1218,18 @@ const char *locale         = DEFAULT_LOCALE;
 		printf("%s", c(KNRM));
 		exit(0);
 	}
+*/
 
 	int iMaxWidth = 4096;
 	int iMaxHeight = 3040;
 	double pixelSize = 1.55;
-	if (width == 0 || height == 0)
+	if (Allsky::width == 0 || Allsky::height == 0)
 	{
-		width  = iMaxWidth;
-		height = iMaxHeight;
+		Allsky::width  = iMaxWidth;
+		Allsky::height = iMaxHeight;
 	}
-	originalWidth = width;
-	originalHeight = height;
+	Allsky::originalWidth = Allsky::width;
+	Allsky::originalHeight = Allsky::height;
 
 	printf(" Camera: Raspberry Pi HQ camera\n");
 	printf("  - Resolution: %dx%d\n", iMaxWidth, iMaxHeight);
@@ -1243,11 +1242,11 @@ const char *locale         = DEFAULT_LOCALE;
 	compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
 	compression_params.push_back(95);
 
-	if (darkframe)
+	if (Allsky::taking_dark_frames)
 	{
 		// To avoid overwriting the optional notification inage with the dark image,
 		// during dark frames we use a different file name.
-		fileName = "dark.jpg";
+		Allsky::fileName = "dark.jpg";
 	}
 
 	// Handle "auto" image_type.
@@ -1258,8 +1257,10 @@ const char *locale         = DEFAULT_LOCALE;
 	}
 
 	//-------------------------------------------------------------------------------------------------------
+	Allsky::info();
 	//-------------------------------------------------------------------------------------------------------
 
+/*
 	printf("%s", c(KGRN));
 	printf("\nCapture Settings:\n");
 	printf(" Command: %s\n", is_libcamera ? "libcamera-still" : "raspistill");
@@ -1316,6 +1317,7 @@ const char *locale         = DEFAULT_LOCALE;
 		printf("    p2: %1.3f\n", Allsky::myModeMeanSetting.mean_p2);
 	}
 	printf("%s", c(KNRM));
+*/
 
 	// Initialization
 	int originalITextX = Allsky::iTextX;
@@ -1330,7 +1332,7 @@ const char *locale         = DEFAULT_LOCALE;
 		std::string lastDayOrNight;
 
 		// Find out if it is currently DAY or NIGHT
-		calculateDayOrNight(latitude, longitude, angle);
+		calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
 
 // Next line is present for testing purposes
 // dayOrNight.assign("NIGHT");
@@ -1342,19 +1344,19 @@ const char *locale         = DEFAULT_LOCALE;
 
 // TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
 // xxxxxx and "currentGain" instead of "asiNightGain"?
-				RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+				RPiHQcalcMean(Allsky::fileName, asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 		}
 
-		if (darkframe) {
+		if (Allsky::taking_dark_frames) {
 			// We're doing dark frames so turn off autoexposure and autogain, and use
 			// nightime gain, delay, exposure, and brightness to mimic a nightime shot.
 			Allsky::currentAutoExposure = 0;
 			Allsky::currentAutoGain = 0;
-			Allsky::currentGain = asiNightGain;
-			currentDelay_ms = nightDelay_ms;
+			Allsky::currentGain = Allsky::asiNightGain;
+			currentDelay_ms = Allsky::nightDelay_ms;
 			Allsky::currentExposure_us = asiNightExposure_us;
-			Allsky::currentBrightness = asiNightBrightness;
-			Allsky::currentBin = nightBin;
+			Allsky::currentBrightness = Allsky::asiNightBrightness;
+			Allsky::currentBin = Allsky::nightBin;
 
  			Allsky::Log(0, "Taking dark frames...\n");
 			if (Allsky::notificationImages) {
@@ -1375,7 +1377,7 @@ const char *locale         = DEFAULT_LOCALE;
 			}
 
 			// Check if images should not be captured during day-time
-			if (daytimeCapture != 1)
+			if (Allsky::daytimeCapture != 1)
 			{
 				// Only display messages once a day.
 				if (displayedNoDaytimeMsg == 0) {
@@ -1387,7 +1389,7 @@ const char *locale         = DEFAULT_LOCALE;
 					displayedNoDaytimeMsg = 1;
 
 					// sleep until almost nighttime, then wake up and sleep a short time
-					int secsTillNight = calculateTimeToNightTime(latitude, longitude, angle);
+					int secsTillNight = calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
 					sleep(secsTillNight - 10);
 				}
 				else
@@ -1410,7 +1412,7 @@ const char *locale         = DEFAULT_LOCALE;
 								// Night to Day, i.e., if the exposure was fine a minute ago it will likely be fine now.
 								// On the other hand, if this program just started or we're using manual exposures,
 								// use what the user specified.
-								if (numExposures == 0 || ! asiDayAutoExposure)
+								if (numExposures == 0 || ! Allsky::asiDayAutoExposure)
 								{
 					Allsky::currentExposure_us = asiDayExposure_us;
 					Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
@@ -1419,11 +1421,11 @@ const char *locale         = DEFAULT_LOCALE;
 								{
 										Allsky::Log(3, "Using the last night exposure of %'ld\n", Allsky::currentExposure_us);
 								}
-				Allsky::currentAutoExposure = asiDayAutoExposure;
-				Allsky::currentBrightness = asiDayBrightness;
-				currentDelay_ms = dayDelay_ms;
-				Allsky::currentBin = dayBin;
-				Allsky::currentGain = asiDayGain;
+				Allsky::currentAutoExposure = Allsky::asiDayAutoExposure;
+				Allsky::currentBrightness = Allsky::asiDayBrightness;
+				currentDelay_ms = Allsky::dayDelay_ms;
+				Allsky::currentBin = Allsky::dayBin;
+				Allsky::currentGain = Allsky::asiDayGain;
 				Allsky::currentAutoGain = asiDayAutoGain;
 			}
 		}
@@ -1433,23 +1435,23 @@ const char *locale         = DEFAULT_LOCALE;
 			Allsky::Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
 
 			// Setup the night time capture parameters
-			if (numExposures == 0 || ! asiNightAutoExposure)
+			if (numExposures == 0 || ! Allsky::asiNightAutoExposure)
 			{
 				Allsky::currentExposure_us = asiNightExposure_us;
 				Allsky::Log(3, "Using night exposure (%'ld)\n", asiNightExposure_us);
 				Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
 			}
-			Allsky::currentAutoExposure = asiNightAutoExposure;
-			Allsky::currentBrightness = asiNightBrightness;
-			currentDelay_ms = nightDelay_ms;
-			Allsky::currentBin = nightBin;
-			Allsky::currentGain = asiNightGain;
-			Allsky::currentAutoGain = asiNightAutoGain;
+			Allsky::currentAutoExposure = Allsky::asiNightAutoExposure;
+			Allsky::currentBrightness = Allsky::asiNightBrightness;
+			currentDelay_ms = Allsky::nightDelay_ms;
+			Allsky::currentBin = Allsky::nightBin;
+			Allsky::currentGain = Allsky::asiNightGain;
+			Allsky::currentAutoGain = Allsky::asiNightAutoGain;
 		}
 
 		// Adjusting variables for chosen binning
-		height    = originalHeight / Allsky::currentBin;
-		width     = originalWidth / Allsky::currentBin;
+		Allsky::height    = Allsky::originalHeight / Allsky::currentBin;
+		Allsky::width     = Allsky::originalWidth / Allsky::currentBin;
 		Allsky::iTextX    = originalITextX / Allsky::currentBin;
 		Allsky::iTextY    = originalITextY / Allsky::currentBin;
 		Allsky::fontsize  = originalFontsize / Allsky::currentBin;
@@ -1458,15 +1460,15 @@ const char *locale         = DEFAULT_LOCALE;
 // TODO: if not the first time, should we free the old pRgb?
 		if (Allsky::Image_type == ASI_IMG_RAW16)
 		{
-			Allsky::pRgb.create(cv::Size(width, height), CV_16UC1);
+			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_16UC1);
 		}
 		else if (Allsky::Image_type == ASI_IMG_RGB24)
 		{
-			Allsky::pRgb.create(cv::Size(width, height), CV_8UC3);
+			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC3);
 		}
 		else // RAW8 and Y8
 		{
-			Allsky::pRgb.create(cv::Size(width, height), CV_8UC1);
+			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC1);
 		}
 
 		if (Allsky::tty)
@@ -1488,16 +1490,16 @@ const char *locale         = DEFAULT_LOCALE;
 
 			// Get start time for overlay.  Make sure it has the same time as exposureStart.
 			if (Allsky::showTime == 1)
-				sprintf(Allsky::bufTime, "%s", formatTime(t, timeFormat));
+				sprintf(Allsky::bufTime, "%s", formatTime(t, Allsky::timeFormat));
 
 			// Capture and save image
-			retCode = RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, asiAutoAWB, Allsky::currentGain, Allsky::currentBin, asiWBR, asiWBB, asiRotation, asiFlip, saturation, Allsky::currentBrightness, quality, fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, background, darkframe, preview, width, height, is_libcamera, &Allsky::pRgb);
+			retCode = RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, is_libcamera, &Allsky::pRgb);
 			if (retCode == 0)
 			{
 				numExposures++;
 
 				// If taking_dark_frames is off, add overlay text to the image
-				if (! darkframe)
+				if (! Allsky::taking_dark_frames)
 				{
 
 					Allsky::lastGain = Allsky::currentGain;	// to be compatible with ZWO - ZWO gain=0.1 dB , RPiHQ gain=factor
@@ -1506,7 +1508,7 @@ const char *locale         = DEFAULT_LOCALE;
 
 					if (Allsky::myModeMeanSetting.mode_mean)
 					{
-						Allsky::lastMean = RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+						Allsky::lastMean = RPiHQcalcMean(Allsky::fileName, asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 						Allsky::Log(2, "  > exposure: %d shutter: %1.4f s quickstart: %d\n", asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, Allsky::myModeMeanSetting.quickstart);
 					}
 
@@ -1515,8 +1517,8 @@ const char *locale         = DEFAULT_LOCALE;
 
 					if (iYOffset > 0)	// if we added anything to overlay, write the file out
 					{
-						bool result = cv::imwrite(fileName, Allsky::pRgb, compression_params);
-						if (! result) printf("*** ERROR: Unable to write to '%s'\n", fileName);
+						bool result = cv::imwrite(Allsky::fileName, Allsky::pRgb, compression_params);
+						if (! result) printf("*** ERROR: Unable to write to '%s'\n", Allsky::fileName);
 					}
 				}
 			}
@@ -1547,7 +1549,7 @@ const char *locale         = DEFAULT_LOCALE;
 			}
 			else if ((dayOrNight == "NIGHT"))
 			{
-				s = (asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (nightDelay_ms * US_IN_MS);
+				s = (asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (Allsky::nightDelay_ms * US_IN_MS);
 			}
 			else
 			{
@@ -1557,7 +1559,7 @@ const char *locale         = DEFAULT_LOCALE;
 			usleep(s);
 
 			// Check for day or night based on location and angle
-			calculateDayOrNight(latitude, longitude, angle);
+			calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
 		}
 
 		// Check for night situation
