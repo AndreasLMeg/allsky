@@ -378,8 +378,23 @@ void Allsky::init(int argc, char *argv[])
 				myModeMeanSetting.mode_mean = true;
 				i++;
 			}
-
+			else if (strcmp(argv[i], "-wbr") == 0)
+			{
+				asiWBR = atof(argv[++i]);
+			}
+			else if (strcmp(argv[i], "-wbb") == 0)
+			{
+				asiWBB = atof(argv[++i]);
+			}
 #else
+			else if (strcmp(argv[i], "-wbr") == 0)
+			{
+				asiWBR = atoi(argv[++i]);
+			}
+			else if (strcmp(argv[i], "-wbb") == 0)
+			{
+				asiWBB = atoi(argv[++i]);
+			}
 			else if (strcmp(argv[i], "-newexposure") == 0)
 			{
 				if (atoi(argv[++i]))
@@ -506,14 +521,6 @@ void Allsky::init(int argc, char *argv[])
 			else if (strcmp(argv[i], "-nightdelay") == 0 || strcmp(argv[i], "-delay") == 0)
 			{
 				nightDelay_ms = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-wbr") == 0)
-			{
-				asiWBR = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-wbb") == 0)
-			{
-				asiWBB = atoi(argv[++i]);
 			}
 			else if ((strcmp(argv[i], "-autowhitebalance") == 0) || (strcmp(argv[i], "-awb") == 0))
 			{
