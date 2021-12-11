@@ -10,26 +10,37 @@
 
 #define NOT_SET				  -1		// signifies something isn't set yet
 
-#ifndef ASI_IMG_RAW8
+#define KNRM "\x1B[0m"
+#define KRED "\x1B[31m"
+#define KGRN "\x1B[32m"
+#define KYEL "\x1B[33m"
+#define KBLU "\x1B[34m"
+#define KMAG "\x1B[35m"
+#define KCYN "\x1B[36m"
+#define KWHT "\x1B[37m"
+
+#ifndef ASICAMERA2_H
+#define ASI_TRUE true
+#define ASI_FALSE false
 #define ASI_IMG_RAW8	0
 #define ASI_IMG_RGB24	1
 #define ASI_IMG_RAW16	2
 #define ASI_IMG_Y8		3
 #endif
 
-#ifndef ASI_TRUE
-#define ASI_TRUE true
-#define ASI_FALSE false
-#endif
-
 #define US_IN_MS 1000                     // microseconds in a millisecond
 #define MS_IN_SEC 1000                    // milliseconds in a second
 #define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
 
+// todo: some valuse are different (ASI / RPiHQ)
 #define DEFAULT_SHOWTIME         1
 #define DEFAULT_ITEXTX      15
 #define DEFAULT_ITEXTY      25
-#define DEFAULT_FONTSIZE    32
+#ifdef CAM_RPIHQ
+  #define DEFAULT_FONTSIZE    32  
+#else
+  #define DEFAULT_FONTSIZE    7
+#endif
 #define DEFAULT_LINEWIDTH   1
 #define DEFAULT_LINENUMBER       0
 #define DEFAULT_FONTNUMBER  0
@@ -54,6 +65,7 @@ class Allsky {
    	static int linetype[3];
     static int linenumber;
     static int fontname[];
+    static char const *fontnames[];
 	  static int fontnumber;
 	  static int fontcolor[3];
     static int smallFontcolor[3];
@@ -87,13 +99,13 @@ class Allsky {
 
 
 
-
+#ifdef CAM_RPIHQ
     static modeMeanSetting myModeMeanSetting;
     static raspistillSetting myRaspistillSetting;
+#endif
 
 
-
-    static void overlayText();
+    static void overlayText(int &);
     static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname,
             int fontcolor[], int imgtype, int outlinefont);
     static unsigned long createRGB(int r, int g, int b);

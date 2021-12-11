@@ -22,28 +22,61 @@
 #include <locale.h>
 #include <stdarg.h>
 
-#define KNRM "\x1B[0m"
-#define KRED "\x1B[31m"
-#define KGRN "\x1B[32m"
-#define KYEL "\x1B[33m"
-#define KBLU "\x1B[34m"
-#define KMAG "\x1B[35m"
-#define KCYN "\x1B[36m"
-#define KWHT "\x1B[37m"
+#include "allsky.h"
 
 #define USE_HISTOGRAM                     // use the histogram code as a workaround to ZWO's bug
-
-#define US_IN_MS 1000                     // microseconds in a millisecond
-#define MS_IN_SEC 1000                    // milliseconds in a second
-#define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
 
 // Forward definitions
 char *getRetCode(ASI_ERROR_CODE);
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
+int Allsky::showTime = DEFAULT_SHOWTIME;
+cv::Mat Allsky::pRgb;	// the image
+char Allsky::bufTime[128] = { 0 };
+int Allsky::iTextX = DEFAULT_ITEXTX;
+int Allsky::iTextY = DEFAULT_ITEXTY;
+int Allsky::currentBin = NOT_SET;
+double Allsky::fontsize = DEFAULT_FONTSIZE;
+int Allsky::linewidth = DEFAULT_LINEWIDTH;
+int Allsky::linetype[3] = { cv::LINE_AA, 8, 4 };
+int Allsky::linenumber = DEFAULT_LINENUMBER;
+int Allsky::fontname[] = { cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
+					   cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
+					   cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
+char const *Allsky::fontnames[] = {		// Character representation of names for clarity:
+        "SIMPLEX",                      "PLAIN",                       "DUPEX",
+        "COMPLEX",                      "TRIPLEX",                     "COMPLEX_SMALL",
+        "SCRIPT_SIMPLEX",               "SCRIPT_COMPLEX" };
+int Allsky::fontnumber = DEFAULT_FONTNUMBER;
+int Allsky::fontcolor[3] = { 255, 0, 0 };
+int Allsky::smallFontcolor[3] = { 0, 0, 255 };
+int Allsky::Image_type = DEFAULT_IMAGE_TYPE;
+int Allsky::outlinefont = DEFAULT_OUTLINEFONT;
+int Allsky::iTextLineHeight = DEFAULT_ITEXTLINEHEIGHT;
+char const *Allsky::ImgText   = "";
+char Allsky::bufTemp[128] = { 0 };
+char Allsky::bufTemp2[50] = { 0 };
+int Allsky::showTemp = 0;
+int Allsky::showExposure = 0;
+int Allsky::showGain = 0;
+int Allsky::showBrightness = 0;
+int Allsky::showMean = 0;
+int Allsky::showFocus = 0;
+int Allsky::currentExposure_us = NOT_SET;
+int Allsky::currentBrightness = NOT_SET;
+int Allsky::currentAutoGain = NOT_SET;
+double Allsky::currentGain = NOT_SET;
+double Allsky::lastGain = NOT_SET;
+float Allsky::lastMean = -1;
+int Allsky::currentAutoExposure= 0;
+long Allsky::actualTemp = 0;	// actual sensor temp, per the camera
+char const *Allsky::tempType       = "C";	// Celsius
+char Allsky::debugText[500];		// buffer to hold debug messages
+int Allsky::debugLevel = 0;
+char const *Allsky::ImgExtraText = "";
+int Allsky::extraFileAge = 0;   // 0 disables it
 
-cv::Mat pRgb;
 std::vector<int> compression_parameters;
 // In version 0.8 we introduced a different way to take exposures.  Instead of turning video mode on at
 // the beginning of the program and off at the end (which kept the camera running all the time, heating it up),
@@ -69,11 +102,9 @@ int CamNum                 = 0;
 pthread_t thread_display   = 0;
 pthread_t hthdSave         = 0;
 int numExposures           = 0;	// how many valid pictures have we taken so far?
-int currentGain            = NOT_SET;
 long camera_max_autoexposure_us= NOT_SET;	// camera's max auto-exposure
 long camera_min_exposure_us= 100;	// camera's minimum exposure
 long current_exposure_us   = NOT_SET;
-long actualTemp            = 0;	// actual sensor temp, per the camera
 int taking_dark_frames     = 0;
 
 // Some command-line and other option definitions needed outside of main():
@@ -101,7 +132,6 @@ long current_max_autoexposure_us  = NOT_SET;
 
 #define DEFAULT_GAIN_TRANSITION_TIME 5		// user specifies minutes
 int gainTransitionTime     = DEFAULT_GAIN_TRANSITION_TIME;
-ASI_BOOL currentAutoExposure = ASI_FALSE;	// is auto-exposure currently on or off?
 
 #ifdef USE_HISTOGRAM
 #define DEFAULT_BOX_SIZEX       500     // Must be a multiple of 2
@@ -115,23 +145,6 @@ float histogramBoxPercentFromLeft = DEFAULT_BOX_FROM_LEFT;
 float histogramBoxPercentFromTop = DEFAULT_BOX_FROM_TOP;
 #endif	// USE_HISTOGRAM
 
-char debug_text[500];		// buffer to hold debug messages
-int debugLevel = 0;
-/**
- * Helper function to display debug info
-**/
-// [[gnu::format(printf, 2, 3)]]
-void Log(int required_level, const char *fmt, ...)
-{
-    if (debugLevel >= required_level) {
-		char msg[8192];
-		snprintf(msg, sizeof(msg), "%s", fmt);
-		va_list va;
-		va_start(va, fmt);
-		vfprintf(stdout, msg, va);
-		va_end(va);
-	}
-}
 
 // Return the string for the specified color, or "" if we're not on a tty.
 char const *c(char const *color)
@@ -156,7 +169,7 @@ ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_
         ret = ASIGetControlCaps(CamNum, i, &ControlCaps);
 		if (ret != ASI_SUCCESS)
 		{
-			Log(0, "WARNING: ASIGetControlCaps() for control %d failed: %s\n", i, getRetCode(ret));
+			Allsky::Log(0, "WARNING: ASIGetControlCaps() for control %d failed: %s\n", i, getRetCode(ret));
 			return(ret);
 		}
 
@@ -181,7 +194,7 @@ ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_
                 ret = ASISetControlValue(CamNum, control, value, makeAuto);
 				if (ret != ASI_SUCCESS)
 				{
-					Log(0, "WARNING: ASISetControlCaps() for control %d, value=%ld failed: %s\n", control, value, getRetCode(ret));
+					Allsky::Log(0, "WARNING: ASISetControlCaps() for control %d, value=%ld failed: %s\n", control, value, getRetCode(ret));
 					return(ret);
 				}
             } else {
@@ -191,38 +204,12 @@ ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_
             return ret;
         }
     }
-    Log(3, "NOTICE: Camera does not support ControlCap # %d; not setting to %ld.\n", control, value);
+    Allsky::Log(3, "NOTICE: Camera does not support ControlCap # %d; not setting to %ld.\n", control, value);
     return ASI_ERROR_INVALID_CONTROL_TYPE;
 }
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
-
-// Create Hex value from RGB
-unsigned long createRGB(int r, int g, int b)
-{
-    return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-}
-
-void cvText(cv::Mat &img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname,
-            int fontcolor[], int imgtype, int outlinefont)
-{
-    int outline_size = std::max(2.0, (fontsize/4));	// need smaller outline when font size is smaller
-    if (imgtype == ASI_IMG_RAW16)
-    {
-        unsigned long fontcolor16 = createRGB(fontcolor[2], fontcolor[1], fontcolor[0]);
-        if (outlinefont)
-            cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0), linewidth+outline_size, linetype);
-        cv::putText(img, text, cv::Point(x, y), fontname, fontsize, fontcolor16, linewidth, linetype);
-    }
-    else
-    {
-        if (outlinefont)
-            cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0, 255), linewidth+outline_size, linetype);
-        cv::putText(img, text, cv::Point(x, y), fontname, fontsize,
-                    cv::Scalar(fontcolor[0], fontcolor[1], fontcolor[2], 255), linewidth, linetype);
-    }
-}
 
 // Return the numeric time.
 timeval getTimeval()
@@ -305,11 +292,11 @@ void *SaveImgThd(void *para)
 
         bSavingImg = true;
 
-        Log(1, "  > Saving %s image '%s'\n", taking_dark_frames ? "dark" : dayOrNight.c_str(), fileName);
+        Allsky::Log(1, "  > Saving %s image '%s'\n", taking_dark_frames ? "dark" : dayOrNight.c_str(), fileName);
         int64 st, et;
 
         bool result = false;
-        if (pRgb.data)
+        if (Allsky::pRgb.data)
         {
             const char *s;	// TODO: use saveImage.sh
             if (dayOrNight == "NIGHT")
@@ -325,11 +312,11 @@ void *SaveImgThd(void *para)
 			// imwrite() may take several seconds and while it's running, "fileName" could change,
 			// so set "cmd" before imwrite().
 			// The temperature must be a 2-digit number with an optional "-" sign.
-            sprintf(cmd, "%s %s '%s' '%2.0f' %ld &", s, dayOrNight.c_str(), fileName, (float) actualTemp/10, current_exposure_us);
+            sprintf(cmd, "%s %s '%s' '%2.0f' %ld &", s, dayOrNight.c_str(), fileName, (float) Allsky::actualTemp/10, current_exposure_us);
             st = cv::getTickCount();
             try
             {
-                result = imwrite(fileName, pRgb, compression_parameters);
+                result = imwrite(fileName, Allsky::pRgb, compression_parameters);
             }
             catch (const cv::Exception& ex)
             {
@@ -344,7 +331,7 @@ void *SaveImgThd(void *para)
 
         } else {
             // This can happen if the program is closed before the first picture.
-            Log(2, "----- SaveImgThd(): pRgb.data is null\n");
+            Allsky::Log(2, "----- SaveImgThd(): pRgb.data is null\n");
         }
         bSavingImg = false;
 
@@ -360,7 +347,7 @@ void *SaveImgThd(void *para)
                x = "  > *****\n";	// indicate when it takes a REALLY long time to save
             else
                x = "";
-            Log(4, "%s  > Image took %'.1f ms to save (average %'.1f ms).\n%s", x, diff, total_time_ms / total_saves, x);
+            Allsky::Log(4, "%s  > Image took %'.1f ms to save (average %'.1f ms).\n%s", x, diff, total_time_ms / total_saves, x);
 		}
 
         pthread_mutex_unlock(&mtx_SaveImg);
@@ -537,14 +524,14 @@ static void flush_buffered_image(int cameraId, void *buf, size_t size)
 long us;
 ASI_BOOL b;
 ASIGetControlValue(cameraId, ASI_EXPOSURE, &us, &b);
-Log(3, "  > [Cleared buffer frame, next exposure: %'ld, auto=%s]\n", us, b==ASI_TRUE ? "yes" : "no");
+Allsky::Log(3, "  > [Cleared buffer frame, next exposure: %'ld, auto=%s]\n", us, b==ASI_TRUE ? "yes" : "no");
     }
 
 // xxxxxxxxxx For now, display message above for each one rather than a summary.
 return;
     if (num_cleared > 0)
     {
-        Log(3, "  > [Cleared %d buffer frame%s]\n", num_cleared, num_cleared > 1 ? "s" : "");
+        Allsky::Log(3, "  > [Cleared %d buffer frame%s]\n", num_cleared, num_cleared > 1 ? "s" : "");
     }
 }
 
@@ -623,22 +610,22 @@ ASI_ERROR_CODE takeOneExposure(
 	// USB contention, such as that caused by heavy USB disk IO
     long timeout = ((exposure_time_us * 2) / US_IN_MS) + 5000;	// timeout is in ms
 
-	if (currentAutoExposure == ASI_TRUE && exposure_time_us > current_max_autoexposure_us)
+	if (Allsky::currentAutoExposure && exposure_time_us > current_max_autoexposure_us)
 	{
 		// If we call length_in_units() twice in same command line they both return the last value.
 		char x[100];
 		snprintf(x, sizeof(x), "%s", length_in_units(exposure_time_us, true));
-		Log(0, "*** WARNING: exposure_time_us requested [%s] > current_max_autoexposure_us [%s]\n", x, length_in_units(current_max_autoexposure_us, true));
+		Allsky::Log(0, "*** WARNING: exposure_time_us requested [%s] > current_max_autoexposure_us [%s]\n", x, length_in_units(current_max_autoexposure_us, true));
 		exposure_time_us = current_max_autoexposure_us;
 	}
 
     // This debug message isn't typcally needed since we already displayed a message about
     // starting a new exposure, and below we display the result when the exposure is done.
-    Log(4, "  > %s to %s, timeout: %'ld ms\n",
+    Allsky::Log(4, "  > %s to %s, timeout: %'ld ms\n",
         wasAutoExposure == ASI_TRUE ? "Camera set auto-exposure" : "Exposure set",
         length_in_units(exposure_time_us, true), timeout);
 
-    setControl(cameraId, ASI_EXPOSURE, exposure_time_us, currentAutoExposure);
+    setControl(cameraId, ASI_EXPOSURE, exposure_time_us, (ASI_BOOL)Allsky::currentAutoExposure);
 
     flush_buffered_image(cameraId, imageBuffer, bufferSize);
 
@@ -653,17 +640,17 @@ ASI_ERROR_CODE takeOneExposure(
         status = ASIGetVideoData(cameraId, imageBuffer, bufferSize, timeout);
         if (status != ASI_SUCCESS)
 		{
-            Log(0, "  > ERROR: Failed getting image: %s\n", getRetCode(status));
+            Allsky::Log(0, "  > ERROR: Failed getting image: %s\n", getRetCode(status));
         }
         else
         {
             numErrors = 0;
-            debug_text[0] = '\0';
+            Allsky::debugText[0] = '\0';
 #ifdef USE_HISTOGRAM
             if (histogram != NULL && mean != NULL)
             {
                 *mean = computeHistogram(imageBuffer, width, height, imageType, histogram);
-                sprintf(debug_text, " @ mean %d", *mean);
+                sprintf(Allsky::debugText, " @ mean %d", *mean);
             }
 #endif
             last_exposure_us = exposure_time_us;
@@ -672,16 +659,16 @@ ASI_ERROR_CODE takeOneExposure(
 			// When in auto-exposure mode, the returned exposure length is what the driver thinks the
 			// next exposure should be, and will eventually converge on the correct exposure.
             ASIGetControlValue(cameraId, ASI_EXPOSURE, &reported_exposure_us, &wasAutoExposure);
-            Log(3, "  > Got image%s.  Reported exposure: %s, auto=%s\n", debug_text, length_in_units(reported_exposure_us, true), wasAutoExposure == ASI_TRUE ? "yes" : "no");
+            Allsky::Log(3, "  > Got image%s.  Reported exposure: %s, auto=%s\n", Allsky::debugText, length_in_units(reported_exposure_us, true), wasAutoExposure == ASI_TRUE ? "yes" : "no");
 
             // If this was a manual exposure, make sure it took the correct exposure.
 			// Per ZWO, this should never happen.
             if (wasAutoExposure == ASI_FALSE && exposure_time_us != reported_exposure_us)
             {
-                Log(0, "  > WARNING: not correct exposure (requested: %'ld us, reported: %'ld us, diff: %'ld)\n", exposure_time_us, reported_exposure_us, reported_exposure_us - exposure_time_us);
+                Allsky::Log(0, "  > WARNING: not correct exposure (requested: %'ld us, reported: %'ld us, diff: %'ld)\n", exposure_time_us, reported_exposure_us, reported_exposure_us - exposure_time_us);
             }
             ASIGetControlValue(cameraId, ASI_GAIN, &actualGain, &bAuto);
-            ASIGetControlValue(cameraId, ASI_TEMPERATURE, &actualTemp, &bAuto);
+            ASIGetControlValue(cameraId, ASI_TEMPERATURE, &Allsky::actualTemp, &bAuto);
         }
 
         if (use_new_exposure_algorithm)
@@ -689,7 +676,7 @@ ASI_ERROR_CODE takeOneExposure(
 
     }
     else {
-        Log(0, "  > ERROR: Not fetching exposure data because status is %s\n", getRetCode(status));
+        Allsky::Log(0, "  > ERROR: Not fetching exposure data because status is %s\n", getRetCode(status));
     }
 
     return status;
@@ -776,8 +763,8 @@ void calculateDayOrNight(const char *latitude, const char *longitude, const char
 
     if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
     {
-        sprintf(debug_text, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight == "" ? "[empty]" : dayOrNight.c_str());
-        waitToFix(debug_text);
+        sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight == "" ? "[empty]" : dayOrNight.c_str());
+        waitToFix(Allsky::debugText);
         closeUp(2);
     }
 }
@@ -842,19 +829,19 @@ int numGainChanges = 0;		// This is reset at every day/night and night/day trans
 bool resetGainTransitionVariables(int dayGain, int nightGain)
 {
     // Many of the "xxx" messages below will go away once we're sure gain transition works.
-    Log(4, "xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, dayOrNight.c_str());
+    Allsky::Log(4, "xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, dayOrNight.c_str());
 
     if (adjustGain == false)
     {
         // determineGainChange() will never be called so no need to set any variables.
-        Log(5, "xxx will not adjust gain - adjustGain == false\n");
+        Allsky::Log(5, "xxx will not adjust gain - adjustGain == false\n");
         return(false);
     }
 
     if (numExposures == 0)
     {
         // we don't adjust when the program first starts since there's nothing to transition from
-        Log(5, "xxx will not adjust gain right now - numExposures == 0\n");
+        Allsky::Log(5, "xxx will not adjust gain right now - numExposures == 0\n");
         return(false);
     }
 
@@ -868,20 +855,20 @@ bool resetGainTransitionVariables(int dayGain, int nightGain)
     if (dayOrNight == "DAY")
     {
         totalTimeInSec = (asi_day_exposure_us / US_IN_SEC) + (dayDelay_ms / MS_IN_SEC);
-        Log(4, "xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, asi_day_exposure_us, dayDelay_ms);
+        Allsky::Log(4, "xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, asi_day_exposure_us, dayDelay_ms);
     }
     else	// NIGHT
     {
         // At nightime if the exposure is less than the max, we wait until max has expired,
         // so use it instead of the exposure time.
         totalTimeInSec = (asi_night_max_autoexposure_ms / MS_IN_SEC) + (nightDelay_ms / MS_IN_SEC);
-        Log(4, "xxx totalTimeInSec=%.1fs, asi_night_max_autoexposure_ms=%'dms, nightDelay_ms=%'dms\n", totalTimeInSec, asi_night_max_autoexposure_ms, nightDelay_ms);
+        Allsky::Log(4, "xxx totalTimeInSec=%.1fs, asi_night_max_autoexposure_ms=%'dms, nightDelay_ms=%'dms\n", totalTimeInSec, asi_night_max_autoexposure_ms, nightDelay_ms);
     }
 
     gainTransitionImages = ceil(gainTransitionTime / totalTimeInSec);
     if (gainTransitionImages == 0)
     {
-        Log(0, "*** INFORMATION: Not adjusting gain - your 'gaintransitiontime' (%d seconds) is less than the time to take one image plus its delay (%.1f seconds).\n", gainTransitionTime, totalTimeInSec);
+        Allsky::Log(0, "*** INFORMATION: Not adjusting gain - your 'gaintransitiontime' (%d seconds) is less than the time to take one image plus its delay (%.1f seconds).\n", gainTransitionTime, totalTimeInSec);
         return(false);
     }
 
@@ -898,7 +885,7 @@ bool resetGainTransitionVariables(int dayGain, int nightGain)
 			gainTransitionImages++;		// this one will get the remaining amount
     }
 
-    Log(4, "xxx gainTransitionImages=%d, gainTransitionTime=%ds, perImageAdjustGain=%d, totalAdjustGain=%d\n",
+    Allsky::Log(4, "xxx gainTransitionImages=%d, gainTransitionTime=%ds, perImageAdjustGain=%d, totalAdjustGain=%d\n",
         gainTransitionImages, gainTransitionTime, perImageAdjustGain, totalAdjustGain);
 
     return(true);
@@ -916,7 +903,7 @@ int determineGainChange(int dayGain, int nightGain)
     if (numGainChanges > gainTransitionImages || totalAdjustGain == 0)
     {
         // no more changes needed in this transition
-        Log(4, "  xxxx No more gain changes needed.\n");
+        Allsky::Log(4, "  xxxx No more gain changes needed.\n");
         currentAdjustGain = false;
         return(0);
     }
@@ -948,8 +935,8 @@ int determineGainChange(int dayGain, int nightGain)
         }
     }
 
-    Log(4, "  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
-        dayOrNight.c_str(), amt, amt+currentGain, numGainChanges, gainTransitionImages);
+    Allsky::Log(4, "  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
+        dayOrNight.c_str(), amt, amt+Allsky::currentGain, numGainChanges, gainTransitionImages);
     return(amt);
 }
 
@@ -963,7 +950,7 @@ bool check_max_errors(int *e, int max_errors)
 	if (numErrors >= max_errors)
 	{
 		*e = 99;		// exit code - needs to match what's in allsky.sh
-		Log(0, "*** ERROR: Maximum number of consecutive errors of %d reached; exiting...\n", max_errors);
+		Allsky::Log(0, "*** ERROR: Maximum number of consecutive errors of %d reached; exiting...\n", max_errors);
 		return(false);	// gets us out of inner and outer loop
 	}
 	return(true);
@@ -980,18 +967,7 @@ int main(int argc, char *argv[])
     pthread_mutex_init(&mtx_SaveImg, 0);
     pthread_cond_init(&cond_SatrtSave, 0);
 
-    int fontname[] = {
-        cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
-        cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
-        cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
-    char const *fontnames[] = {		// Character representation of names for clarity:
-        "SIMPLEX",                      "PLAIN",                       "DUPEX",
-        "COMPLEX",                      "TRIPLEX",                     "COMPLEX_SMALL",
-        "SCRIPT_SIMPLEX",               "SCRIPT_COMPLEX" };
 
-    char bufTime[128]     = { 0 };
-    char bufTemp[128]     = { 0 };
-    char bufTemp2[50]     = { 0 };
     char const *bayer[]   = { "RG", "BG", "GR", "GB" };
     bool endOfNight       = false;
     int i;
@@ -1009,30 +985,7 @@ int main(int argc, char *argv[])
 
 #define DEFAULT_LOCALE           "en_US.UTF-8"
 const char *locale = DEFAULT_LOCALE;
-    // All the font settings apply to both day and night.
-#define DEFAULT_FONTNUMBER       0
-    int fontnumber             = DEFAULT_FONTNUMBER;
-#define DEFAULT_ITEXTX           15
-#define DEFAULT_ITEXTY           25
-    int iTextX                 = DEFAULT_ITEXTX;
-    int iTextY                 = DEFAULT_ITEXTY;
-#define DEFAULT_ITEXTLINEHEIGHT  30
-    int iTextLineHeight        = DEFAULT_ITEXTLINEHEIGHT;
-    char const *ImgText        = "";
-    char const *ImgExtraText   = "";
-    int extraFileAge           = 0;   // 0 disables it
-#define DEFAULT_FONTSIZE         7
-    double fontsize            = DEFAULT_FONTSIZE;
 #define SMALLFONTSIZE_MULTIPLIER 0.08
-#define DEFAULT_LINEWIDTH        1
-    int linewidth              = DEFAULT_LINEWIDTH;
-#define DEFAULT_OUTLINEFONT      0
-    int outlinefont            = DEFAULT_OUTLINEFONT;
-    int fontcolor[3]           = { 255, 0, 0 };
-    int smallFontcolor[3]      = { 0, 0, 255 };
-    int linetype[3]            = { cv::LINE_AA, 8, 4 };
-#define DEFAULT_LINENUMBER       0
-    int linenumber             = DEFAULT_LINENUMBER;
 
 #define DEFAULT_WIDTH            0
 #define DEFAULT_HEIGHT           0
@@ -1043,11 +996,6 @@ const char *locale = DEFAULT_LOCALE;
 #define DEFAULT_NIGHTBIN         1
     int dayBin                 = DEFAULT_DAYBIN;
     int nightBin               = DEFAULT_NIGHTBIN;
-    int currentBin             = NOT_SET;
-
-#define AUTO_IMAGE_TYPE         99	// needs to match what's in the camera_settings.json file
-#define DEFAULT_IMAGE_TYPE       AUTO_IMAGE_TYPE
-    int Image_type             = DEFAULT_IMAGE_TYPE;
 
 #define DEFAULT_ASIBANDWIDTH    40
     int asiBandwidth           = DEFAULT_ASIBANDWIDTH;
@@ -1078,7 +1026,6 @@ const char *locale = DEFAULT_LOCALE;
     int asiNightAutoGain       = DEFAULT_NIGHTAUTOGAIN;	// is Auto Gain on or off for nighttime?
 #define DEFAULT_ASINIGHTMAXGAIN  200
     int asiNightMaxGain        = DEFAULT_ASINIGHTMAXGAIN;
-    ASI_BOOL currentAutoGain   = ASI_FALSE;
 
     int currentDelay_ms        = NOT_SET;
 
@@ -1095,7 +1042,6 @@ const char *locale = DEFAULT_LOCALE;
 #define DEFAULT_BRIGHTNESS       50
     int asiDayBrightness       = DEFAULT_BRIGHTNESS;
     int asiNightBrightness     = DEFAULT_BRIGHTNESS;
-    int currentBrightness      = NOT_SET;
 
 #define DEFAULT_LATITUDE         "60.7N" //GPS Coordinates of Whitehorse, Yukon where the code was created
     char const *latitude       = DEFAULT_LATITUDE;
@@ -1109,14 +1055,8 @@ const char *locale = DEFAULT_LOCALE;
     int preview                = 0;
 #define DEFAULT_SHOWTIME         1
     int showTime               = DEFAULT_SHOWTIME;
-    char const *tempType       = "C";	// Celsius
 
     int showDetails            = 0;
-        // Allow for more granularity than showDetails, which shows everything:
-        int showTemp           = 0;
-        int showExposure       = 0;
-        int showGain           = 0;
-        int showBrightness     = 0;
 #ifdef USE_HISTOGRAM
         int showHistogram      = 0;
     int maxHistogramAttempts   = 15;	// max number of times we'll try for a better histogram mean
@@ -1217,7 +1157,7 @@ const char *locale = DEFAULT_LOCALE;
             }
             else if (strcmp(argv[i], "-type") == 0)
             {
-                Image_type = atoi(argv[++i]);
+                Allsky::Image_type = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-quality") == 0)
             {
@@ -1312,57 +1252,57 @@ const char *locale = DEFAULT_LOCALE;
             }
             else if (strcmp(argv[i], "-text") == 0)
             {
-                ImgText = argv[++i];
+                Allsky::ImgText = argv[++i];
             }
             else if (strcmp(argv[i], "-extratext") == 0)
             {
-                ImgExtraText = argv[++i];
+                Allsky::ImgExtraText = argv[++i];
             }
             else if (strcmp(argv[i], "-extratextage") == 0)
             {
-                extraFileAge = atoi(argv[++i]);
+                Allsky::extraFileAge = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-textlineheight") == 0)
             {
-                iTextLineHeight = atoi(argv[++i]);
+                Allsky::iTextLineHeight = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-textx") == 0)
             {
-                iTextX = atoi(argv[++i]);
+                Allsky::iTextX = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-texty") == 0)
             {
-                iTextY = atoi(argv[++i]);
+                Allsky::iTextY = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-fontname") == 0)
             {
-                fontnumber = atoi(argv[++i]);
+                Allsky::fontnumber = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-fontcolor") == 0)
             {
-                if (sscanf(argv[++i], "%d %d %d", &fontcolor[0], &fontcolor[1], &fontcolor[2]) != 3)
+                if (sscanf(argv[++i], "%d %d %d", &Allsky::fontcolor[0], &Allsky::fontcolor[1], &Allsky::fontcolor[2]) != 3)
                     fprintf(stderr, "%s*** ERROR: Not enough font color parameters: '%s'%s\n", c(KRED), argv[i], c(KNRM));
             }
             else if (strcmp(argv[i], "-smallfontcolor") == 0)
             {
-                if (sscanf(argv[++i], "%d %d %d", &smallFontcolor[0], &smallFontcolor[1], &smallFontcolor[2]) != 3)
+                if (sscanf(argv[++i], "%d %d %d", &Allsky::smallFontcolor[0], &Allsky::smallFontcolor[1], &Allsky::smallFontcolor[2]) != 3)
                     fprintf(stderr, "%s*** ERROR: Not enough small font color parameters: '%s'%s\n", c(KRED), argv[i], c(KNRM));
             }
             else if (strcmp(argv[i], "-fonttype") == 0)
             {
-                linenumber = atoi(argv[++i]);
+                Allsky::linenumber = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-fontsize") == 0)
             {
-                fontsize = atof(argv[++i]);
+                Allsky::fontsize = atof(argv[++i]);
             }
             else if (strcmp(argv[i], "-fontline") == 0)
             {
-                linewidth = atoi(argv[++i]);
+                Allsky::linewidth = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-outlinefont") == 0)
             {
-                outlinefont = atoi(argv[++i]);
+                Allsky::outlinefont = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-flip") == 0)
             {
@@ -1429,7 +1369,7 @@ const char *locale = DEFAULT_LOCALE;
             }
             else if (strcmp(argv[i], "-debuglevel") == 0)
             {
-                debugLevel = atoi(argv[++i]);
+                Allsky::debugLevel = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-showTime") == 0 || strcmp(argv[i], "-time") == 0)
             {
@@ -1448,29 +1388,29 @@ const char *locale = DEFAULT_LOCALE;
                 showDetails = atoi(argv[++i]);
                 // showDetails is an obsolete variable that shows ALL details except time.
                 // It's been replaced by separate variables for various lines.
-                showTemp = showDetails;
-		        showExposure = showDetails;
-		        showGain = showDetails;
+                Allsky::showTemp = showDetails;
+		        Allsky::showExposure = showDetails;
+		        Allsky::showGain = showDetails;
             }
             else if (strcmp(argv[i], "-showTemp") == 0)
             {
-                showTemp = atoi(argv[++i]);
+                Allsky::showTemp = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-temptype") == 0)
             {
-                tempType = argv[++i];
+                Allsky::tempType = argv[++i];
             }
             else if (strcmp(argv[i], "-showExposure") == 0)
             {
-                showExposure = atoi(argv[++i]);
+                Allsky::showExposure = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-showGain") == 0)
             {
-                showGain = atoi(argv[++i]);
+                Allsky::showGain = atoi(argv[++i]);
             }
             else if (strcmp(argv[i], "-showBrightness") == 0)
             {
-                showBrightness = atoi(argv[++i]);
+                Allsky::showBrightness = atoi(argv[++i]);
             }
 #ifdef USE_HISTOGRAM
             else if (strcmp(argv[i], "-showHistogram") == 0)
@@ -1586,7 +1526,7 @@ const char *locale = DEFAULT_LOCALE;
     const char *ext = strrchr(fileName, '.');
     if (strcasecmp(ext + 1, "jpg") == 0 || strcasecmp(ext + 1, "jpeg") == 0)
     {
-        if (Image_type == ASI_IMG_RAW16)
+        if (Allsky::Image_type == ASI_IMG_RAW16)
 		{
 			waitToFix("*** ERROR: RAW16 images only work with .png files; either change the Image Type or the Filename.\n");
 			exit(2);
@@ -1623,8 +1563,8 @@ const char *locale = DEFAULT_LOCALE;
     }
     else
     {
-        sprintf(debug_text, "*** ERROR: Unsupported image extension (%s); only .jpg and .png are supported.\n", ext);
-        waitToFix(debug_text);
+        sprintf(Allsky::debugText, "*** ERROR: Unsupported image extension (%s); only .jpg and .png are supported.\n", ext);
+        waitToFix(Allsky::debugText);
     	exit(100);
     }
     compression_parameters.push_back(quality);
@@ -1793,7 +1733,7 @@ const char *locale = DEFAULT_LOCALE;
 
     // Get a few values from the camera that we need elsewhere.
     ASIGetNumOfControls(CamNum, &iNumOfCtrl);
-    if (debugLevel >= 4)
+    if (Allsky::debugLevel >= 4)
         printf("Control Caps:\n");
     for (i = 0; i < iNumOfCtrl; i++)
     {
@@ -1812,7 +1752,7 @@ const char *locale = DEFAULT_LOCALE;
 			break;
 #endif
 		}
-        if (debugLevel >= 4)
+        if (Allsky::debugLevel >= 4)
         {
             printf("- %s:\n", ControlCaps.Name);
             printf("   - Description = %s\n", ControlCaps.Description);
@@ -1846,7 +1786,7 @@ const char *locale = DEFAULT_LOCALE;
 	   	asi_night_exposure_us = camera_max_autoexposure_us;
 	}
 
-    if (debugLevel >= 4)
+    if (Allsky::debugLevel >= 4)
     {
         printf("Supported video formats:\n");
         for (i = 0; i < 8; i++)
@@ -1865,38 +1805,38 @@ const char *locale = DEFAULT_LOCALE;
         }
     }
 
-    ASIGetControlValue(CamNum, ASI_TEMPERATURE, &actualTemp, &bAuto);
-    printf("- Sensor temperature: %0.2f\n", (float)actualTemp / 10.0);
+    ASIGetControlValue(CamNum, ASI_TEMPERATURE, &Allsky::actualTemp, &bAuto);
+    printf("- Sensor temperature: %0.2f\n", (float)Allsky::actualTemp / 10.0);
 
     // Handle "auto" Image_type.
-    if (Image_type == AUTO_IMAGE_TYPE)
+    if (Allsky::Image_type == AUTO_IMAGE_TYPE)
     {
         // If it's a color camera, create color pictures.
         // If it's a mono camera use RAW16 if the image file is a .png, otherwise use RAW8.
         // There is no good way to handle Y8 automatically so it has to be set manually.
         if (ASICameraInfo.IsColorCam)
-            Image_type = ASI_IMG_RGB24;
+            Allsky::Image_type = ASI_IMG_RGB24;
         else if (strcmp(imagetype, "png") == 0)
-            Image_type = ASI_IMG_RAW16;
+            Allsky::Image_type = ASI_IMG_RAW16;
         else // jpg
-            Image_type = ASI_IMG_RAW8;
+            Allsky::Image_type = ASI_IMG_RAW8;
     }
 
     const char *sType;		// displayed in output
-    if (Image_type == ASI_IMG_RAW16)
+    if (Allsky::Image_type == ASI_IMG_RAW16)
     {
         sType = "ASI_IMG_RAW16";
     }
-    else if (Image_type == ASI_IMG_RGB24)
+    else if (Allsky::Image_type == ASI_IMG_RGB24)
     {
         sType = "ASI_IMG_RGB24";
     }
-    else if (Image_type == ASI_IMG_RAW8)
+    else if (Allsky::Image_type == ASI_IMG_RAW8)
     {
         // Color cameras should use Y8 instead of RAW8.  Y8 is the mono mode for color cameras.
         if (ASICameraInfo.IsColorCam)
 		{
-			Image_type = ASI_IMG_Y8;
+			Allsky::Image_type = ASI_IMG_Y8;
             sType = "ASI_IMG_Y8 (not RAW8 for color cameras)";
 		}
 		else
@@ -1904,14 +1844,14 @@ const char *locale = DEFAULT_LOCALE;
             sType = "ASI_IMG_RAW8";
 		}
     }
-    else if (Image_type == ASI_IMG_RAW8)
+    else if (Allsky::Image_type == ASI_IMG_RAW8)
     {
         sType = "ASI_IMG_Y8";
     }
     else
     {
-        sprintf(debug_text, "*** ERROR: ASI_IMG_TYPE: %d\n", Image_type);
-        waitToFix(debug_text);
+        sprintf(Allsky::debugText, "*** ERROR: ASI_IMG_TYPE: %d\n", Allsky::Image_type);
+        waitToFix(Allsky::debugText);
     	exit(100);
     }
 
@@ -1954,17 +1894,17 @@ const char *locale = DEFAULT_LOCALE;
     printf(" Binning (night): %d\n", nightBin);
     printf(" USB Speed: %d, auto: %s\n", asiBandwidth, yesNo(asiAutoBandwidth));
 
-    printf(" Text Overlay: %s\n", ImgText[0] == '\0' ? "[none]" : ImgText);
-    printf(" Text Extra File: %s, Age: %d seconds\n", ImgExtraText[0] == '\0' ? "[none]" : ImgExtraText, extraFileAge);
-    printf(" Text Line Height %dpx\n", iTextLineHeight);
-    printf(" Text Position: %dpx from left, %dpx from top\n", iTextX, iTextY);
-    printf(" Font Name:  %s (%d)\n", fontnames[fontnumber], fontname[fontnumber]);
-    printf(" Font Color: %d, %d, %d\n", fontcolor[0], fontcolor[1], fontcolor[2]);
-    printf(" Small Font Color: %d, %d, %d\n", smallFontcolor[0], smallFontcolor[1], smallFontcolor[2]);
-    printf(" Font Line Type: %d\n", linetype[linenumber]);
-    printf(" Font Size: %1.1f\n", fontsize);
-    printf(" Font Line Width: %d\n", linewidth);
-    printf(" Outline Font : %s\n", yesNo(outlinefont));
+    printf(" Text Overlay: %s\n", Allsky::ImgText[0] == '\0' ? "[none]" : Allsky::ImgText);
+    printf(" Text Extra File: %s, Age: %d seconds\n", Allsky::ImgExtraText[0] == '\0' ? "[none]" : Allsky::ImgExtraText, Allsky::extraFileAge);
+    printf(" Text Line Height %dpx\n", Allsky::iTextLineHeight);
+    printf(" Text Position: %dpx from left, %dpx from top\n", Allsky::iTextX, Allsky::iTextY);
+    printf(" Font Name:  %s (%d)\n", Allsky::fontnames[Allsky::fontnumber], Allsky::fontname[Allsky::fontnumber]);
+    printf(" Font Color: %d, %d, %d\n", Allsky::fontcolor[0], Allsky::fontcolor[1], Allsky::fontcolor[2]);
+    printf(" Small Font Color: %d, %d, %d\n", Allsky::smallFontcolor[0], Allsky::smallFontcolor[1], Allsky::smallFontcolor[2]);
+    printf(" Font Line Type: %d\n", Allsky::linetype[Allsky::linenumber]);
+    printf(" Font Size: %1.1f\n", Allsky::fontsize);
+    printf(" Font Line Width: %d\n", Allsky::linewidth);
+    printf(" Outline Font : %s\n", yesNo(Allsky::outlinefont));
 
     printf(" Flip Image: %d\n", asiFlip);
     printf(" Filename: %s\n", fileName);
@@ -1982,13 +1922,13 @@ const char *locale = DEFAULT_LOCALE;
 #endif
     printf(" Show Time: %s (format: %s)\n", yesNo(showTime), timeFormat);
     printf(" Show Details: %s\n", yesNo(showDetails));
-    printf(" Show Temperature: %s, type: %s\n", yesNo(showTemp), tempType);
-    printf(" Show Exposure: %s\n", yesNo(showExposure));
-    printf(" Show Gain: %s\n", yesNo(showGain));
-    printf(" Show Brightness: %s\n", yesNo(showBrightness));
+    printf(" Show Temperature: %s, type: %s\n", yesNo(Allsky::showTemp), Allsky::tempType);
+    printf(" Show Exposure: %s\n", yesNo(Allsky::showExposure));
+    printf(" Show Gain: %s\n", yesNo(Allsky::showGain));
+    printf(" Show Brightness: %s\n", yesNo(Allsky::showBrightness));
     printf(" Preview: %s\n", yesNo(preview));
     printf(" Taking Dark Frames: %s\n", yesNo(taking_dark_frames));
-    printf(" Debug Level: %d\n", debugLevel);
+    printf(" Debug Level: %d\n", Allsky::debugLevel);
     printf(" On TTY: %s\n", tty ? "Yes" : "No");
     printf(" Video OFF Between Images: %s\n", yesNo(use_new_exposure_algorithm));
     printf(" ZWO SDK version %s\n", ASIGetSDKVersion());
@@ -2034,10 +1974,10 @@ const char *locale = DEFAULT_LOCALE;
     // Initialization
     int exitCode        = 0;    // Exit code for main()
     int maxErrors       = 5;    // Max number of errors in a row before we exit
-    int originalITextX = iTextX;
-    int originalITextY = iTextY;
-    int originalFontsize = fontsize;
-    int originalLinewidth = linewidth;
+    int originalITextX = Allsky::iTextX;
+    int originalITextY = Allsky::iTextY;
+    int originalFontsize = Allsky::fontsize;
+    int originalLinewidth = Allsky::linewidth;
     // Have we displayed "not taking picture during day" message, if applicable?
     int displayedNoDaytimeMsg = 0;
     int gainChange = 0;			// how much to change gain up or down
@@ -2051,16 +1991,16 @@ const char *locale = DEFAULT_LOCALE;
     if (asiDayAutoGain == 1 || asiNightAutoGain == 1 || gainTransitionTime == 0 || asiDayGain == asiNightGain || taking_dark_frames == 1)
     {
         adjustGain = false;
-        Log(3, "Will NOT adjust gain at transitions\n");
+        Allsky::Log(3, "Will NOT adjust gain at transitions\n");
     }
     else
     {
         adjustGain = true;
-        Log(3, "Will adjust gain at transitions\n");
+        Allsky::Log(3, "Will adjust gain at transitions\n");
     }
 
-    if (ImgExtraText[0] != '\0' && extraFileAge > 0) {
-        Log(1, "Extra Text File Age Disabled So Displaying Anyway\n");
+    if (Allsky::ImgExtraText[0] != '\0' && Allsky::extraFileAge > 0) {
+        Allsky::Log(1, "Extra Text File Age Disabled So Displaying Anyway\n");
     }
 
     if (tty)
@@ -2096,18 +2036,18 @@ const char *locale = DEFAULT_LOCALE;
         {
                 // We're doing dark frames so turn off autoexposure and autogain, and use
                 // nightime gain, delay, max exposure, bin, and brightness to mimic a nightime shot.
-                currentAutoExposure = ASI_FALSE;
+                Allsky::currentAutoExposure = ASI_FALSE;
                 asiNightAutoExposure = 0;
-                currentAutoGain = ASI_FALSE;
+                Allsky::currentAutoGain = ASI_FALSE;
                 // Don't need to set ASI_AUTO_MAX_GAIN since we're not using auto gain
-                currentGain = asiNightGain;
+                Allsky::currentGain = asiNightGain;
                 gainChange = 0;
                 currentDelay_ms = nightDelay_ms;
                 current_max_autoexposure_us = current_exposure_us = asi_night_max_autoexposure_ms * US_IN_MS;
-                currentBin = nightBin;
-                currentBrightness = asiNightBrightness;
+                Allsky::currentBin = nightBin;
+                Allsky::currentBrightness = asiNightBrightness;
 
-                Log(0, "Taking dark frames...\n");
+                Allsky::Log(0, "Taking dark frames...\n");
 
                 if (notificationImages) {
                     system("scripts/copy_notification_image.sh DarkFrames &");
@@ -2119,7 +2059,7 @@ const char *locale = DEFAULT_LOCALE;
             // Setup the daytime capture parameters
             if (endOfNight == true)	// Execute end of night script
             {
-                Log(0, "Processing end of night data\n");
+                Allsky::Log(0, "Processing end of night data\n");
                 system("scripts/endOfNight.sh &");
                 endOfNight = false;
                 displayedNoDaytimeMsg = 0;
@@ -2132,7 +2072,7 @@ const char *locale = DEFAULT_LOCALE;
                     if (notificationImages) {
                         system("scripts/copy_notification_image.sh CameraOffDuringDay &");
                     }
-                    Log(0, "It's daytime... we're not saving images.\n*** %s ***\n",
+                    Allsky::Log(0, "It's daytime... we're not saving images.\n*** %s ***\n",
                         tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
                     displayedNoDaytimeMsg = 1;
 
@@ -2152,7 +2092,7 @@ const char *locale = DEFAULT_LOCALE;
 
             else
             {
-                Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
+                Allsky::Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
 
                 // We only skip initial frames if we are starting in daytime and using auto-exposure.
                 if (numExposures == 0 && asiDayAutoExposure)
@@ -2167,15 +2107,15 @@ const char *locale = DEFAULT_LOCALE;
                 {
 					if (asiDayAutoExposure && asi_day_exposure_us > asi_day_max_autoexposure_ms*US_IN_MS)
 					{
-						snprintf(bufTemp, sizeof(bufTemp), "%s", length_in_units(asi_day_exposure_us, true));
-						Log(0, "*** WARNING: daytime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", bufTemp, length_in_units(asi_day_max_autoexposure_ms*US_IN_MS, true));
+						snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", length_in_units(asi_day_exposure_us, true));
+						Allsky::Log(0, "*** WARNING: daytime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, length_in_units(asi_day_max_autoexposure_ms*US_IN_MS, true));
 						asi_day_exposure_us = asi_day_max_autoexposure_ms * US_IN_MS;
 					}
                     current_exposure_us = asi_day_exposure_us;
                 }
                 else
                 {
-                    Log(2, "Using the last night exposure of %s\n", length_in_units(current_exposure_us, true));
+                    Allsky::Log(2, "Using the last night exposure of %s\n", length_in_units(current_exposure_us, true));
                 }
 
                 current_max_autoexposure_us = asi_day_max_autoexposure_ms * US_IN_MS;
@@ -2183,18 +2123,18 @@ const char *locale = DEFAULT_LOCALE;
                 // Don't use camera auto-exposure since we mimic it ourselves.
                 if (asiDayAutoExposure)
                 {
-                    Log(2, "Turning off daytime auto-exposure to use histogram exposure.\n");
+                    Allsky::Log(2, "Turning off daytime auto-exposure to use histogram exposure.\n");
                 }
                 // With the histogram method we NEVER use auto exposure - either the user said
                 // not to, or we turn it off ourselves.
-                currentAutoExposure = ASI_FALSE;
+                Allsky::currentAutoExposure = ASI_FALSE;
 #else
-                currentAutoExposure = asiDayAutoExposure ? ASI_TRUE : ASI_FALSE;
+                Allsky::currentAutoExposure = asiDayAutoExposure ? ASI_TRUE : ASI_FALSE;
 #endif
-                currentBrightness = asiDayBrightness;
+                Allsky::currentBrightness = asiDayBrightness;
                 currentDelay_ms = dayDelay_ms;
-                currentBin = dayBin;
-                currentGain = asiDayGain;	// must come before determineGainChange() below
+                Allsky::currentBin = dayBin;
+                Allsky::currentGain = asiDayGain;	// must come before determineGainChange() below
                 if (currentAdjustGain)
                 {
                     // we did some nightime images so adjust gain
@@ -2205,7 +2145,7 @@ const char *locale = DEFAULT_LOCALE;
                 {
                     gainChange = 0;
                 }
-                currentAutoGain = asiDayAutoGain ? ASI_TRUE : ASI_FALSE;
+                Allsky::currentAutoGain = asiDayAutoGain ? ASI_TRUE : ASI_FALSE;
 // xxxx TODO: add asiDayMaxGain and currentMaxGain.
 // xxxx then can move the setControl further below
                 // We don't have a separate asiDayMaxGain, so set to night one
@@ -2215,7 +2155,7 @@ const char *locale = DEFAULT_LOCALE;
 
         else	// NIGHT
         {
-            Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
+            Allsky::Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
 
             // We only skip initial frames if we are starting in nighttime and using auto-exposure.
             if (numExposures == 0 && asiNightAutoExposure)
@@ -2226,20 +2166,20 @@ const char *locale = DEFAULT_LOCALE;
             {
 				if (asiNightAutoExposure && asi_night_exposure_us > asi_night_max_autoexposure_ms*US_IN_MS)
 				{
-					snprintf(bufTemp, sizeof(bufTemp), "%s", length_in_units(asi_night_exposure_us, true));
-					Log(0, "*** WARNING: nighttime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", bufTemp, length_in_units(asi_night_max_autoexposure_ms*US_IN_MS, true));
+					snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", length_in_units(asi_night_exposure_us, true));
+					Allsky::Log(0, "*** WARNING: nighttime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, length_in_units(asi_night_max_autoexposure_ms*US_IN_MS, true));
 					asi_night_exposure_us = asi_night_max_autoexposure_ms * US_IN_MS;
 				}
                 current_exposure_us = asi_night_exposure_us;
-                Log(4, "Using night exposure (%s)\n", length_in_units(asi_night_exposure_us, true));
+                Allsky::Log(4, "Using night exposure (%s)\n", length_in_units(asi_night_exposure_us, true));
             }
 
-            currentAutoExposure = asiNightAutoExposure ? ASI_TRUE : ASI_FALSE;
-            currentBrightness = asiNightBrightness;
+            Allsky::currentAutoExposure = asiNightAutoExposure ? ASI_TRUE : ASI_FALSE;
+            Allsky::currentBrightness = asiNightBrightness;
             currentDelay_ms = nightDelay_ms;
-            currentBin = nightBin;
+            Allsky::currentBin = nightBin;
             current_max_autoexposure_us = asi_night_max_autoexposure_ms * US_IN_MS;
-            currentGain = asiNightGain;	// must come before determineGainChange() below
+            Allsky::currentGain = asiNightGain;	// must come before determineGainChange() below
             if (currentAdjustGain)
             {
                 // we did some daytime images so adjust gain
@@ -2250,63 +2190,63 @@ const char *locale = DEFAULT_LOCALE;
             {
                 gainChange = 0;
             }
-            currentAutoGain = asiNightAutoGain ? ASI_TRUE : ASI_FALSE;
+            Allsky::currentAutoGain = asiNightAutoGain ? ASI_TRUE : ASI_FALSE;
             setControl(CamNum, ASI_AUTO_MAX_GAIN, asiNightMaxGain, ASI_FALSE);
         }
 
 		// never go over the camera's max auto exposure.  ASI_AUTO_MAX_EXP is in ms so convert
         current_max_autoexposure_us = std::min(current_max_autoexposure_us, camera_max_autoexposure_us);
         setControl(CamNum, ASI_AUTO_MAX_EXP, current_max_autoexposure_us / US_IN_MS, ASI_FALSE);
-        setControl(CamNum, ASI_GAIN, currentGain + gainChange, currentAutoGain);
+        setControl(CamNum, ASI_GAIN, Allsky::currentGain + gainChange, (ASI_BOOL)Allsky::currentAutoGain);
 		// ASI_BRIGHTNESS is also called ASI_OFFSET
-        setControl(CamNum, ASI_BRIGHTNESS, currentBrightness, ASI_FALSE);
+        setControl(CamNum, ASI_BRIGHTNESS, Allsky::currentBrightness, ASI_FALSE);
 
 #ifndef USE_HISTOGRAM
-        setControl(CamNum, ASI_EXPOSURE, current_exposure_us, currentAutoExposure);
+        setControl(CamNum, ASI_EXPOSURE, current_exposure_us, (ASI_BOOL)Allsky::currentAutoExposure);
 #endif
 
         if (numExposures == 0 || dayBin != nightBin)
         {
             // Adjusting variables for chosen binning.
             // Only need to do at the beginning and if bin changes.
-            height    = originalHeight / currentBin;
-            width     = originalWidth / currentBin;
-            iTextX    = originalITextX / currentBin;
-            iTextY    = originalITextY / currentBin;
-            fontsize  = originalFontsize / currentBin;
-            linewidth = originalLinewidth / currentBin;
-            current_histogramBoxSizeX = histogramBoxSizeX / currentBin;
-            current_histogramBoxSizeY = histogramBoxSizeY / currentBin;
+            height    = originalHeight / Allsky::currentBin;
+            width     = originalWidth / Allsky::currentBin;
+            Allsky::iTextX    = originalITextX / Allsky::currentBin;
+            Allsky::iTextY    = originalITextY / Allsky::currentBin;
+            Allsky::fontsize  = originalFontsize / Allsky::currentBin;
+            Allsky::linewidth = originalLinewidth / Allsky::currentBin;
+            current_histogramBoxSizeX = histogramBoxSizeX / Allsky::currentBin;
+            current_histogramBoxSizeY = histogramBoxSizeY / Allsky::currentBin;
 
-            bufferSize = width * height * bytesPerPixel((ASI_IMG_TYPE) Image_type);
-            Log(4, "Buffer size: %ld\n", bufferSize);
+            bufferSize = width * height * bytesPerPixel((ASI_IMG_TYPE) Allsky::Image_type);
+            Allsky::Log(4, "Buffer size: %ld\n", bufferSize);
 
 // TODO: if not the first time, should we free the old pRgb?
-			if (Image_type == ASI_IMG_RAW16)
+			if (Allsky::Image_type == ASI_IMG_RAW16)
 			{
-				pRgb.create(cv::Size(width, height), CV_16UC1);
+				Allsky::pRgb.create(cv::Size(width, height), CV_16UC1);
 			}
-			else if (Image_type == ASI_IMG_RGB24)
+			else if (Allsky::Image_type == ASI_IMG_RGB24)
 			{
-				pRgb.create(cv::Size(width, height), CV_8UC3);
+				Allsky::pRgb.create(cv::Size(width, height), CV_8UC3);
 			}
 			else // RAW8 and Y8
 			{
-				pRgb.create(cv::Size(width, height), CV_8UC1);
+				Allsky::pRgb.create(cv::Size(width, height), CV_8UC1);
 			}
 
 // TODO: ASISetStartPos(CamNum, from_left_xxx, from_top_xxx);
-			asiRetCode = ASISetROIFormat(CamNum, width, height, currentBin, (ASI_IMG_TYPE)Image_type);
+			asiRetCode = ASISetROIFormat(CamNum, width, height, Allsky::currentBin, (ASI_IMG_TYPE)Allsky::Image_type);
 			if (asiRetCode != ASI_SUCCESS)
 			{
 				if (asiRetCode == ASI_ERROR_INVALID_SIZE)
 				{
-                    printf("*** ERROR: your camera does not support bin %dx%d.\n", currentBin, currentBin);
+                    printf("*** ERROR: your camera does not support bin %dx%d.\n", Allsky::currentBin, Allsky::currentBin);
                     closeUp(100);	// user needs to fix
 				}
 				else
 				{
-                    printf("ASISetROIFormat(%d, %dx%d, %d, %d) = %s\n", CamNum, width, height, currentBin, Image_type, getRetCode(asiRetCode));
+                    printf("ASISetROIFormat(%d, %dx%d, %d, %d) = %s\n", CamNum, width, height, Allsky::currentBin, Allsky::Image_type, getRetCode(asiRetCode));
                     closeUp(100);
 				}
             }
@@ -2330,13 +2270,13 @@ const char *locale = DEFAULT_LOCALE;
             char exposureStart[128];
             char f[10] = "%F %T";
             sprintf(exposureStart, "%s", formatTime(t, f));
-            Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, length_in_units(current_exposure_us, true));
+            Allsky::Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, length_in_units(current_exposure_us, true));
 
             // Get start time for overlay.  Make sure it has the same time as exposureStart.
             if (showTime == 1)
-            	sprintf(bufTime, "%s", formatTime(t, timeFormat));
+            	sprintf(Allsky::bufTime, "%s", formatTime(t, timeFormat));
 
-            asiRetCode = takeOneExposure(CamNum, current_exposure_us, pRgb.data, width, height, (ASI_IMG_TYPE) Image_type, histogram, &mean);
+            asiRetCode = takeOneExposure(CamNum, current_exposure_us, Allsky::pRgb.data, width, height, (ASI_IMG_TYPE) Allsky::Image_type, histogram, &mean);
             if (asiRetCode == ASI_SUCCESS)
             {
                 numErrors = 0;
@@ -2346,7 +2286,7 @@ const char *locale = DEFAULT_LOCALE;
                 {
                     // Start the preview thread at the last possible moment.
                     bDisplay = 1;
-                    pthread_create(&thread_display, NULL, Display, (void *)&pRgb);
+                    pthread_create(&thread_display, NULL, Display, (void *)&Allsky::pRgb);
                 }
 
 #ifdef USE_HISTOGRAM
@@ -2404,7 +2344,7 @@ const char *locale = DEFAULT_LOCALE;
                             // which is ok - it just means the multiplier will be less than 1.
                             numMultiples = (float)(asiDayBrightness - DEFAULT_BRIGHTNESS) / DEFAULT_BRIGHTNESS;
                             exposureAdjustment = 1 + (numMultiples * adjustmentAmountPerMultiple);
-                            Log(3, "  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
+                            Allsky::Log(3, "  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
                             showedMessage = 1;
                         }
 
@@ -2455,7 +2395,7 @@ const char *locale = DEFAULT_LOCALE;
                     }
                     if (adjustment != 0)
                     {
-                        Log(3, "  > !!! Adjusting %sAcceptableMean by %d to %d\n",
+                        Allsky::Log(3, "  > !!! Adjusting %sAcceptableMean by %d to %d\n",
                            adjustment < 0 ? "min" : "max",
                            adjustment,
                            adjustment < 0 ? minAcceptableMean : maxAcceptableMean);
@@ -2600,12 +2540,12 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                              break;
                          }
 
-                         Log(3, "  >> Retry %i @ %'ld us, min=%'ld us, max=%'ld us: mean (%d) %s (%d)\n", attempts, new_exposure_us, temp_min_exposure_us, temp_max_exposure_us, mean, why.c_str(), num);
+                         Allsky::Log(3, "  >> Retry %i @ %'ld us, min=%'ld us, max=%'ld us: mean (%d) %s (%d)\n", attempts, new_exposure_us, temp_min_exposure_us, temp_max_exposure_us, mean, why.c_str(), num);
 
                          prior_mean = mean;
                          prior_mean_diff = last_mean_diff;
 
-                         asiRetCode = takeOneExposure(CamNum, current_exposure_us, pRgb.data, width, height, (ASI_IMG_TYPE) Image_type, histogram, &mean);
+                         asiRetCode = takeOneExposure(CamNum, current_exposure_us, Allsky::pRgb.data, width, height, (ASI_IMG_TYPE) Allsky::Image_type, histogram, &mean);
                          if (asiRetCode == ASI_SUCCESS)
                          {
 
@@ -2631,7 +2571,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 
                     if (asiRetCode != ASI_SUCCESS)
                     {
-                        Log(2,"  > Sleeping %s from failed exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false));
+                        Allsky::Log(2,"  > Sleeping %s from failed exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false));
                         usleep(currentDelay_ms * US_IN_MS);
                         // Don't save the file or do anything below.
                         continue;
@@ -2640,25 +2580,25 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                     if (mean >= minAcceptableMean && mean <= maxAcceptableMean)
                     {
                         // +++ at end makes it easier to see in log file
-                        Log(3, "  > Good image: mean within range of %d to %d ++++++++++, mean %d\n", minAcceptableMean, maxAcceptableMean, mean);
+                        Allsky::Log(3, "  > Good image: mean within range of %d to %d ++++++++++, mean %d\n", minAcceptableMean, maxAcceptableMean, mean);
                     }
                     else if (attempts > maxHistogramAttempts)
                     {
-                         Log(3, "  > max attempts reached - using exposure of %s us with mean %d\n", length_in_units(current_exposure_us, true), mean);
+                         Allsky::Log(3, "  > max attempts reached - using exposure of %s us with mean %d\n", length_in_units(current_exposure_us, true), mean);
                     }
                     else if (attempts >= 1)
                     {
                          if (current_exposure_us > current_max_autoexposure_us)
                          {
-                             Log(3, "  > Stopped trying: new exposure of %s would be over max of %s\n", length_in_units(current_exposure_us, false), length_in_units(current_max_autoexposure_us, false));
+                             Allsky::Log(3, "  > Stopped trying: new exposure of %s would be over max of %s\n", length_in_units(current_exposure_us, false), length_in_units(current_max_autoexposure_us, false));
 
                              long diff = (long)((float)current_exposure_us * (1/(float)percent_change));
                              current_exposure_us -= diff;
-                             Log(3, "  > Decreasing next exposure by %d%% (%'ld us) to %'ld\n", percent_change, diff, current_exposure_us);
+                             Allsky::Log(3, "  > Decreasing next exposure by %d%% (%'ld us) to %'ld\n", percent_change, diff, current_exposure_us);
                          }
                          else if (current_exposure_us == current_max_autoexposure_us)
                          {
-                             Log(3, "  > Stopped trying: hit max exposure limit of %s, mean %d\n", length_in_units(current_max_autoexposure_us, false), mean);
+                             Allsky::Log(3, "  > Stopped trying: hit max exposure limit of %s, mean %d\n", length_in_units(current_max_autoexposure_us, false), mean);
                              // If current_exposure_us causes too high of a mean, decrease exposure
                              // so on the next loop we'll adjust it.
                              if (mean > maxAcceptableMean)
@@ -2666,16 +2606,16 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                          }
                          else if (new_exposure_us == current_exposure_us)
                          {
-                             Log(3, "  > Stopped trying: new_exposure_us == current_exposure_us == %s\n", length_in_units(current_exposure_us, false));
+                             Allsky::Log(3, "  > Stopped trying: new_exposure_us == current_exposure_us == %s\n", length_in_units(current_exposure_us, false));
                          }
                          else
                          {
-                             Log(3, "  > Stopped trying, using exposure of %s us with mean %d, min=%d, max=%d\n", length_in_units(current_exposure_us, false), mean, minAcceptableMean, maxAcceptableMean);
+                             Allsky::Log(3, "  > Stopped trying, using exposure of %s us with mean %d, min=%d, max=%d\n", length_in_units(current_exposure_us, false), mean, minAcceptableMean, maxAcceptableMean);
                          }
                     }
                     else if (current_exposure_us == current_max_autoexposure_us)
                     {
-                         Log(3, "  > Did not make any additional attempts - at max exposure limit of %s, mean %d\n", length_in_units(current_max_autoexposure_us, false), mean);
+                         Allsky::Log(3, "  > Did not make any additional attempts - at max exposure limit of %s, mean %d\n", length_in_units(current_max_autoexposure_us, false), mean);
                     }
                     // xxxx TODO: this was "actual_exposure_us = ..."    reported_exposure_us = current_exposure_us;
 
@@ -2683,7 +2623,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                     // Didn't use histogram method.
                     // If we used auto-exposure, set the next exposure to the last reported exposure, which is what.
                     // the camera driver thinks the next exposure should be.
-                    if (currentAutoExposure == ASI_TRUE)
+                    if (Allsky::currentAutoExposure == ASI_TRUE)
                         current_exposure_us = reported_exposure_us;
 					else
                         current_exposure_us = last_exposure_us;
@@ -2702,7 +2642,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                     else
 #endif
                     {
-                        Log(2, "  >>>> Skipping this frame\n");
+                        Allsky::Log(2, "  >>>> Skipping this frame\n");
                         current_skip_frames--;
                         // Do not save this frame or sleep after it.
                         // We just started taking images so no need to check if DAY or NIGHT changed
@@ -2711,115 +2651,31 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                 }
 
                 // Write temperature to file
-                writeTemperatureToFile((float)actualTemp / 10.0);
+                writeTemperatureToFile((float)Allsky::actualTemp / 10.0);
 
                 // If taking_dark_frames is off, add overlay text to the image
                 if (! taking_dark_frames)
                 {
                     int iYOffset = 0;
+					Allsky::overlayText(iYOffset);
 
-                    if (showTime == 1)
-                    {
-                        // The time and ImgText are in the larger font; everything else is in smaller font.
-                        cvText(pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * 0.1, linewidth,
-                            linetype[linenumber], fontname[fontnumber], fontcolor,
-							Image_type, outlinefont);
-                        iYOffset += iTextLineHeight;
-                    }
-
-                    if (ImgText[0] != '\0')
-                    {
-                        cvText(pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * 0.1, linewidth,
-                            linetype[linenumber], fontname[fontnumber], fontcolor,
-							Image_type, outlinefont);
-                        iYOffset+=iTextLineHeight;
-                    }
-
-
-                    if (showTemp == 1)
-                    {
-                        char C[20] = { 0 }, F[20] = { 0 };
-                        if (strcmp(tempType, "C") == 0 || strcmp(tempType, "B") == 0)
-						{
-							sprintf(C, "  %.0fC", (float)actualTemp / 10);
-						}
-                        if (strcmp(tempType, "F") == 0 || strcmp(tempType, "B") == 0)
-						{
-							sprintf(F, "  %.0fF", (((float)actualTemp / 10 * 1.8) + 32));
-						}
-                        sprintf(bufTemp, "Sensor: %s %s", C, F);
-                        cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-                            linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-                        iYOffset += iTextLineHeight;
-                    }
-
-                    if (showExposure == 1)
-                    {
-                        // display in seconds if >= 1 second, else in ms
-                        if (last_exposure_us >= (1 * US_IN_SEC))
-                            sprintf(bufTemp, "Exposure: %'.2f s%s", (float)last_exposure_us / US_IN_SEC, bufTemp2);
-                        else
-                            sprintf(bufTemp, "Exposure: %'.2f ms%s", (float)last_exposure_us / US_IN_MS, bufTemp2);
-                        // Indicate if in auto-exposure mode.
-                        if (currentAutoExposure == ASI_TRUE) strcat(bufTemp, " (auto)");
-                        cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-                            linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-                        iYOffset += iTextLineHeight;
-                    }
-
-                    if (showGain == 1)
-                    {
-                        sprintf(bufTemp, "Gain: %ld", actualGain);
-
-                        // Indicate if in auto gain mode.
-                        if (currentAutoGain == ASI_TRUE) strcat(bufTemp, " (auto)");
-                        // Indicate if in gain transition mode.
-                        if (gainChange != 0)
-                        {
-                            char x[20];
-                            sprintf(x, " (adj: %+d)", gainChange);
-                            strcat(bufTemp, x);
-                        }
-
-                        cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-                            linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-                        iYOffset += iTextLineHeight;
-                    }
                     if (currentAdjustGain)
                     {
                         // Determine if we need to change the gain on the next image.
                         // This must come AFTER the "showGain" above.
                         gainChange = determineGainChange(asiDayGain, asiNightGain);
-                        setControl(CamNum, ASI_GAIN, currentGain + gainChange, currentAutoGain);
+                        setControl(CamNum, ASI_GAIN, Allsky::currentGain + gainChange, (ASI_BOOL)Allsky::currentAutoGain);
                     }
-
-                    if (showBrightness == 1)
-                    {
-                        sprintf(bufTemp, "Brightness: %d", currentBrightness);
-                        cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-                        iYOffset += iTextLineHeight;
-                     }
 
 #ifdef USE_HISTOGRAM
                     if (showHistogram)
                     {
-                        sprintf(bufTemp, "Mean: %d", mean);
-                        cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber], smallFontcolor,
-							Image_type, outlinefont);
-                        iYOffset += iTextLineHeight;
+                        sprintf(Allsky::bufTemp, "Mean: %d", mean);
+                        Allsky::cvText(Allsky::pRgb, Allsky::bufTemp, Allsky::iTextX, Allsky::iTextY + (iYOffset / Allsky::currentBin),
+							Allsky::fontsize * SMALLFONTSIZE_MULTIPLIER, Allsky::linewidth,
+							Allsky::linetype[Allsky::linenumber], Allsky::fontname[Allsky::fontnumber], Allsky::smallFontcolor,
+							Allsky::Image_type, Allsky::outlinefont);
+                        iYOffset += Allsky::iTextLineHeight;
                     }
                     if (showHistogramBox && usedHistogram)
                     {
@@ -2833,7 +2689,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                         int Y2 = Y1 + histogramBoxSizeY;
                         cv::Scalar outer_line, inner_line;
 // xxxxxxx  TODO: can we use Scalar(x,y,z) for both?
-                        if (1 || Image_type == ASI_IMG_RAW16)
+                        if (1 || Allsky::Image_type == ASI_IMG_RAW16)
                         {
                             outer_line = cv::Scalar(0,0,0);
                             inner_line = cv::Scalar(255,255,255);
@@ -2843,78 +2699,14 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                             outer_line = cv::Scalar(0,0,0, 255);
                             inner_line = cv::Scalar(255,255,255, 255);
                         }
-                        cv::rectangle(pRgb, cv::Point(X1, Y1), cv::Point(X2, Y2), outer_line,  thickness, lt, 0);
-                        cv::rectangle(pRgb, cv::Point(X1+thickness, Y1+thickness), cv::Point(X2-thickness, Y2-thickness), inner_line,  thickness, lt, 0);
+                        cv::rectangle(Allsky::pRgb, cv::Point(X1, Y1), cv::Point(X2, Y2), outer_line,  thickness, lt, 0);
+                        cv::rectangle(Allsky::pRgb, cv::Point(X1+thickness, Y1+thickness), cv::Point(X2-thickness, Y2-thickness), inner_line,  thickness, lt, 0);
                     }
 #endif
-
-                    /**
-                     * Optionally display extra text which is read from the provided file. If the
-                     * age of the file exceeds the specified limit then ignore the file.
-                     * This prevents situations where the program updating the file stops working.
-                     **/
-                    if (ImgExtraText[0] != '\0') {
-                        // Display these messages every time, since it's possible the user will
-                        // correct the issue while we're running.
-                        if (access(ImgExtraText, F_OK ) == -1 ) {
-                            Log(1, "  > *** WARNING: Extra Text File Does Not Exist So Ignoring It\n");
-                        } else if (access(ImgExtraText, R_OK ) == -1 ) {
-                            Log(1, "  > *** WARNING: Cannot Read From Extra Text File So Ignoring It\n");
-                        } else {
-                            FILE *fp = fopen(ImgExtraText, "r");
-
-                            if (fp != NULL) {
-                                bool bAddExtra = false;
-                                if (extraFileAge > 0) {
-                                    struct stat buffer;
-                                    if (stat(ImgExtraText, &buffer) == 0) {
-                                        struct tm modifiedTime = *localtime(&buffer.st_mtime);
-
-                                        time_t now = time(NULL);
-                                        double ageInSeconds = difftime(now, mktime(&modifiedTime));
-                                        Log(4, "  > Extra Text File (%s) Modified %.1f seconds ago", ImgExtraText, ageInSeconds);
-                                        if (ageInSeconds < extraFileAge) {
-                                            Log(1, ", so Using It\n");
-                                            bAddExtra = true;
-                                        } else {
-                                            Log(1, ", so Ignoring\n");
-                                        }
-                                    } else {
-                                        Log(0, "  > *** ERROR: Stat Of Extra Text File Failed !\n");
-                                    }
-                                } else {
-                                    bAddExtra = true;
-                                }
-
-                                if (bAddExtra) {
-                                    char *line = NULL;
-                                    size_t len = 0;
-				                    int slen = 0;
-                                    while (getline(&line, &len, fp) != -1) {
-                                        slen = strlen(line);
-                                        if (slen >= 2 && (line[slen-2] == 10 || line[slen-2] == 13)) {  // LF, CR
-                                            line[slen-2] = '\0';
-                                        } else if (slen >= 1 && (line[slen-1] == 10 || line[slen-1] == 13)) {
-                                            line[slen-1] = '\0';
-                                        }
-
-                                        cvText(pRgb, line, iTextX, iTextY + (iYOffset / currentBin),
-											fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-											linetype[linenumber], fontname[fontnumber],
-											smallFontcolor, Image_type, outlinefont);
-                                        iYOffset += iTextLineHeight;
-                                    }
-                                }
-                                fclose(fp);
-                            } else {
-                                Log(0, "  > *** WARNING: Failed To Open Extra Text File\n");
-                            }
-                        }
-                    }
                 }
 
 #ifndef USE_HISTOGRAM
-                if (currentAutoExposure == ASI_TRUE)
+                if (Allsky::currentAutoExposure == ASI_TRUE)
                 {
                     // Retrieve the current Exposure for smooth transition to night time
                     // as long as auto-exposure is enabled during night time
@@ -2934,7 +2726,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                     // Hopefully the user can use the time it took to save a file to disk
                     // to help determine why they are getting this warning.
                     // Perhaps their disk is very slow or their delay is too short.
-                    Log(0, "  > WARNING: currently saving an image; can't save new one at %s.\n", exposureStart);
+                    Allsky::Log(0, "  > WARNING: currently saving an image; can't save new one at %s.\n", exposureStart);
 
                     // TODO: wait for the prior image to finish saving.
                 }
@@ -2942,10 +2734,10 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                 if (asiNightAutoGain == 1 && dayOrNight == "NIGHT" && ! taking_dark_frames)
                 {
                     ASIGetControlValue(CamNum, ASI_GAIN, &actualGain, &bAuto);
-                    Log(1, "  > Auto Gain value: %ld\n", actualGain);
+                    Allsky::Log(1, "  > Auto Gain value: %ld\n", actualGain);
                 }
 
-                if (currentAutoExposure == ASI_TRUE)
+                if (Allsky::currentAutoExposure == ASI_TRUE)
                 {
 #ifndef USE_HISTOGRAM
 
@@ -2964,14 +2756,14 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                         // This doesn't apply during the day since we don't have a max time then.
                         long s_us = (asi_night_max_autoexposure_ms * US_IN_MS) - last_exposure_us; // to get to max
                         s_us += currentDelay_ms * US_IN_MS;   // Add standard delay amount
-                        Log(0, "  > Sleeping: %s\n", length_in_units(s_us, false));
+                        Allsky::Log(0, "  > Sleeping: %s\n", length_in_units(s_us, false));
                         usleep(s_us);	// usleep() is in us (microseconds)
                     }
                     else
                     {
                         // Sleep even if taking dark frames so the sensor can cool between shots like it would
                         // do on a normal night.  With no delay the sensor may get hotter than it would at night.
-                        Log(0, "  > Sleeping %s from %s exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false), taking_dark_frames ? "dark frame" : "auto");
+                        Allsky::Log(0, "  > Sleeping %s from %s exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false), taking_dark_frames ? "dark frame" : "auto");
                         usleep(currentDelay_ms * US_IN_MS);
                     }
                 }
@@ -2986,7 +2778,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
                     if (usedHistogram == 1)
                         s = "histogram";
 #endif
-                    Log(0, "  > Sleeping %s from %s exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false), s.c_str());
+                    Allsky::Log(0, "  > Sleeping %s from %s exposure\n", length_in_units(currentDelay_ms * US_IN_MS, false), s.c_str());
                     usleep(currentDelay_ms * US_IN_MS);
                 }
                 calculateDayOrNight(latitude, longitude, angle);

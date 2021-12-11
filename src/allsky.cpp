@@ -12,8 +12,7 @@
 /**
  * Text_overlay
 **/
-void Allsky::overlayText() {
-  int iYOffset = 0;
+void Allsky::overlayText(int &iYOffset) {
 
   if (showTime == 1)
   {
@@ -91,6 +90,7 @@ void Allsky::overlayText() {
 		iYOffset += iTextLineHeight;
 	}
 
+#ifdef CAM_RPIHQ
 	if (showMean == 1 && myModeMeanSetting.mode_mean)
 	{
 		sprintf(bufTemp, "Mean: %.6f", lastMean);
@@ -100,7 +100,9 @@ void Allsky::overlayText() {
 			Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
+#endif
 
+#ifdef CAM_RPIHQ
 	if (showFocus == 1)
 	{
 		sprintf(bufTemp, "Focus: %.2f", get_focus_measure(pRgb, myModeMeanSetting));
@@ -110,6 +112,7 @@ void Allsky::overlayText() {
 			Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
+#endif
 
   /**
   * Optionally display extra text which is read from the provided file. If the

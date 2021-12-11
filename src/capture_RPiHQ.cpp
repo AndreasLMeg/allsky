@@ -21,15 +21,6 @@
 
 using namespace std;
 
-#define KNRM "\x1B[0m"
-#define KRED "\x1B[31m"
-#define KGRN "\x1B[32m"
-#define KYEL "\x1B[33m"
-#define KBLU "\x1B[34m"
-#define KMAG "\x1B[35m"
-#define KCYN "\x1B[36m"
-#define KWHT "\x1B[37m"
-
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -47,7 +38,6 @@ int Allsky::linenumber = DEFAULT_LINENUMBER;
 int Allsky::fontname[] = { cv::FONT_HERSHEY_SIMPLEX,        cv::FONT_HERSHEY_PLAIN,         cv::FONT_HERSHEY_DUPLEX,
 					   cv::FONT_HERSHEY_COMPLEX,        cv::FONT_HERSHEY_TRIPLEX,       cv::FONT_HERSHEY_COMPLEX_SMALL,
 					   cv::FONT_HERSHEY_SCRIPT_SIMPLEX, cv::FONT_HERSHEY_SCRIPT_COMPLEX };
-// All the font settings apply to both day and night.
 int Allsky::fontnumber = DEFAULT_FONTNUMBER;
 int Allsky::fontcolor[3] = { 255, 0, 0 };
 int Allsky::smallFontcolor[3] = { 0, 0, 255 };
@@ -1589,10 +1579,10 @@ const char *locale         = DEFAULT_LOCALE;
 						Allsky::Log(2, "  > exposure: %d shutter: %1.4f s quickstart: %d\n", asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, Allsky::myModeMeanSetting.quickstart);
 					}
 
-					Allsky::overlayText();
+ 					int iYOffset = 0;
+					Allsky::overlayText(iYOffset);
 
-
-					//if (iYOffset > 0)	// if we added anything to overlay, write the file out
+					if (iYOffset > 0)	// if we added anything to overlay, write the file out
 					{
 						bool result = cv::imwrite(fileName, Allsky::pRgb, compression_params);
 						if (! result) printf("*** ERROR: Unable to write to '%s'\n", fileName);
