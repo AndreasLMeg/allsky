@@ -155,7 +155,6 @@ class Allsky {
 		static int nightDelay_ms;	// Delay in milliseconds.
 		static int daytimeCapture;  // are we capturing daytime pictures?
 		static int quality;
-		static const char *sType;		// displayed in output
 		static int asiNightBrightness;
 		static int asiDayBrightness;
 		static int asiNightAutoExposure;	// is it on or off for nighttime?
@@ -175,9 +174,21 @@ class Allsky {
 		static int asiRotation;
 		static int background;
 		static float saturation;
+		static bool is_libcamera;
+		static std::vector<int> compression_params;
+		static int min_brightness;					// what user enters on command line
+		static int max_brightness;
+		static int default_brightness;
+		static float min_saturation;				// produces black and white
+		static float max_saturation;
+		static float default_saturation;
+		//maybe for all ?
+		static bool endOfNight;
+
 
 	
 #else
+		static const char *sType;		// displayed in output
 		static int asiWBR;
 		static int asiWBB;
 		static bool use_new_exposure_algorithm;

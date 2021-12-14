@@ -17,7 +17,8 @@
 #include <stdarg.h>
 
 #include "allsky.h"
-
+#include "camera.h"
+#include "camera_rpihq.h"
 
 using namespace std;
 
@@ -85,7 +86,6 @@ double Allsky::asiWBB         = 2;
 double Allsky::asiNightGain   = 4.0;
 double Allsky::asiDayGain     = 1.0;
 const char *Allsky::locale = DEFAULT_LOCALE;
-const char *Allsky::sType;		// displayed in output
 int Allsky::width = DEFAULT_WIDTH;		
 int Allsky::height = DEFAULT_HEIGHT;	
 int Allsky::quality = NOT_SET;
@@ -110,165 +110,24 @@ int Allsky::nightBin  = DEFAULT_NIGHTBIN;
 int Allsky::showDetails = 0;
 int Allsky::gotSignal = 0;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 std::string Allsky::dayOrNight;
+int Allsky::min_brightness;					// what user enters on command line
+int Allsky::max_brightness;
+int Allsky::default_brightness;
+float Allsky::min_saturation;				// produces black and white
+float Allsky::max_saturation;
+float Allsky::default_saturation;
+bool Allsky::is_libcamera;
+std::vector<int> Allsky::compression_params;
+bool Allsky::endOfNight = false;
 
 
 bool bMain					= true;
-//ol bDisplay = false;
 int numExposures			= 0;	// how many valid pictures have we taken so far?
-float min_saturation;				// produces black and white
-float max_saturation;
-float default_saturation;
-int min_brightness;					// what user enters on command line
-int max_brightness;
-int default_brightness;
 
-//bool bSavingImg = false;
-
+CameraRPi myCam;
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
-
-
-
-/*
-std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
-	size_t start_pos = 0;
-	while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-		str.replace(start_pos, from.length(), to);
-		start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-	}
-	return str;
-}
-*/
-/*
-std::string exec(const char *cmd)
-{
-	std::tr1::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
-	if (!pipe)
-		return "ERROR";
-	char buffer[128];
-	std::string result = "";
-	while (!feof(pipe.get()))
-	{
-		if (fgets(buffer, 128, pipe.get()) != NULL)
-		{
-			result += buffer;
-		}
-	}
-	return result;
-}
-*/
-
-/*
-void *Display(void *params)
-{
-	cv::Mat *pImg = (cv::Mat *)params;
-	cvNamedWindow("video", 1);
-	while (bDisplay)
-	{
-		cvShowImage("video", pImg);
-		cvWaitKey(100);
-	}
-	cvDestroyWindow("video");
-	printf("Display thread over\n");
-	return (void *)0;
-}
-*/
-/*
-// Exit the program gracefully.
-void closeUp(int e)
-{
-	static int closingUp = 0;		// indicates if we're in the process of exiting.
-	// For whatever reason, we're sometimes called twice, but we should only execute once.
-	if (closingUp) return;
-
-	closingUp = 1;
-
-	// If we're not on a tty assume we were started by the service.
-	// Unfortunately we don't know if the service is stopping us, or restarting us.
-	// If it was restarting there'd be no reason to copy a notification image since it
-	// will soon be overwritten.  Since we don't know, always copy it.
-	if (Allsky::notificationImages) {
-		system("scripts/copy_notification_image.sh NotRunning &");
-		// Sleep to give it a chance to print any messages so they (hopefully) get printed
-		// before the one below.  This is only so it looks nicer in the log file.
-		sleep(3);
-	}
-
-	printf("     ***** Stopping AllSky *****\n");
-	exit(e);
-}
-
-void IntHandle(int i)
-{
-	bMain = false;
-	closeUp(0);
-}
-*/
-
-/*
-// Calculate if it is day or night
-void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
-{
-	char sunwaitCommand[128];
-
-	// Log data.  Don't need "exit" or "set".
-	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
-	dayOrNight = Allsky::exec(sunwaitCommand);
-
-	// RMu, I have no clue what this does...
-	dayOrNight.erase(std::remove(dayOrNight.begin(), dayOrNight.end(), '\n'), dayOrNight.end());
-
-	if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
-	{
-		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight.c_str());
-		Allsky::waitToFix(Allsky::debugText);
-		Allsky::closeUp(2);
-	}
-}
-
-// Calculate how long until nighttime.
-int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle)
-{
-		std::string t;
-		char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
-		sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", angle, latitude, longitude);
-		t = Allsky::exec(sunwaitCommand);
-		t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
-
-		int h=0, m=0, secs;
-		sscanf(t.c_str(), "%d:%d", &h, &m);
-		secs = (h*60*60) + (m*60);
-
-		char *now = Allsky::getTime("%H:%M");
-		int hNow=0, mNow=0, secsNow;
-		sscanf(now, "%d:%d", &hNow, &mNow);
-		secsNow = (hNow*60*60) + (mNow*60);
-
-		// Handle the (probably rare) case where nighttime is tomorrow
-		if (secsNow > secs)
-		{
-				return(secs + (60*60*24) - secsNow);
-		}
-		else
-		{
-				return(secs - secsNow);
-		}
-}
-*/
-
-/*
-// write value to log file
-void writeToLog(int val)
-{
-	std::ofstream outfile;
-
-	// Append value to the logfile
-	outfile.open("log.txt", std::ios_base::app);
-	outfile << val;
-	outfile << "\n";
-}
-*/
 
 // Build capture command to capture the image from the HQ camera
 int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera, cv::Mat *image)
@@ -544,22 +403,22 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 		command += " --vflip";
 	}
 
-	if (Allsky::saturation < min_saturation)
-		Allsky::saturation = min_saturation;
-	else if (Allsky::saturation > max_saturation)
-		Allsky::saturation = max_saturation;
+	if (Allsky::saturation < Allsky::min_saturation)
+		Allsky::saturation = Allsky::min_saturation;
+	else if (Allsky::saturation > Allsky::max_saturation)
+		Allsky::saturation = Allsky::max_saturation;
 	ss.str("");
 	ss << Allsky::saturation;
 	command += " --saturation "+ ss.str();
 
 	ss.str("");
-	if (Allsky::currentBrightness < min_brightness)
+	if (Allsky::currentBrightness < Allsky::min_brightness)
 	{
-		Allsky::currentBrightness = min_brightness;
+		Allsky::currentBrightness = Allsky::min_brightness;
 	}
-	else if (Allsky::currentBrightness > max_brightness)
+	else if (Allsky::currentBrightness > Allsky::max_brightness)
 	{
-		Allsky::currentBrightness = max_brightness;
+		Allsky::currentBrightness = Allsky::max_brightness;
 	}
 	if (libcamera)
 	{
@@ -690,533 +549,22 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 	return(ret);
 }
 
-/*
-// Simple function to make flags easier to read for humans.
-char const *yes = "1 (yes)";
-char const *no  = "0 (no)";
-char const *yesNo(int flag)
-{
-		if (flag)
-				return(yes);
-		else
-				return(no);
-}
-*/
-
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
 
 int main(int argc, char *argv[])
 {
-	// is_libcamera is only temporary so do a hack to determine if we should use raspistill or libcamera.
-	// We need to know its value before setting other variables.
-	bool is_libcamera;	// are we using libcamera or raspistill?
-	if (argc > 2 && strcmp(argv[1], "-cmd") == 0 && strcmp(argv[2], "libcamera") == 0)
-		is_libcamera = true;
-	else
-		is_libcamera = false;
-
-	Allsky::tty = isatty(fileno(stdout)) ? true : false;
-	signal(SIGINT, Allsky::IntHandle);
-	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
-
-
 
 	int asiDayExposure_us = 32;
 	int asiNightExposure_us= 60 * US_IN_SEC;
 	int asiDayAutoGain    = 0;
 	int currentDelay_ms   = NOT_SET;
-	if (is_libcamera)
-	{
-		default_saturation= 1.0;
-		Allsky::saturation        = default_saturation;
-		min_saturation    = 0.0;
-		max_saturation    = 2.0;
-
-		default_brightness= DEFAULT_BRIGHTNESS_LIBCAMERA;
-		Allsky::asiDayBrightness  = default_brightness;
-		Allsky::asiNightBrightness= default_brightness;
-		min_brightness    = -100;
-		max_brightness    = 100;
-	}
-	else
-	{
-		default_saturation= 0.0;
-		Allsky::saturation        = default_saturation;
-		min_saturation    = -100.0;
-		max_saturation    = 100.0;
-
-		default_brightness= DEFAULT_BRIGHTNESS;
-		Allsky::asiDayBrightness  = default_brightness;
-		Allsky::asiNightBrightness= default_brightness;
-		min_brightness    = 0;
-		max_brightness    = 100;
-	}
-	bool endOfNight    = false;
 	int retCode;
-	
 
 	//-------------------------------------------------------------------------------------------------------
 	Allsky::init(argc, argv);
 	//-------------------------------------------------------------------------------------------------------
-/*
-	setlinebuf(stdout);   // Line buffer output so entries appear in the log immediately.
-	if (setlocale(LC_NUMERIC, locale) == NULL)
-		printf("*** WARNING: Could not set locale to %s ***\n", locale);
 
-	printf("\n");
-	printf("%s ********************************************\n", c(KGRN));
-	printf("%s *** Allsky Camera Software v0.8.1 | 2021 ***\n", c(KGRN));
-	printf("%s ********************************************\n\n", c(KGRN));
-	printf("\%sCapture images of the sky with a Raspberry Pi and a RPi HQ camera\n", c(KGRN));
-	printf("\n");
-	printf("%sAdd -h or --help for available options\n", c(KYEL));
-	printf("\n");
-	printf("\%sAuthor: ", c(KNRM));
-	printf("Thomas Jacquin - <jacquin.thomas@gmail.com>\n\n");
-	printf("\%sContributors:\n", c(KNRM));
-	printf("-Knut Olav Klo\n");
-	printf("-Daniel Johnsen\n");
-	printf("-Robert Wagner\n");
-	printf("-Michael J. Kidd - <linuxkidd@gmail.com>\n");
-	printf("-Rob Musquetier\n");	
-	printf("-Eric Claeys\n");
-	printf("\n");
-
-	// The newer "allsky.sh" puts quotes around arguments so we can have spaces in them.
-	// If you are running the old allsky.sh, set this to false:
-	bool argumentsQuoted = true;
-
-	if (argc > 1)
-	{
-		Allsky::Log(4, "Found %d parameters...\n", argc - 1);
-
-		for (i = 1; i <= argc - 1; i++)
-		{
-			Allsky::Log(4, "Processing argument %2d: %s\n", i, argv[i]);
-
-			if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-			{
-				help = 1;
-			}
-			else if (strcmp(argv[i], "-cmd") == 0)
-			{
-				is_libcamera = strcmp(argv[i+1], "libcamera") == 0 ? true : false;
-			}
-			else if (strcmp(argv[i], "-locale") == 0)
-			{
-				locale = argv[++i];
-			}
-			else if (strcmp(argv[i], "-width") == 0)
-			{
-				width = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-height") == 0)
-			{
-				height = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-type") == 0)
-			{
-				Allsky::Image_type = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-quality") == 0)
-			{
-				quality = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-focus") == 0 || strcmp(argv[i], "-autofocus") == 0)
-			{
-				Allsky::showFocus = atoi(argv[++i]);
-			}
-			// check for old names as well - the "||" part is the old name
-			else if (strcmp(argv[i], "-dayexposure") == 0)
-			{
-				asiDayExposure_us = atoi(argv[++i]) * US_IN_MS;
-			}
-			else if (strcmp(argv[i], "-nightexposure") == 0 || strcmp(argv[i], "-exposure") == 0)
-			{
-				asiNightExposure_us = atoi(argv[++i]) * US_IN_MS;
-			}
-
-			else if (strcmp(argv[i], "-dayautoexposure") == 0)
-			{
-				asiDayAutoExposure = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-nightautoexposure") == 0 || strcmp(argv[i], "-autoexposure") == 0)
-			{
-				asiNightAutoExposure = atoi(argv[++i]);
-			}
-
-			else if (strcmp(argv[i], "-dayautogain") == 0)
-			{
-				asiDayAutoGain = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-nightautogain") == 0 || strcmp(argv[i], "-autogain") == 0)
-			{
-				asiNightAutoGain = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-daygain") == 0)
-			{
-				asiDayGain = atof(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-nightgain") == 0 || strcmp(argv[i], "-gain") == 0)
-			{
-				asiNightGain = atof(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-saturation") == 0)
-			{
-				saturation = atof(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-brightness") == 0)// old "-brightness" applied to day and night
-			{
-				asiDayBrightness = atoi(argv[++i]);
-				Allsky::asiNightBrightness = asiDayBrightness;
-			}
-			else if (strcmp(argv[i], "-daybrightness") == 0)
-			{
-				asiDayBrightness = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-nightbrightness") == 0)
-			{
-				Allsky::asiNightBrightness = atoi(argv[++i]);
-			}
- 			else if (strcmp(argv[i], "-daybin") == 0)
-			{
-				dayBin = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-nightbin") == 0 || strcmp(argv[i], "-bin") == 0)
-			{
-				nightBin = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-daydelay") == 0 || strcmp(argv[i], "-daytimeDelay") == 0)
-			{
-				dayDelay_ms = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-nightdelay") == 0 || strcmp(argv[i], "-delay") == 0)
-			{
-				nightDelay_ms = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-awb") == 0)
-			{
-				asiAutoAWB = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-wbr") == 0)
-			{
-				asiWBR = atof(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-wbb") == 0)
-			{
-				asiWBB = atof(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-mean-value") == 0)
-			{
-				Allsky::myModeMeanSetting.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
-				Allsky::myModeMeanSetting.mode_mean = true;
-				i++;
-			}
-			else if (strcmp(argv[i], "-mean-threshold") == 0)
-			{
-				Allsky::myModeMeanSetting.mean_threshold = std::min(0.1,std::max(0.0001,atof(argv[i + 1])));
-				Allsky::myModeMeanSetting.mode_mean = true;
-				i++;
-			}
-			else if (strcmp(argv[i], "-mean-p0") == 0)
-			{
-				Allsky::myModeMeanSetting.mean_p0 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				Allsky::myModeMeanSetting.mode_mean = true;
-				i++;
-			}
-			else if (strcmp(argv[i], "-mean-p1") == 0)
-			{
-				Allsky::myModeMeanSetting.mean_p1 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				Allsky::myModeMeanSetting.mode_mean = true;
-				i++;
-			}
-			else if (strcmp(argv[i], "-mean-p2") == 0)
-			{
-				Allsky::myModeMeanSetting.mean_p2 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				Allsky::myModeMeanSetting.mode_mean = true;
-				i++;
-			}
-
-			// Check for text parameter
-			else if (strcmp(argv[i], "-text") == 0)
-			{
-				if (argumentsQuoted)
-				{
-					Allsky::ImgText = argv[++i];
-				}
-				else
-				{
-					// Get first param
-					char *param = argv[i + 1];
-
-					// Space character
-					const char *space = " ";
-
-					// Temporary text buffer
-					char buffer[1024]; // <- danger, only storage for 1024 characters.
-
-					// First word flag
-					int j = 0;
-
-					// Loop while next parameter doesn't start with a - character
-					while (strncmp(param, "-", 1) != 0)
-					{
-						// Copy Text into buffer
-						strncpy(buffer, Allsky::ImgText, sizeof(buffer));
-
-						// Add a space after each word (skip for first word)
-						if (j)
-							strncat(buffer, space, sizeof(buffer));
-
-						// Add parameter
-						strncat(buffer, param, sizeof(buffer));
-
-						// Copy buffer into ImgText variable
-						Allsky::ImgText = buffer;
-
-						// Flag first word is entered
-						j = 1;
-
-						// Get next parameter
-						param = argv[++i];
-					}
-				}
-			}
-			else if (strcmp(argv[i], "-extratext") == 0)
-			{
-				Allsky::ImgExtraText = argv[++i];
-			}
-			else if (strcmp(argv[i], "-extratextage") == 0)
-			{
-				Allsky::extraFileAge = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-textlineheight") == 0)
-			{
-				Allsky::iTextLineHeight = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-textx") == 0)
-			{
-				Allsky::iTextX = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-texty") == 0)
-			{
-				Allsky::iTextY = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-fontname") == 0)
-			{
-				Allsky::fontnumber = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-background") == 0)
-			{
-				background = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-fontcolor") == 0)
-			{
-				sscanf(argv[++i], "%d %d %d", &Allsky::fontcolor[0], &Allsky::fontcolor[1], &Allsky::fontcolor[2]);
-			}
-			else if (strcmp(argv[i], "-smallfontcolor") == 0)
-			{
-				if (argumentsQuoted)
-				{
-					sscanf(argv[++i], "%d %d %d", &Allsky::smallFontcolor[0], &Allsky::smallFontcolor[1], &Allsky::smallFontcolor[2]);
-				}
-				else
-				{
-					Allsky::smallFontcolor[0] = atoi(argv[++i]);
-					Allsky::smallFontcolor[1] = atoi(argv[++i]);
-					Allsky::smallFontcolor[2] = atoi(argv[++i]);
-				}
-			}
-			else if (strcmp(argv[i], "-fonttype") == 0)
-			{
-				Allsky::linenumber = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-fontsize") == 0)
-			{
-				Allsky::fontsize = atof(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-fontline") == 0)
-			{
-				Allsky::linewidth = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-outlinefont") == 0)
-			{
-				Allsky::outlinefont = atoi(argv[++i]);
-				if (Allsky::outlinefont != 0)
-					Allsky::outlinefont = 1;
-			}
-			else if (strcmp(argv[i], "-rotation") == 0)
-			{
-				asiRotation = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-flip") == 0)
-			{
-				asiFlip = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-filename") == 0)
-			{
-				fileName = (argv[++i]);
-			}
-			else if (strcmp(argv[i], "-latitude") == 0)
-			{
-				latitude = argv[++i];
-			}
-			else if (strcmp(argv[i], "-longitude") == 0)
-			{
-				longitude = argv[++i];
-			}
-			else if (strcmp(argv[i], "-angle") == 0)
-			{
-				angle = argv[++i];
-			}
-			else if (strcmp(argv[i], "-preview") == 0)
-			{
-				preview = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-debuglevel") == 0)
-			{
-				Allsky::debugLevel = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-showTime") == 0 || strcmp(argv[i], "-time") == 0)
-			{
-				Allsky::showTime = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-timeformat") == 0)
-			{
-				timeFormat = argv[++i];
-			}
-			else if (strcmp(argv[i], "-darkframe") == 0)
-			{
-				darkframe = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-showExposure") == 0)
-			{
-				Allsky::showExposure = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-showGain") == 0)
-			{
-				Allsky::showGain = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-showBrightness") == 0)
-			{
-				Allsky::showBrightness = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-showMean") == 0)
-			{
-				Allsky::showMean = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-showFocus") == 0)
-			{
-				Allsky::showFocus = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-daytime") == 0)
-			{
-				daytimeCapture = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-notificationimages") == 0)
-			{
-				Allsky::notificationImages = atoi(argv[++i]);
-			}
-			else if (strcmp(argv[i], "-tty") == 0)
-			{
-				Allsky::tty = atoi(argv[++i]) ? true : false;
-			}
-		}
-	}
-
-	if (help == 1)
-	{
-		printf("%sUsage:\n", c(KRED));
-		printf(" ./capture_RPiHQ -width 640 -height 480 -nightexposure 5000000 -nightbin 1 -filename Lake-Laberge.JPG\n\n");
-		printf("%s", c(KNRM));
-
-		printf("%sAvailable Arguments:\n", c(KYEL));
-		printf(" -cmd                               - Default = raspistill - cmd being used\n");
-		printf(" -width                             - Default = Camera Max Width\n");
-		printf(" -height                            - Default = Camera Max Height\n");
-		printf(" -nightexposure                     - Default = 5000000 - Time in us (equals to 5 sec)\n");
-		printf(" -nightautoexposure                 - Default = 0 - Set to 1 to enable auto Exposure\n");
-		printf(" -nightgain                         - Default = 4.0 (1.0 - 16.0)\n");
-		printf(" -nightautogain                     - Default = 0 - Set to 1 to enable auto Gain at night\n");
-		printf(" -saturation                        - Default = %.1f (%.1f to %.1f)\n", default_saturation, min_saturation, max_saturation);
-		printf(" -brightness                        - Default = %d (%d to  %d)\n", default_brightness, min_brightness, max_brightness);
-		printf(" -awb                               - Default = 0 - Auto White Balance (0 = off)\n");
-		printf(" -wbr                               - Default = 2 - White Balance Red  (0 = off)\n");
-		printf(" -wbb                               - Default = 2 - White Balance Blue (0 = off)\n");
-		printf(" -daybin                            - Default = 1 - binning OFF (1x1), 2 = 2x2, 3 = 3x3 binning\n");
-		printf(" -nightbin                          - Default = 1 - same as -daybin but for nighttime\n");
-		printf(" -nightdelay                        - Default = 10 ms - Delay between nighttime images - %d = 1 sec.\n", MS_IN_SEC);
-		printf(" -daydelay                          - Default = 5000 ms - Delay between daytime images - 5000 = 5 sec.\n");
-		printf(" -type = Image Type                 - Default = 0 - 0 = RAW8,  1 = RGB24,  2 = RAW16\n");
-		printf(" -quality                           - Default = 70%%, 0%% (poor) 100%% (perfect)\n");
-		printf(" -filename                          - Default = image.jpg\n");
-		if (is_libcamera)
-			printf(" -rotation                          - Default = 0 degrees - Options 0 or 180\n");
-		else
-			printf(" -rotation                          - Default = 0 degrees - Options 0, 90, 180 or 270\n");
-		printf(" -flip                              - Default = 0 - 0 = Orig, 1 = Horiz, 2 = Verti, 3 = Both\n");
-		printf("\n");
-		printf(" -text                              - Default =      - Character/Text Overlay. Use Quotes.  Ex. -c "
-				 "\"Text Overlay\"\n");
-		printf(" -textx                             - Default = 15   - Text Placement Horizontal from LEFT in Pixels\n");
-		printf(" -texty = Text Y                    - Default = 25   - Text Placement Vertical from TOP in Pixels\n");
-		printf(" -fontname = Font Name              - Default = 0    - Font Types (0-7), Ex. 0 = simplex, 4 = triplex, 7 = script\n");
-		printf(" -fontcolor = Font Color            - Default = 255  - Text gray scale color  (0 - 255)\n");
-		printf(" -background= Font Color            - Default = 0  - Backgroud gray scale color (0 - 255)\n");
-		printf(" -smallfontcolor = Small Font Color - Default = 0 0 255  - Text red (BGR)\n");
-		printf(" -fonttype = Font Type              - Default = 0    - Font Line Type,(0-2), 0 = AA, 1 = 8, 2 = 4\n");
-		printf(" -fontsize                          - Default = 32  - Text Font Size (range 6 - 160, 32 default)\n");
-		printf(" -fontline                          - Default = 1    - Text Font Line Thickness\n");
-		printf("\n");
-		printf("\n");
-		printf(" -latitude                          - Default = 60.7N (Whitehorse)   - Latitude of the camera.\n");
-		printf(" -longitude                         - Default = 135.05W (Whitehorse) - Longitude of the camera\n");
-		printf(" -angle                             - Default = -6 - Angle of the sun below the horizon. -6=civil "
-				 "twilight, -12=nautical twilight, -18=astronomical twilight\n");
-		printf("\n");
-		printf(" -preview                           - set to 1 to preview the captured images. Only works with a Desktop Environment\n");
-		printf(" -darkframe                         - Set to 1 to grab dark frame and cover your camera\n");
-		printf(" -time                              - Set to 1 to display the time on the image.\n");
-		printf(" -focus                             - Set to 1 to display a focus metric on the image.\n");
-		printf(" -notificationimages                - Set to 1 to enable notification images, for example, 'Camera is off during day'.\n");
-		printf(" -debuglevel                        - Default = 0. Set to 1,2 or 3 for more debugging information.\n");
-
-		printf(" -mean-value                        - Default = 0.3 Set mean-value and activates exposure control\n");
-		printf("                                      NOTE: Auto-Gain should be On in the WebUI\n");
-		printf("                                            -autoexposure should be set in config.sh:\n");
-		printf("                                            CAPTURE_EXTRA_PARAMETERS='-mean-value 0.3 -autoexposure 1'\n"); 
-		printf(" -mean-threshold                    - Default = 0.01 Set mean-value and activates exposure control\n");
-		printf(" -mean-p0                           - Default = 5.0, be careful changing these values, ExposureChange (Steps) = p0 + p1 * diff + (p2*diff)^2\n");
-		printf(" -mean-p1                           - Default = 20.0\n");
-		printf(" -mean-p2                           - Default = 45.0\n");
-
-		printf("%s", c(KNRM));
-		exit(0);
-	}
-*/
-
-	int iMaxWidth = 4096;
-	int iMaxHeight = 3040;
-	double pixelSize = 1.55;
-	if (Allsky::width == 0 || Allsky::height == 0)
-	{
-		Allsky::width  = iMaxWidth;
-		Allsky::height = iMaxHeight;
-	}
-	Allsky::originalWidth = Allsky::width;
-	Allsky::originalHeight = Allsky::height;
-
-	printf(" Camera: Raspberry Pi HQ camera\n");
-	printf("  - Resolution: %dx%d\n", iMaxWidth, iMaxHeight);
-	printf("  - Pixel Size: %1.2fmicrons\n", pixelSize);
-	printf("  - Supported Bins: 1x, 2x and 3x\n");
-
-	std::vector<int> compression_params;
-	compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
-	compression_params.push_back(9);
-	compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
-	compression_params.push_back(95);
 
 	if (Allsky::taking_dark_frames)
 	{
@@ -1235,65 +583,6 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------------------------------------------
 	Allsky::info();
 	//-------------------------------------------------------------------------------------------------------
-
-/*
-	printf("%s", c(KGRN));
-	printf("\nCapture Settings:\n");
-	printf(" Command: %s\n", is_libcamera ? "libcamera-still" : "raspistill");
-	printf(" Resolution (before any binning): %dx%d\n", width, height);
-	printf(" Quality: %d\n", quality);
-		printf(" Daytime capture: %s\n", yesNo(daytimeCapture));
-	printf(" Exposure (night): %1.0fms\n", round(asiNightExposure_us / US_IN_MS));
-	printf(" Auto Exposure (night): %s\n", yesNo(asiNightAutoExposure));
-	printf(" Gain (night): %1.2f\n", asiNightGain);
-	printf(" Auto Gain (night): %s\n", yesNo(asiNightAutoGain));
-	printf(" Brightness (day): %d\n", asiDayBrightness);
-	printf(" Brightness (night): %d\n", asiNightBrightness);
-	printf(" Saturation: %.1f\n", saturation);
-	printf(" Auto White Balance: %s\n", yesNo(asiAutoAWB));
-	printf(" WB Red: %1.2f\n", asiWBR);
-	printf(" WB Blue: %1.2f\n", asiWBB);
-	printf(" Binning (day): %d\n", dayBin);
-	printf(" Binning (night): %d\n", nightBin);
-	printf(" Delay (day): %dms\n", dayDelay_ms);
-	printf(" Delay (night): %dms\n", nightDelay_ms);
-	printf(" Text Overlay: %s\n", Allsky::ImgText);
-	printf(" Text Position: %dpx left, %dpx top\n", Allsky::iTextX, Allsky::iTextY);
-	printf(" Font Name:  %d\n", Allsky::fontname[Allsky::fontnumber]);
-	printf(" Font Color: %d, %d, %d\n", Allsky::fontcolor[0], Allsky::fontcolor[1], Allsky::fontcolor[2]);
-	printf(" Font Background Color: %d\n", background);
-	printf(" Small Font Color: %d, %d, %d\n", Allsky::smallFontcolor[0], Allsky::smallFontcolor[1], Allsky::smallFontcolor[2]);
-	printf(" Font Line Type: %d\n", Allsky::linetype[Allsky::linenumber]);
-	printf(" Font Size: %1.1f\n", Allsky::fontsize);
-	printf(" Font Line: %d\n", Allsky::linewidth);
-	printf(" Outline Font : %s\n", yesNo(Allsky::outlinefont));
-	printf(" Rotation: %d\n", asiRotation);
-	printf(" Flip Image: %d\n", asiFlip);
-	printf(" Filename: %s\n", fileName);
-	printf(" Latitude: %s\n", latitude);
-	printf(" Longitude: %s\n", longitude);
-	printf(" Sun Elevation: %s\n", angle);
-	printf(" Locale: %s\n", locale);
-	printf(" Notification Images: %s\n", yesNo(Allsky::notificationImages));
-	printf(" Show Time: %s (format: %s)\n", yesNo(Allsky::showTime), timeFormat);
-	printf(" Show Exposure: %s\n", yesNo(Allsky::showExposure));
-	printf(" Show Gain: %s\n", yesNo(Allsky::showGain));
-	printf(" Show Brightness: %s\n", yesNo(Allsky::showBrightness));
-	printf(" Show Focus Metric: %s\n", yesNo(Allsky::showFocus));
-	printf(" Preview: %s\n", yesNo(preview));
-	printf(" Taking Dark Frames: %s\n", yesNo(darkframe));
-	printf(" Debug Level: %d\n", Allsky::debugLevel);
-	printf(" On TTY: %s\n", Allsky::tty ? "Yes" : "No");
-	printf(" Mode Mean: %s\n", yesNo(Allsky::myModeMeanSetting.mode_mean));
-	if (Allsky::myModeMeanSetting.mode_mean) {
-		printf("    Mean Value: %1.3f\n", Allsky::myModeMeanSetting.mean_value);
-		printf("    Threshold: %1.3f\n", Allsky::myModeMeanSetting.mean_threshold);
-		printf("    p0: %1.3f\n", Allsky::myModeMeanSetting.mean_p0);
-		printf("    p1: %1.3f\n", Allsky::myModeMeanSetting.mean_p1);
-		printf("    p2: %1.3f\n", Allsky::myModeMeanSetting.mean_p2);
-	}
-	printf("%s", c(KNRM));
-*/
 
 	// Initialization
 	int originalITextX = Allsky::iTextX;
@@ -1342,12 +631,12 @@ int main(int argc, char *argv[])
 
 		else if (Allsky::dayOrNight == "DAY")
 		{
-			if (endOfNight == true)		// Execute end of night script
+			if (Allsky::endOfNight == true)		// Execute end of night script
 			{
 				system("scripts/endOfNight.sh &");
 
 				// Reset end of night indicator
-				endOfNight = false;
+				Allsky::endOfNight = false;
 
 				displayedNoDaytimeMsg = 0;
 			}
@@ -1453,7 +742,7 @@ int main(int argc, char *argv[])
 			printf("Stop the allsky service to end this process.\n\n");
 
 		// Wait for switch day time -> night time or night time -> day time
-		while (bMain && lastDayOrNight == Allsky::dayOrNight)
+		while (bMain && (lastDayOrNight == Allsky::dayOrNight))
 		{
 			// date/time is added to many log entries to make it easier to associate them
 			// with an image (which has the date/time in the filename).
@@ -1468,8 +757,9 @@ int main(int argc, char *argv[])
 			if (Allsky::showTime == 1)
 				sprintf(Allsky::bufTime, "%s", Allsky::formatTime(t, Allsky::timeFormat));
 
+			myCam.setup();
 			// Capture and save image
-			retCode = RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, is_libcamera, &Allsky::pRgb);
+			retCode = RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, Allsky::is_libcamera, &Allsky::pRgb);
 			if (retCode == 0)
 			{
 				numExposures++;
@@ -1493,7 +783,7 @@ int main(int argc, char *argv[])
 
 					if (iYOffset > 0)	// if we added anything to overlay, write the file out
 					{
-						bool result = cv::imwrite(Allsky::fileName, Allsky::pRgb, compression_params);
+						bool result = cv::imwrite(Allsky::fileName, Allsky::pRgb, Allsky::compression_params);
 						if (! result) printf("*** ERROR: Unable to write to '%s'\n", Allsky::fileName);
 					}
 				}
@@ -1542,7 +832,7 @@ int main(int argc, char *argv[])
 		if (lastDayOrNight == "NIGHT")
 		{
 			// Flag end of night processing is needed
-			endOfNight = true;
+			Allsky::endOfNight = true;
 		}
 	}
 

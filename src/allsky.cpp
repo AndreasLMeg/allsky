@@ -294,9 +294,11 @@ void Allsky::waitToFix(char const *msg)
 
 void Allsky::init(int argc, char *argv[])
 {
-	int help = 0;
-	int i;
 
+	Allsky::tty = isatty(fileno(stdout)) ? true : false;
+
+	signal(SIGINT, Allsky::IntHandle);
+	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
 
 	setlinebuf(stdout);   // Line buffer output so entries appear in the log immediately.
 	if (setlocale(LC_NUMERIC, locale) == NULL)
@@ -320,6 +322,10 @@ void Allsky::init(int argc, char *argv[])
 	printf(" -Eric Claeys\n");
 	printf("\n");
 
+	//parameter
+	int help = 0;
+	int i;
+
 	if (argc > 1)
 	{
 		// Many of the argument names changed to allow day and night values.
@@ -336,6 +342,12 @@ void Allsky::init(int argc, char *argv[])
 				locale = argv[++i];
 			}
 #ifdef CAM_RPIHQ
+			// is_libcamera is only temporary so do a hack to determine if we should use raspistill or libcamera.
+			// We need to know its value before setting other variables.
+			else if (strcmp(argv[i], "-cmd") == 0)
+			{
+				is_libcamera = (strcmp(argv[++i], "libcamera") == 0);
+			}
 			else if (strcmp(argv[i], "-rotation") == 0)
 			{
 				asiRotation = atoi(argv[++i]);
@@ -801,6 +813,64 @@ void Allsky::init(int argc, char *argv[])
 		printf("%s", c(KNRM));
 		exit(0);
 	}
+
+	//some other settings
+	// for all
+#ifdef CAM_RPIHQ
+	// for RPiHQ
+	if (is_libcamera)
+	{
+		default_saturation = 1.0;
+		saturation = default_saturation;
+		min_saturation = 0.0;
+		max_saturation = 2.0;
+
+		default_brightness = DEFAULT_BRIGHTNESS_LIBCAMERA;
+		asiDayBrightness = default_brightness;
+		asiNightBrightness = default_brightness;
+		min_brightness = -100;
+		max_brightness = 100;
+	}
+	else
+	{
+		default_saturation= 0.0;
+		saturation        = default_saturation;
+		min_saturation    = -100.0;
+		max_saturation    = 100.0;
+
+		default_brightness= DEFAULT_BRIGHTNESS;
+		asiDayBrightness  = default_brightness;
+		asiNightBrightness= default_brightness;
+		min_brightness    = 0;
+		max_brightness    = 100;
+	}
+
+	int iMaxWidth = 4096;
+	int iMaxHeight = 3040;
+	double pixelSize = 1.55;
+	if (Allsky::width == 0 || Allsky::height == 0)
+	{
+		Allsky::width  = iMaxWidth;
+		Allsky::height = iMaxHeight;
+	}
+	Allsky::originalWidth = Allsky::width;
+	Allsky::originalHeight = Allsky::height;
+
+	printf(" Camera: Raspberry Pi HQ camera\n");
+	printf("  - Resolution: %dx%d\n", iMaxWidth, iMaxHeight);
+	printf("  - Pixel Size: %1.2fmicrons\n", pixelSize);
+	printf("  - Supported Bins: 1x, 2x and 3x\n");
+
+	std::vector<int> compression_params;
+	compression_params.push_back(cv::IMWRITE_PNG_COMPRESSION);
+	compression_params.push_back(9);
+	compression_params.push_back(cv::IMWRITE_JPEG_QUALITY);
+	compression_params.push_back(95);
+
+#else
+	// other = ZWO
+#endif
+
 }
 
 
@@ -827,8 +897,8 @@ void Allsky::info(void)
 	printf(" Exposure (night): %'1.0fms, Auto: %s\n", round(asi_night_exposure_us / US_IN_MS), yesNo(asiNightAutoExposure));
 	printf(" Exposure (day): %'1.3fms, Auto: %s\n", (float)asi_day_exposure_us / US_IN_MS, yesNo(asiDayAutoExposure));
 	printf(" Gamma: %d\n", asiGamma);
-#endif
 	printf(" Image Type: %s\n", sType);
+#endif
 	printf(" Resolution (before any binning): %dx%d\n", width, height);
 	printf(" Quality: %d\n", quality);
 	printf(" Daytime capture: %s\n", yesNo(daytimeCapture));
