@@ -174,6 +174,19 @@ void Allsky::overlayText(int &iYOffset) {
 							linetype[linenumber], fontname[fontnumber],
 							smallFontcolor, Image_type, outlinefont);
 						iYOffset += iTextLineHeight;
+
+						//freetext
+						int fontHeight = 60;
+						int thickness = -1;
+						int linestyle = 8;
+						cv::Point textOrg(iTextX, iTextY + (iYOffset / currentBin));
+
+						cv::Ptr<cv::freetype::FreeType2> ft2;
+						ft2 = cv::freetype::createFreeType2();
+						ft2->loadFontData( "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 0 );
+						ft2->putText(pRgb, line, textOrg, fontHeight,
+               cv::Scalar::all(255), thickness, linestyle, true );
+						iYOffset += iTextLineHeight;
 					}
 				}
 				fclose(fp);
