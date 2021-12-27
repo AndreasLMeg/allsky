@@ -124,7 +124,7 @@ capture:capture.cpp
 
 capture_RPiHQ:capture_RPiHQ.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC)  $@.cpp camera_rpihq.cpp allsky.cpp mode_RPiHQ_mean.cpp -o $@ $(CFLAGS) -DCAM_RPIHQ $(OPENCV)
+	@$(CC)  $@.cpp log.cpp camera_rpihq.cpp allsky.cpp mode_RPiHQ_mean.cpp -o $@ $(CFLAGS) -DCAM_RPIHQ $(OPENCV)
 	@echo `date +%F\ %R:%S` Done.
 
 keogram:keogram.cpp

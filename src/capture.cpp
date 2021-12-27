@@ -158,7 +158,7 @@ bool bSavingImg = false;
 ASI_CONTROL_CAPS ControlCaps;
 int numErrors              = 0;	// Number of errors in a row.
 int iNumOfCtrl             = 0;
-int numExposures           = 0;	// how many valid pictures have we taken so far?
+//int numExposures           = 0;	// how many valid pictures have we taken so far?
 long camera_max_autoexposure_us= NOT_SET;	// camera's max auto-exposure
 long camera_min_exposure_us= 100;	// camera's minimum exposure
 long current_exposure_us   = NOT_SET;
@@ -191,7 +191,7 @@ ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_
 		ret = ASIGetControlCaps(CamNum, i, &ControlCaps);
 		if (ret != ASI_SUCCESS)
 		{
-			Allsky::Log(0, "WARNING: ASIGetControlCaps() for control %d failed: %s\n", i, getRetCode(ret));
+			Allsky::Warning("WARNING: ASIGetControlCaps() for control %d failed: %s\n", i, getRetCode(ret));
 			return(ret);
 		}
 
@@ -216,7 +216,7 @@ ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_
 				ret = ASISetControlValue(CamNum, control, value, makeAuto);
 				if (ret != ASI_SUCCESS)
 				{
-					Allsky::Log(0, "WARNING: ASISetControlCaps() for control %d, value=%ld failed: %s\n", control, value, getRetCode(ret));
+					Allsky::Warning("WARNING: ASISetControlCaps() for control %d, value=%ld failed: %s\n", control, value, getRetCode(ret));
 					return(ret);
 				}
 			} else {
@@ -226,7 +226,7 @@ ASI_ERROR_CODE setControl(int CamNum, ASI_CONTROL_TYPE control, long value, ASI_
 			return ret;
 		}
 	}
-	Allsky::Log(3, "NOTICE: Camera does not support ControlCap # %d; not setting to %ld.\n", control, value);
+	Allsky::Debug("NOTICE: Camera does not support ControlCap # %d; not setting to %ld.\n", control, value);
 	return ASI_ERROR_INVALID_CONTROL_TYPE;
 }
 
@@ -294,7 +294,7 @@ void *SaveImgThd(void *para)
 
 		bSavingImg = true;
 
-		Allsky::Log(1, "  > Saving %s image '%s'\n", Allsky::taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), Allsky::fileName);
+		Allsky::Warning("  > Saving %s image '%s'\n", Allsky::taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), Allsky::fileName);
 		int64 st, et;
 
 		bool result = false;
@@ -333,7 +333,7 @@ void *SaveImgThd(void *para)
 
 		} else {
 			// This can happen if the program is closed before the first picture.
-			Allsky::Log(2, "----- SaveImgThd(): pRgb.data is null\n");
+			Allsky::Info("----- SaveImgThd(): pRgb.data is null\n");
 		}
 		bSavingImg = false;
 
@@ -349,7 +349,7 @@ void *SaveImgThd(void *para)
 			   x = "  > *****\n";	// indicate when it takes a REALLY long time to save
 			else
 			   x = "";
-			Allsky::Log(4, "%s  > Image took %'.1f ms to save (average %'.1f ms).\n%s", x, diff, total_time_ms / total_saves, x);
+			Allsky::Trace("%s  > Image took %'.1f ms to save (average %'.1f ms).\n%s", x, diff, total_time_ms / total_saves, x);
 		}
 
 		pthread_mutex_unlock(&Allsky::mtx_SaveImg);
@@ -526,14 +526,14 @@ static void flush_buffered_image(int cameraId, void *buf, size_t size)
 long us;
 ASI_BOOL b;
 ASIGetControlValue(cameraId, ASI_EXPOSURE, &us, &b);
-Allsky::Log(3, "  > [Cleared buffer frame, next exposure: %'ld, auto=%s]\n", us, b==ASI_TRUE ? "yes" : "no");
+Allsky::Debug("  > [Cleared buffer frame, next exposure: %'ld, auto=%s]\n", us, b==ASI_TRUE ? "yes" : "no");
 	}
 
 // xxxxxxxxxx For now, display message above for each one rather than a summary.
 return;
 	if (num_cleared > 0)
 	{
-		Allsky::Log(3, "  > [Cleared %d buffer frame%s]\n", num_cleared, num_cleared > 1 ? "s" : "");
+		Allsky::Debug("  > [Cleared %d buffer frame%s]\n", num_cleared, num_cleared > 1 ? "s" : "");
 	}
 }
 
@@ -570,13 +570,13 @@ ASI_ERROR_CODE takeOneExposure(
 		// If we call length_in_units() twice in same command line they both return the last value.
 		char x[100];
 		snprintf(x, sizeof(x), "%s", Allsky::length_in_units(exposure_time_us, true));
-		Allsky::Log(0, "*** WARNING: exposure_time_us requested [%s] > current_max_autoexposure_us [%s]\n", x, Allsky::length_in_units(Allsky::current_max_autoexposure_us, true));
+		Allsky::Warning("*** WARNING: exposure_time_us requested [%s] > current_max_autoexposure_us [%s]\n", x, Allsky::length_in_units(Allsky::current_max_autoexposure_us, true));
 		exposure_time_us = Allsky::current_max_autoexposure_us;
 	}
 
 	// This debug message isn't typcally needed since we already displayed a message about
 	// starting a new exposure, and below we display the result when the exposure is done.
-	Allsky::Log(4, "  > %s to %s, timeout: %'ld ms\n",
+	Allsky::Trace("  > %s to %s, timeout: %'ld ms\n",
 		wasAutoExposure == ASI_TRUE ? "Camera set auto-exposure" : "Exposure set",
 		Allsky::length_in_units(exposure_time_us, true), timeout);
 
@@ -595,7 +595,7 @@ ASI_ERROR_CODE takeOneExposure(
 		status = ASIGetVideoData(cameraId, imageBuffer, bufferSize, timeout);
 		if (status != ASI_SUCCESS)
 		{
-			Allsky::Log(0, "  > ERROR: Failed getting image: %s\n", getRetCode(status));
+			Allsky::Error("  > ERROR: Failed getting image: %s\n", getRetCode(status));
 		}
 		else
 		{
@@ -614,13 +614,13 @@ ASI_ERROR_CODE takeOneExposure(
 			// When in auto-exposure mode, the returned exposure length is what the driver thinks the
 			// next exposure should be, and will eventually converge on the correct exposure.
 			ASIGetControlValue(cameraId, ASI_EXPOSURE, &reported_exposure_us, &wasAutoExposure);
-			Allsky::Log(3, "  > Got image%s.  Reported exposure: %s, auto=%s\n", Allsky::debugText, Allsky::length_in_units(reported_exposure_us, true), wasAutoExposure == ASI_TRUE ? "yes" : "no");
+			Allsky::Debug("  > Got image%s.  Reported exposure: %s, auto=%s\n", Allsky::debugText, Allsky::length_in_units(reported_exposure_us, true), wasAutoExposure == ASI_TRUE ? "yes" : "no");
 
 			// If this was a manual exposure, make sure it took the correct exposure.
 			// Per ZWO, this should never happen.
 			if (wasAutoExposure == ASI_FALSE && exposure_time_us != reported_exposure_us)
 			{
-				Allsky::Log(0, "  > WARNING: not correct exposure (requested: %'ld us, reported: %'ld us, diff: %'ld)\n", exposure_time_us, reported_exposure_us, reported_exposure_us - exposure_time_us);
+				Allsky::Warning("  > WARNING: not correct exposure (requested: %'ld us, reported: %'ld us, diff: %'ld)\n", exposure_time_us, reported_exposure_us, reported_exposure_us - exposure_time_us);
 			}
 			ASIGetControlValue(cameraId, ASI_GAIN, &actualGain, &bAuto);
 			ASIGetControlValue(cameraId, ASI_TEMPERATURE, &Allsky::actualTemp, &bAuto);
@@ -631,7 +631,7 @@ ASI_ERROR_CODE takeOneExposure(
 
 	}
 	else {
-		Allsky::Log(0, "  > ERROR: Not fetching exposure data because status is %s\n", getRetCode(status));
+		Allsky::Error("  > ERROR: Not fetching exposure data because status is %s\n", getRetCode(status));
 	}
 
 	return status;
@@ -762,19 +762,19 @@ int numGainChanges = 0;		// This is reset at every day/night and night/day trans
 bool resetGainTransitionVariables(int dayGain, int nightGain)
 {
 	// Many of the "xxx" messages below will go away once we're sure gain transition works.
-	Allsky::Log(4, "xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, Allsky::dayOrNight.c_str());
+	Allsky::Trace("xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, Allsky::dayOrNight.c_str());
 
 	if (adjustGain == false)
 	{
 		// determineGainChange() will never be called so no need to set any variables.
-		Allsky::Log(5, "xxx will not adjust gain - adjustGain == false\n");
+		Allsky::Trace("xxx will not adjust gain - adjustGain == false\n");
 		return(false);
 	}
 
-	if (numExposures == 0)
+	if (Allsky::numExposures == 0)
 	{
 		// we don't adjust when the program first starts since there's nothing to transition from
-		Allsky::Log(5, "xxx will not adjust gain right now - numExposures == 0\n");
+		Allsky::Trace("xxx will not adjust gain right now - numExposures == 0\n");
 		return(false);
 	}
 
@@ -788,20 +788,20 @@ bool resetGainTransitionVariables(int dayGain, int nightGain)
 	if (Allsky::dayOrNight == "DAY")
 	{
 		totalTimeInSec = (Allsky::asi_day_exposure_us / US_IN_SEC) + (Allsky::dayDelay_ms / MS_IN_SEC);
-		Allsky::Log(4, "xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_day_exposure_us, Allsky::dayDelay_ms);
+		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_day_exposure_us, Allsky::dayDelay_ms);
 	}
 	else	// NIGHT
 	{
 		// At nightime if the exposure is less than the max, we wait until max has expired,
 		// so use it instead of the exposure time.
 		totalTimeInSec = (Allsky::asi_night_max_autoexposure_ms / MS_IN_SEC) + (Allsky::nightDelay_ms / MS_IN_SEC);
-		Allsky::Log(4, "xxx totalTimeInSec=%.1fs, asi_night_max_autoexposure_ms=%'dms, nightDelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_night_max_autoexposure_ms, Allsky::nightDelay_ms);
+		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_night_max_autoexposure_ms=%'dms, nightDelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_night_max_autoexposure_ms, Allsky::nightDelay_ms);
 	}
 
 	gainTransitionImages = ceil(Allsky::gainTransitionTime / totalTimeInSec);
 	if (gainTransitionImages == 0)
 	{
-		Allsky::Log(0, "*** INFORMATION: Not adjusting gain - your 'gaintransitiontime' (%d seconds) is less than the time to take one image plus its delay (%.1f seconds).\n", Allsky::gainTransitionTime, totalTimeInSec);
+		Allsky::Info("*** INFORMATION: Not adjusting gain - your 'gaintransitiontime' (%d seconds) is less than the time to take one image plus its delay (%.1f seconds).\n", Allsky::gainTransitionTime, totalTimeInSec);
 		return(false);
 	}
 
@@ -818,7 +818,7 @@ bool resetGainTransitionVariables(int dayGain, int nightGain)
 			gainTransitionImages++;		// this one will get the remaining amount
 	}
 
-	Allsky::Log(4, "xxx gainTransitionImages=%d, gainTransitionTime=%ds, perImageAdjustGain=%d, totalAdjustGain=%d\n",
+	Allsky::Trace("xxx gainTransitionImages=%d, gainTransitionTime=%ds, perImageAdjustGain=%d, totalAdjustGain=%d\n",
 		gainTransitionImages, Allsky::gainTransitionTime, perImageAdjustGain, totalAdjustGain);
 
 	return(true);
@@ -836,7 +836,7 @@ int determineGainChange(int dayGain, int nightGain)
 	if (numGainChanges > gainTransitionImages || totalAdjustGain == 0)
 	{
 		// no more changes needed in this transition
-		Allsky::Log(4, "  xxxx No more gain changes needed.\n");
+		Allsky::Trace("  xxxx No more gain changes needed.\n");
 		currentAdjustGain = false;
 		return(0);
 	}
@@ -868,7 +868,7 @@ int determineGainChange(int dayGain, int nightGain)
 		}
 	}
 
-	Allsky::Log(4, "  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
+	Allsky::Trace("  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
 		Allsky::dayOrNight.c_str(), amt, amt+Allsky::currentGain, numGainChanges, gainTransitionImages);
 	return(amt);
 }
@@ -883,7 +883,7 @@ bool check_max_errors(int *e, int max_errors)
 	if (numErrors >= max_errors)
 	{
 		*e = 99;		// exit code - needs to match what's in allsky.sh
-		Allsky::Log(0, "*** ERROR: Maximum number of consecutive errors of %d reached; exiting...\n", max_errors);
+		Allsky::Error("*** ERROR: Maximum number of consecutive errors of %d reached; exiting...\n", max_errors);
 		return(false);	// gets us out of inner and outer loop
 	}
 	return(true);
@@ -925,9 +925,9 @@ int main(int argc, char *argv[])
 
 #define DEFAULT_ASIDAYGHTGAIN    0
 	int asiDayGain             = DEFAULT_ASIDAYGHTGAIN;
-	int asiDayAutoGain         = 0;	// is Auto Gain on or off for daytime?
+	//int asiDayAutoGain         = 0;	// is Auto Gain on or off for daytime?
 
-	int currentDelay_ms        = NOT_SET;
+	//int currentDelay_ms        = NOT_SET;
 
 
 
@@ -1353,19 +1353,19 @@ int main(int argc, char *argv[])
 	// so don't transition.
 	// gainTransitionTime of 0 means don't adjust gain.
 	// No need to adjust gain if day and night gain are the same.
-	if (asiDayAutoGain == 1 || Allsky::asiNightAutoGain == 1 || Allsky::gainTransitionTime == 0 || asiDayGain == Allsky::asiNightGain || Allsky::taking_dark_frames == 1)
+	if (Allsky::asiDayAutoGain == 1 || Allsky::asiNightAutoGain == 1 || Allsky::gainTransitionTime == 0 || asiDayGain == Allsky::asiNightGain || Allsky::taking_dark_frames == 1)
 	{
 		adjustGain = false;
-		Allsky::Log(3, "Will NOT adjust gain at transitions\n");
+		Allsky::Debug("Will NOT adjust gain at transitions\n");
 	}
 	else
 	{
 		adjustGain = true;
-		Allsky::Log(3, "Will adjust gain at transitions\n");
+		Allsky::Debug("Will adjust gain at transitions\n");
 	}
 
 	if (Allsky::ImgExtraText[0] != '\0' && Allsky::extraFileAge > 0) {
-		Allsky::Log(1, "Extra Text File Age Disabled So Displaying Anyway\n");
+		Allsky::Warning("Extra Text File Age Disabled So Displaying Anyway\n");
 	}
 
 	if (Allsky::tty)
@@ -1407,12 +1407,12 @@ int main(int argc, char *argv[])
 				// Don't need to set ASI_AUTO_MAX_GAIN since we're not using auto gain
 				Allsky::currentGain = Allsky::asiNightGain;
 				gainChange = 0;
-				currentDelay_ms = Allsky::nightDelay_ms;
+				Allsky::currentDelay_ms = Allsky::nightDelay_ms;
 				Allsky::current_max_autoexposure_us = current_exposure_us = Allsky::asi_night_max_autoexposure_ms * US_IN_MS;
 				Allsky::currentBin = Allsky::nightBin;
 				Allsky::currentBrightness = Allsky::asiNightBrightness;
 
-				Allsky::Log(0, "Taking dark frames...\n");
+				Allsky::Info("Taking dark frames...\n");
 
 				if (Allsky::notificationImages) {
 					system("scripts/copy_notification_image.sh DarkFrames &");
@@ -1424,7 +1424,7 @@ int main(int argc, char *argv[])
 			// Setup the daytime capture parameters
 			if (endOfNight == true)	// Execute end of night script
 			{
-				Allsky::Log(0, "Processing end of night data\n");
+				Allsky::Info("Processing end of night data\n");
 				system("scripts/endOfNight.sh &");
 				endOfNight = false;
 				displayedNoDaytimeMsg = 0;
@@ -1437,7 +1437,7 @@ int main(int argc, char *argv[])
 					if (Allsky::notificationImages) {
 						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
 					}
-					Allsky::Log(0, "It's daytime... we're not saving images.\n*** %s ***\n",
+					Allsky::Debug("It's daytime... we're not saving images.\n*** %s ***\n",
 						Allsky::tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
 					displayedNoDaytimeMsg = 1;
 
@@ -1457,10 +1457,10 @@ int main(int argc, char *argv[])
 
 			else
 			{
-				Allsky::Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
+				Allsky::Info("==========\n=== Starting daytime capture ===\n==========\n");
 
 				// We only skip initial frames if we are starting in daytime and using auto-exposure.
-				if (numExposures == 0 && Allsky::asiDayAutoExposure)
+				if (Allsky::numExposures == 0 && Allsky::asiDayAutoExposure)
 					Allsky::current_skip_frames = Allsky::day_skip_frames;
 
 				// If we went from Night to Day, then current_exposure_us will be the last night
@@ -1468,19 +1468,19 @@ int main(int argc, char *argv[])
 				// Night to Day, i.e., if the exposure was fine a minute ago it will likely be fine now.
 				// On the other hand, if this program just started or we're using manual exposures,
 				// use what the user specified.
-				if (numExposures == 0 || ! Allsky::asiDayAutoExposure)
+				if (Allsky::numExposures == 0 || ! Allsky::asiDayAutoExposure)
 				{
 					if (Allsky::asiDayAutoExposure && Allsky::asi_day_exposure_us > Allsky::asi_day_max_autoexposure_ms*US_IN_MS)
 					{
 						snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", Allsky::length_in_units(Allsky::asi_day_exposure_us, true));
-						Allsky::Log(0, "*** WARNING: daytime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, Allsky::length_in_units(Allsky::asi_day_max_autoexposure_ms*US_IN_MS, true));
+						Allsky::Warning("*** WARNING: daytime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, Allsky::length_in_units(Allsky::asi_day_max_autoexposure_ms*US_IN_MS, true));
 						Allsky::asi_day_exposure_us = Allsky::asi_day_max_autoexposure_ms * US_IN_MS;
 					}
 					current_exposure_us = Allsky::asi_day_exposure_us;
 				}
 				else
 				{
-					Allsky::Log(2, "Using the last night exposure of %s\n", Allsky::length_in_units(current_exposure_us, true));
+					Allsky::Info("Using the last night exposure of %s\n", Allsky::length_in_units(current_exposure_us, true));
 				}
 
 				Allsky::current_max_autoexposure_us = Allsky::asi_day_max_autoexposure_ms * US_IN_MS;
@@ -1488,7 +1488,7 @@ int main(int argc, char *argv[])
 				// Don't use camera auto-exposure since we mimic it ourselves.
 				if (Allsky::asiDayAutoExposure)
 				{
-					Allsky::Log(2, "Turning off daytime auto-exposure to use histogram exposure.\n");
+					Allsky::Info("Turning off daytime auto-exposure to use histogram exposure.\n");
 				}
 				// With the histogram method we NEVER use auto exposure - either the user said
 				// not to, or we turn it off ourselves.
@@ -1497,7 +1497,7 @@ int main(int argc, char *argv[])
 				Allsky::currentAutoExposure = Allsky::asiDayAutoExposure ? ASI_TRUE : ASI_FALSE;
 #endif
 				Allsky::currentBrightness = Allsky::asiDayBrightness;
-				currentDelay_ms = Allsky::dayDelay_ms;
+				Allsky::currentDelay_ms = Allsky::dayDelay_ms;
 				Allsky::currentBin = Allsky::dayBin;
 				Allsky::currentGain = asiDayGain;	// must come before determineGainChange() below
 				if (currentAdjustGain)
@@ -1510,7 +1510,7 @@ int main(int argc, char *argv[])
 				{
 					gainChange = 0;
 				}
-				Allsky::currentAutoGain = asiDayAutoGain ? ASI_TRUE : ASI_FALSE;
+				Allsky::currentAutoGain = Allsky::asiDayAutoGain ? ASI_TRUE : ASI_FALSE;
 // xxxx TODO: add asiDayMaxGain and currentMaxGain.
 // xxxx then can move the setControl further below
 				// We don't have a separate asiDayMaxGain, so set to night one
@@ -1520,28 +1520,28 @@ int main(int argc, char *argv[])
 
 		else	// NIGHT
 		{
-			Allsky::Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
+			Allsky::Info("==========\n=== Starting nighttime capture ===\n==========\n");
 
 			// We only skip initial frames if we are starting in nighttime and using auto-exposure.
-			if (numExposures == 0 && Allsky::asiNightAutoExposure)
+			if (Allsky::numExposures == 0 && Allsky::asiNightAutoExposure)
 				Allsky::current_skip_frames = Allsky::night_skip_frames;
 
 			// Setup the night time capture parameters
-			if (numExposures == 0 || Allsky::asiNightAutoExposure == ASI_FALSE)
+			if (Allsky::numExposures == 0 || Allsky::asiNightAutoExposure == ASI_FALSE)
 			{
 				if (Allsky::asiNightAutoExposure && Allsky::asi_night_exposure_us > Allsky::asi_night_max_autoexposure_ms*US_IN_MS)
 				{
 					snprintf(Allsky::bufTemp, sizeof(Allsky::bufTemp), "%s", Allsky::length_in_units(Allsky::asi_night_exposure_us, true));
-					Allsky::Log(0, "*** WARNING: nighttime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, Allsky::length_in_units(Allsky::asi_night_max_autoexposure_ms*US_IN_MS, true));
+					Allsky::Warning("*** WARNING: nighttime Manual Exposure [%s] > Max Auto-Exposure [%s]; user smaller number.\n", Allsky::bufTemp, Allsky::length_in_units(Allsky::asi_night_max_autoexposure_ms*US_IN_MS, true));
 					Allsky::asi_night_exposure_us = Allsky::asi_night_max_autoexposure_ms * US_IN_MS;
 				}
 				current_exposure_us = Allsky::asi_night_exposure_us;
-				Allsky::Log(4, "Using night exposure (%s)\n", Allsky::length_in_units(Allsky::asi_night_exposure_us, true));
+				Allsky::Trace("Using night exposure (%s)\n", Allsky::length_in_units(Allsky::asi_night_exposure_us, true));
 			}
 
 			Allsky::currentAutoExposure = Allsky::asiNightAutoExposure ? ASI_TRUE : ASI_FALSE;
 			Allsky::currentBrightness = Allsky::asiNightBrightness;
-			currentDelay_ms = Allsky::nightDelay_ms;
+			Allsky::currentDelay_ms = Allsky::nightDelay_ms;
 			Allsky::currentBin = Allsky::nightBin;
 			Allsky::current_max_autoexposure_us = Allsky::asi_night_max_autoexposure_ms * US_IN_MS;
 			Allsky::currentGain = Allsky::asiNightGain;	// must come before determineGainChange() below
@@ -1570,7 +1570,7 @@ int main(int argc, char *argv[])
 		setControl(Allsky::CamNum, ASI_EXPOSURE, current_exposure_us, (ASI_BOOL)Allsky::currentAutoExposure);
 #endif
 
-		if (numExposures == 0 || Allsky::dayBin != Allsky::nightBin)
+		if (Allsky::numExposures == 0 || Allsky::dayBin != Allsky::nightBin)
 		{
 			// Adjusting variables for chosen binning.
 			// Only need to do at the beginning and if bin changes.
@@ -1584,7 +1584,7 @@ int main(int argc, char *argv[])
 			current_histogramBoxSizeY = histogramBoxSizeY / Allsky::currentBin;
 
 			bufferSize = Allsky::width * Allsky::height * bytesPerPixel((ASI_IMG_TYPE) Allsky::Image_type);
-			Allsky::Log(4, "Buffer size: %ld\n", bufferSize);
+			Allsky::Trace("Buffer size: %ld\n", bufferSize);
 
 // TODO: if not the first time, should we free the old pRgb?
 			if (Allsky::Image_type == ASI_IMG_RAW16)
@@ -1635,7 +1635,7 @@ int main(int argc, char *argv[])
 			char exposureStart[128];
 			char f[10] = "%F %T";
 			sprintf(exposureStart, "%s", Allsky::formatTime(t, f));
-			Allsky::Log(0, "STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(current_exposure_us, true));
+			Allsky::Debug("STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(current_exposure_us, true));
 
 			// Get start time for overlay.  Make sure it has the same time as exposureStart.
 			if (showTime == 1)
@@ -1645,9 +1645,9 @@ int main(int argc, char *argv[])
 			if (asiRetCode == ASI_SUCCESS)
 			{
 				numErrors = 0;
-				numExposures++;
+				Allsky::numExposures++;
 
-				if (numExposures == 0 && Allsky::preview == 1)
+				if (Allsky::numExposures == 0 && Allsky::preview == 1)
 				{
 					// Start the preview thread at the last possible moment.
 					Allsky::bDisplay = 1;
@@ -1709,7 +1709,7 @@ int main(int argc, char *argv[])
 							// which is ok - it just means the multiplier will be less than 1.
 							numMultiples = (float)(Allsky::asiDayBrightness - DEFAULT_BRIGHTNESS) / DEFAULT_BRIGHTNESS;
 							exposureAdjustment = 1 + (numMultiples * adjustmentAmountPerMultiple);
-							Allsky::Log(3, "  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
+							Allsky::Debug("  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
 							showedMessage = 1;
 						}
 
@@ -1760,7 +1760,7 @@ int main(int argc, char *argv[])
 					}
 					if (adjustment != 0)
 					{
-						Allsky::Log(3, "  > !!! Adjusting %sAcceptableMean by %d to %d\n",
+						Allsky::Debug("  > !!! Adjusting %sAcceptableMean by %d to %d\n",
 						   adjustment < 0 ? "min" : "max",
 						   adjustment,
 						   adjustment < 0 ? minAcceptableMean : maxAcceptableMean);
@@ -1905,7 +1905,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 							 break;
 						 }
 
-						 Allsky::Log(3, "  >> Retry %i @ %'ld us, min=%'ld us, max=%'ld us: mean (%d) %s (%d)\n", attempts, new_exposure_us, temp_min_exposure_us, temp_max_exposure_us, mean, why.c_str(), num);
+						 Allsky::Debug("  >> Retry %i @ %'ld us, min=%'ld us, max=%'ld us: mean (%d) %s (%d)\n", attempts, new_exposure_us, temp_min_exposure_us, temp_max_exposure_us, mean, why.c_str(), num);
 
 						 prior_mean = mean;
 						 prior_mean_diff = last_mean_diff;
@@ -1936,8 +1936,8 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 
 					if (asiRetCode != ASI_SUCCESS)
 					{
-						Allsky::Log(2,"  > Sleeping %s from failed exposure\n", Allsky::length_in_units(currentDelay_ms * US_IN_MS, false));
-						usleep(currentDelay_ms * US_IN_MS);
+						Allsky::Info("  > Sleeping %s from failed exposure\n", Allsky::length_in_units(Allsky::currentDelay_ms * US_IN_MS, false));
+						usleep(Allsky::currentDelay_ms * US_IN_MS);
 						// Don't save the file or do anything below.
 						continue;
 					}
@@ -1945,25 +1945,25 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					if (mean >= minAcceptableMean && mean <= maxAcceptableMean)
 					{
 						// +++ at end makes it easier to see in log file
-						Allsky::Log(3, "  > Good image: mean within range of %d to %d ++++++++++, mean %d\n", minAcceptableMean, maxAcceptableMean, mean);
+						Allsky::Debug("  > Good image: mean within range of %d to %d ++++++++++, mean %d\n", minAcceptableMean, maxAcceptableMean, mean);
 					}
 					else if (attempts > maxHistogramAttempts)
 					{
-						 Allsky::Log(3, "  > max attempts reached - using exposure of %s us with mean %d\n", Allsky::length_in_units(current_exposure_us, true), mean);
+						 Allsky::Debug("  > max attempts reached - using exposure of %s us with mean %d\n", Allsky::length_in_units(current_exposure_us, true), mean);
 					}
 					else if (attempts >= 1)
 					{
 						 if (current_exposure_us > Allsky::current_max_autoexposure_us)
 						 {
-							 Allsky::Log(3, "  > Stopped trying: new exposure of %s would be over max of %s\n", Allsky::length_in_units(current_exposure_us, false), Allsky::length_in_units(Allsky::current_max_autoexposure_us, false));
+							 Allsky::Debug("  > Stopped trying: new exposure of %s would be over max of %s\n", Allsky::length_in_units(current_exposure_us, false), Allsky::length_in_units(Allsky::current_max_autoexposure_us, false));
 
 							 long diff = (long)((float)current_exposure_us * (1/(float)percent_change));
 							 current_exposure_us -= diff;
-							 Allsky::Log(3, "  > Decreasing next exposure by %d%% (%'ld us) to %'ld\n", percent_change, diff, current_exposure_us);
+							 Allsky::Debug("  > Decreasing next exposure by %d%% (%'ld us) to %'ld\n", percent_change, diff, current_exposure_us);
 						 }
 						 else if (current_exposure_us == Allsky::current_max_autoexposure_us)
 						 {
-							 Allsky::Log(3, "  > Stopped trying: hit max exposure limit of %s, mean %d\n", Allsky::length_in_units(Allsky::current_max_autoexposure_us, false), mean);
+							 Allsky::Debug("  > Stopped trying: hit max exposure limit of %s, mean %d\n", Allsky::length_in_units(Allsky::current_max_autoexposure_us, false), mean);
 							 // If current_exposure_us causes too high of a mean, decrease exposure
 							 // so on the next loop we'll adjust it.
 							 if (mean > maxAcceptableMean)
@@ -1971,16 +1971,16 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						 }
 						 else if (new_exposure_us == current_exposure_us)
 						 {
-							 Allsky::Log(3, "  > Stopped trying: new_exposure_us == current_exposure_us == %s\n", Allsky::length_in_units(current_exposure_us, false));
+							 Allsky::Debug("  > Stopped trying: new_exposure_us == current_exposure_us == %s\n", Allsky::length_in_units(current_exposure_us, false));
 						 }
 						 else
 						 {
-							 Allsky::Log(3, "  > Stopped trying, using exposure of %s us with mean %d, min=%d, max=%d\n", Allsky::length_in_units(current_exposure_us, false), mean, minAcceptableMean, maxAcceptableMean);
+							 Allsky::Debug("  > Stopped trying, using exposure of %s us with mean %d, min=%d, max=%d\n", Allsky::length_in_units(current_exposure_us, false), mean, minAcceptableMean, maxAcceptableMean);
 						 }
 					}
 					else if (current_exposure_us == Allsky::current_max_autoexposure_us)
 					{
-						 Allsky::Log(3, "  > Did not make any additional attempts - at max exposure limit of %s, mean %d\n", Allsky::length_in_units(Allsky::current_max_autoexposure_us, false), mean);
+						 Allsky::Debug("  > Did not make any additional attempts - at max exposure limit of %s, mean %d\n", Allsky::length_in_units(Allsky::current_max_autoexposure_us, false), mean);
 					}
 					// xxxx TODO: this was "actual_exposure_us = ..."    reported_exposure_us = current_exposure_us;
 
@@ -2007,7 +2007,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					else
 #endif
 					{
-						Allsky::Log(2, "  >>>> Skipping this frame\n");
+						Allsky::Info("  >>>> Skipping this frame\n");
 						Allsky::current_skip_frames--;
 						// Do not save this frame or sleep after it.
 						// We just started taking images so no need to check if DAY or NIGHT changed
@@ -2091,7 +2091,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					// Hopefully the user can use the time it took to save a file to disk
 					// to help determine why they are getting this warning.
 					// Perhaps their disk is very slow or their delay is too short.
-					Allsky::Log(0, "  > WARNING: currently saving an image; can't save new one at %s.\n", exposureStart);
+					Allsky::Warning("  > WARNING: currently saving an image; can't save new one at %s.\n", exposureStart);
 
 					// TODO: wait for the prior image to finish saving.
 				}
@@ -2099,7 +2099,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 				if (Allsky::asiNightAutoGain == 1 && Allsky::dayOrNight == "NIGHT" && ! Allsky::taking_dark_frames)
 				{
 					ASIGetControlValue(Allsky::CamNum, ASI_GAIN, &actualGain, &bAuto);
-					Allsky::Log(1, "  > Auto Gain value: %ld\n", actualGain);
+					Allsky::Warning("  > Auto Gain value: %ld\n", actualGain);
 				}
 
 				if (Allsky::currentAutoExposure == ASI_TRUE)
@@ -2120,16 +2120,16 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						// This is important for a constant frame rate during timelapse generation.
 						// This doesn't apply during the day since we don't have a max time then.
 						long s_us = (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) - last_exposure_us; // to get to max
-						s_us += currentDelay_ms * US_IN_MS;   // Add standard delay amount
-						Allsky::Log(0, "  > Sleeping: %s\n", Allsky::length_in_units(s_us, false));
+						s_us += Allsky::currentDelay_ms * US_IN_MS;   // Add standard delay amount
+						Allsky::Debug("  > Sleeping: %s\n", Allsky::length_in_units(s_us, false));
 						usleep(s_us);	// usleep() is in us (microseconds)
 					}
 					else
 					{
 						// Sleep even if taking dark frames so the sensor can cool between shots like it would
 						// do on a normal night.  With no delay the sensor may get hotter than it would at night.
-						Allsky::Log(0, "  > Sleeping %s from %s exposure\n", Allsky::length_in_units(currentDelay_ms * US_IN_MS, false), Allsky::taking_dark_frames ? "dark frame" : "auto");
-						usleep(currentDelay_ms * US_IN_MS);
+						Allsky::Debug("  > Sleeping %s from %s exposure\n", Allsky::length_in_units(Allsky::currentDelay_ms * US_IN_MS, false), Allsky::taking_dark_frames ? "dark frame" : "auto");
+						usleep(Allsky::currentDelay_ms * US_IN_MS);
 					}
 				}
 				else
@@ -2143,8 +2143,8 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					if (usedHistogram == 1)
 						s = "histogram";
 #endif
-					Allsky::Log(0, "  > Sleeping %s from %s exposure\n", Allsky::length_in_units(currentDelay_ms * US_IN_MS, false), s.c_str());
-					usleep(currentDelay_ms * US_IN_MS);
+					Allsky::Debug("  > Sleeping %s from %s exposure\n", Allsky::length_in_units(Allsky::currentDelay_ms * US_IN_MS, false), s.c_str());
+					usleep(Allsky::currentDelay_ms * US_IN_MS);
 				}
 				Allsky::calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
 

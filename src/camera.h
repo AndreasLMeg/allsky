@@ -2,7 +2,7 @@
 #define CAMERA_H
 
 // Base class
-class Camera {
+class Camera: public Allsky {
   public:
 	//void setup(void);
 	//

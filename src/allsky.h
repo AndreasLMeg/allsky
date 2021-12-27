@@ -9,6 +9,7 @@
 // new includes (MEAN)
 #include "include/RPiHQ_raspistill.h"
 #include "include/mode_RPiHQ_mean.h"
+#include "log.h"
 
 #define NOT_SET				  -1		// signifies something isn't set yet
 
@@ -90,7 +91,7 @@
 	#define DEFAULT_ASIGAMMA         50		// not supported by all cameras
 #endif
 
-class Allsky {
+class Allsky: public Log {
 	public:
 		static int showTime;
 		static cv::Mat pRgb;	// the image
@@ -164,6 +165,11 @@ class Allsky {
 		static int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
 		static int gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 		static std::string dayOrNight;
+		static int currentDelay_ms;
+		static int numExposures;	// how many valid pictures have we taken so far?
+		static int asiDayAutoGain;
+		static int asiDayExposure_us;
+
 
 
 #ifdef CAM_RPIHQ
@@ -186,6 +192,7 @@ class Allsky {
 		static float default_saturation;
 		//maybe for all ?
 		static bool endOfNight;
+		static int asiNightExposure_us;
 
 
 	
@@ -243,6 +250,15 @@ class Allsky {
 		static void closeUp(int e);
 		static void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle);
 		static int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle);
+		static void prepareForDayOrNight(void);
+		static int capture(void);
+		static void postCapture(void);
+		static void deliverImage(void);
+		static void waitForNextCapture(void);
+#ifdef CAM_RPIHQ
+		static int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera, cv::Mat *image);
+#else
+#endif
 
 
 

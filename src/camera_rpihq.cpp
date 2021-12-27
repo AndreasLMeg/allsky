@@ -31,7 +31,7 @@ void CameraRPi::kill()
 	// Ensure no process is still running.
 	// Define command line.
 	string command;
-	if (Allsky::is_libcamera) command = "libcamera-still";
+	if (is_libcamera) command = "libcamera-still";
 	else command = "raspistill";
 
 	// Include "--" so we only find the command, not a different program with the command
@@ -40,7 +40,7 @@ void CameraRPi::kill()
 	char kcmd[kill.length() + 1];		// Define char variable
 	strcpy(kcmd, kill.c_str());			// Convert command to character variable
 
-	Allsky::Log(4, " > Kill command: %s\n", kcmd);
+	Allsky::Trace(" > Kill command: %s\n", kcmd);
 	system(kcmd);						// Stop any currently running process
 }
 
@@ -49,7 +49,7 @@ void CameraRPi::setup()
 {
 	// Define command line.
 	string command;
-	if (Allsky::is_libcamera) command = "libcamera-still";
+	if (is_libcamera) command = "libcamera-still";
 	else command = "raspistill";
 
 	stringstream ss;
