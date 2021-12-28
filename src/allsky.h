@@ -162,8 +162,6 @@ class Allsky: public Log {
 		static int asiDayAutoGain;
 		static int asiDayExposure_us;
     static char const *cameraName;
-		
-
 
 #ifdef CAM_RPIHQ
 		static modeMeanSetting myModeMeanSetting;
