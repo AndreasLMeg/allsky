@@ -161,8 +161,7 @@ int main(int argc, char *argv[])
 			Allsky::setupCapture();
 			myCam->setupCapture();
 			int retCode = myCam->capture();
-			if (retCode == 0)
-			{
+			if (retCode == 0) {
 				myCam->postCapture();
 				myCam->deliverImage();
 			}
