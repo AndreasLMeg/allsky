@@ -133,31 +133,21 @@ Camera* myCam;
 
 int main(int argc, char *argv[])
 {
-	//-------------------------------------------------------------------------------------------------------
 	Allsky::init(argc, argv);
-	//-------------------------------------------------------------------------------------------------------
 
 	if (strcmp(Allsky::cameraName, "RPiHQ") == 0)
 		myCam = new CameraRPi();
+	// TODO: other cameras....
 
-	//-------------------------------------------------------------------------------------------------------
 	Allsky::info();
-	//-------------------------------------------------------------------------------------------------------
 	
 	while (bMain)
 	{
-		//std::string lastDayOrNight;
-
 		Allsky::prepareForDayOrNight();
-
-		// Next line is present for testing purposes
-		// dayOrNight.assign("NIGHT");
-		//lastDayOrNight = Allsky::dayOrNight;
 
 		// Wait for switch day time -> night time or night time -> day time
 		while (bMain && (Allsky::lastDayOrNight == Allsky::dayOrNight))
 		{
-
 			Allsky::setupCapture();
 			myCam->setupCapture();
 			int retCode = myCam->capture();
@@ -165,8 +155,7 @@ int main(int argc, char *argv[])
 				myCam->postCapture();
 				myCam->deliverImage();
 			}
-			else
-			{
+			else {
 				printf(" >>> Unable to take picture, return code=%d\n", (retCode >> 8));
 				Allsky::Warning("  > Sleeping from failed exposure: %.1f seconds\n", (float)Allsky::currentDelay_ms / MS_IN_SEC);
 				usleep(Allsky::currentDelay_ms * US_IN_MS); // TODO: move to waitForNextCapture
