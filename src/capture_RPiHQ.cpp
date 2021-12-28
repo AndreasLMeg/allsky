@@ -1,16 +1,12 @@
 #include <sys/time.h>
-//#include <time.h>
 #include <unistd.h>
 #include <string.h>
-//#include <sys/types.h>
 #include <errno.h>
 #include <string>
 #include <iomanip>
 #include <cstring>
 #include <sstream>
-//#include <cstdio>
 #include <tr1/memory>
-//#include <ctime>
 #include <stdlib.h>
 #include <signal.h>
 #include <fstream>
@@ -125,10 +121,11 @@ int Allsky::numExposures = 0;	// how many valid pictures have we taken so far?
 int Allsky::asiDayAutoGain    = 0;
 int Allsky::asiDayExposure_us = 32;
 int Allsky::currentDelay_ms   = NOT_SET;
+char const *Allsky::cameraName = "RPiHQ";
 
 bool bMain					= true;
 
-CameraRPi myCam;
+Camera* myCam;
 
 //-------------------------------------------------------------------------------------------------------
 //-------------------------------------------------------------------------------------------------------
@@ -138,6 +135,9 @@ int main(int argc, char *argv[])
 	//-------------------------------------------------------------------------------------------------------
 	Allsky::init(argc, argv);
 	//-------------------------------------------------------------------------------------------------------
+
+	if (strcmp(Allsky::cameraName, "RPiHQ") == 0)
+		myCam = new CameraRPi();
 
 	if (Allsky::taking_dark_frames)
 	{
@@ -183,26 +183,27 @@ int main(int argc, char *argv[])
 			if (Allsky::showTime == 1)
 				sprintf(Allsky::bufTime, "%s", Allsky::formatTime(t, Allsky::timeFormat));
 
-			myCam.setup();
+			myCam->setup();
 			// Capture and save image
-			int retCode = Allsky::capture();
+			int retCode = myCam->capture();
 			if (retCode == 0)
 			{
-				Allsky::postCapture();
+				myCam->postCapture();
 			}
 			else
 			{
 				printf(" >>> Unable to take picture, return code=%d\n", (retCode >> 8));
 				Allsky::Warning("  > Sleeping from failed exposure: %.1f seconds\n", (float)Allsky::currentDelay_ms / MS_IN_SEC);
-				usleep(Allsky::currentDelay_ms * US_IN_MS);
+				usleep(Allsky::currentDelay_ms * US_IN_MS); // TODO: move to waitForNextCapture
 				continue;
 			}
 
-			Allsky::deliverImage();
-			Allsky::waitForNextCapture();
+			myCam->deliverImage();
+			myCam->waitForNextCapture();
 
 			// Check for day or night based on location and angle
 			Allsky::calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
+			Allsky::Info("----------------------------\n");
 		}
 
 		// Check for night situation
@@ -211,7 +212,10 @@ int main(int argc, char *argv[])
 			// Flag end of night processing is needed
 			Allsky::endOfNight = true;
 		}
+		Allsky::Info("============================\n");
+		Allsky::Info("%s\n", Allsky::dayOrNight.c_str());
+		Allsky::Info("============================\n");
 	}
-
+	
 	Allsky::closeUp(0);
 }

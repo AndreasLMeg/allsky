@@ -71,7 +71,7 @@ float RPiHQcalcMean(const char* fileName, int exposure_us, double gain, raspisti
 		}
 		// first exposure with currentRaspistillSetting.shutter_us, so we have to calculate the startpoint for ExposureLevel 
 		currentModeMeanSetting.ExposureLevel = log(1.0  * currentRaspistillSetting.shutter_us/(double) US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
-		Allsky::Info("  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
+		Allsky::Debug("  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
 	}
 
 	// get old ExposureTime

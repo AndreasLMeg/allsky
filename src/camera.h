@@ -4,8 +4,9 @@
 // Base class
 class Camera: public Allsky {
   public:
-	//void setup(void);
-	//
+		virtual void setup(void) = 0;
+		virtual int capture(void) = 0;
+		virtual void postCapture(void) = 0;
 };
 
 #endif

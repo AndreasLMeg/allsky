@@ -142,7 +142,6 @@ pthread_mutex_t Allsky::mtx_SaveImg;
 pthread_cond_t Allsky::cond_SatrtSave;
 std::string Allsky::dayOrNight;
 
-
 std::vector<int> compression_parameters;
 // In version 0.8 we introduced a different way to take exposures.  Instead of turning video mode on at
 // the beginning of the program and off at the end (which kept the camera running all the time, heating it up),

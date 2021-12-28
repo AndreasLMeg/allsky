@@ -13,14 +13,6 @@
 
 #define NOT_SET				  -1		// signifies something isn't set yet
 
-#define KNRM "\x1B[0m"
-#define KRED "\x1B[31m"
-#define KGRN "\x1B[32m"
-#define KYEL "\x1B[33m"
-#define KBLU "\x1B[34m"
-#define KMAG "\x1B[35m"
-#define KCYN "\x1B[36m"
-#define KWHT "\x1B[37m"
 
 #ifndef ASICAMERA2_H
 #define ASI_TRUE true
@@ -169,7 +161,8 @@ class Allsky: public Log {
 		static int numExposures;	// how many valid pictures have we taken so far?
 		static int asiDayAutoGain;
 		static int asiDayExposure_us;
-
+    static char const *cameraName;
+		
 
 
 #ifdef CAM_RPIHQ
@@ -228,18 +221,20 @@ class Allsky: public Log {
 		static pthread_mutex_t mtx_SaveImg;
 		static pthread_cond_t cond_SatrtSave;
 
-
-
 #endif
+		// main functions
+		static void init(int argc, char *argv[]);
+		static void info(void);
+		static void prepareForDayOrNight(void);
+		static void deliverImage(void);
+		static void waitForNextCapture(void);
 
+		//helper functions
 		static void overlayText(int &);
 		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
 		static unsigned long createRGB(int r, int g, int b);
-		static void Log(int required_level, const char *fmt, ...);
 		static char *length_in_units(long us, bool multi);
 		static void waitToFix(char const *msg);
-		static void init(int argc, char *argv[]);
-		static void info(void);
 		static char const *yesNo(int flag);
 		static char const *c(char const *color);
 		static timeval getTimeval();
@@ -250,18 +245,6 @@ class Allsky: public Log {
 		static void closeUp(int e);
 		static void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle);
 		static int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle);
-		static void prepareForDayOrNight(void);
-		static int capture(void);
-		static void postCapture(void);
-		static void deliverImage(void);
-		static void waitForNextCapture(void);
-#ifdef CAM_RPIHQ
-		static int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera, cv::Mat *image);
-#else
-#endif
-
-
-
 };
 
 #endif
