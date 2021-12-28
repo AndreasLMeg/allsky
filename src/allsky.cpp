@@ -822,6 +822,20 @@ void Allsky::init(int argc, char *argv[])
 
 	//some other settings
 	// for all
+	if (Allsky::taking_dark_frames)
+	{
+		// To avoid overwriting the optional notification inage with the dark image,
+		// during dark frames we use a different file name.
+		Allsky::fileName = "dark.jpg";
+	}
+
+	// Handle "auto" image_type.
+	if (Allsky::Image_type == AUTO_IMAGE_TYPE)
+	{
+		// user will have to manually set for 8- or 16-bit mono mode
+		Allsky::Image_type = ASI_IMG_RGB24;
+	}
+
 #ifdef CAM_RPIHQ
 	// for RPiHQ
 	if (is_libcamera)
@@ -1091,6 +1105,9 @@ void Allsky::closeUp(int e)
 // Calculate if it is day or night
 void Allsky::calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
 {
+
+	lastDayOrNight = dayOrNight;
+
 	char sunwaitCommand[128];
 	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
 	dayOrNight = Allsky::exec(sunwaitCommand);
@@ -1101,6 +1118,14 @@ void Allsky::calculateDayOrNight(const char *latitude, const char *longitude, co
 		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight == "" ? "[empty]" : dayOrNight.c_str());
 		Allsky::waitToFix(Allsky::debugText);
 		Allsky::closeUp(2);
+	}
+
+	// Check for night situation
+	if ((lastDayOrNight == "NIGHT") && (dayOrNight == "DAY"))
+	{
+		// Flag end of night processing is needed
+		endOfNight = true;
+	  Info("endOfNight detected\n");
 	}
 }
 
@@ -1138,9 +1163,10 @@ void Allsky::prepareForDayOrNight(void)
 {
 	// Have we displayed "not taking picture during day" message, if applicable?
 	int displayedNoDaytimeMsg = 0;
-
-		// Find out if it is currently DAY or NIGHT
-		calculateDayOrNight(latitude, longitude, angle);
+	
+	// Find out if it is currently DAY or NIGHT
+	calculateDayOrNight(latitude, longitude, angle);
+	lastDayOrNight = dayOrNight;
 
 		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
 // TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
@@ -1171,10 +1197,11 @@ void Allsky::prepareForDayOrNight(void)
 		{
 			if (Allsky::endOfNight == true)		// Execute end of night script
 			{
+ 			  Info("starting endOfNight.sh\n");
 				system("scripts/endOfNight.sh &");
 
 				// Reset end of night indicator
-				Allsky::endOfNight = false;
+				endOfNight = false;
 
 				displayedNoDaytimeMsg = 0;
 			}
@@ -1283,7 +1310,23 @@ void Allsky::prepareForDayOrNight(void)
 			printf("Stop the allsky service to end this process.\n\n");
 
 }
+/*
+all common things before the capture
+*/
+void Allsky::setupCapture(void) {
+	// date/time is added to many log entries to make it easier to associate them
+	// with an image (which has the date/time in the filename).
+	timeval t;
+	t = Allsky::getTimeval();
+	char exposureStart[128];
+	char f[10] = "%F %T";
+	snprintf(exposureStart, sizeof(exposureStart), "%s", Allsky::formatTime(t, f));
+	Allsky::Info("STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(Allsky::currentExposure_us, true));
 
+	// Get start time for overlay.  Make sure it has the same time as exposureStart.
+	if (Allsky::showTime == 1)
+		sprintf(Allsky::bufTime, "%s", Allsky::formatTime(t, Allsky::timeFormat));
+}
 
 void Allsky::deliverImage(void)
 {

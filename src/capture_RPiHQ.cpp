@@ -106,6 +106,7 @@ int Allsky::nightBin  = DEFAULT_NIGHTBIN;
 int Allsky::showDetails = 0;
 int Allsky::gotSignal = 0;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 std::string Allsky::dayOrNight;
+std::string Allsky::lastDayOrNight;
 int Allsky::min_brightness;					// what user enters on command line
 int Allsky::max_brightness;
 int Allsky::default_brightness;
@@ -139,66 +140,39 @@ int main(int argc, char *argv[])
 	if (strcmp(Allsky::cameraName, "RPiHQ") == 0)
 		myCam = new CameraRPi();
 
-	if (Allsky::taking_dark_frames)
-	{
-		// To avoid overwriting the optional notification inage with the dark image,
-		// during dark frames we use a different file name.
-		Allsky::fileName = "dark.jpg";
-	}
-
-	// Handle "auto" image_type.
-	if (Allsky::Image_type == AUTO_IMAGE_TYPE)
-	{
-		// user will have to manually set for 8- or 16-bit mono mode
-		Allsky::Image_type = ASI_IMG_RGB24;
-	}
-
 	//-------------------------------------------------------------------------------------------------------
 	Allsky::info();
 	//-------------------------------------------------------------------------------------------------------
 	
 	while (bMain)
 	{
-		std::string lastDayOrNight;
+		//std::string lastDayOrNight;
 
 		Allsky::prepareForDayOrNight();
 
 		// Next line is present for testing purposes
 		// dayOrNight.assign("NIGHT");
-		lastDayOrNight = Allsky::dayOrNight;
+		//lastDayOrNight = Allsky::dayOrNight;
 
 		// Wait for switch day time -> night time or night time -> day time
-		while (bMain && (lastDayOrNight == Allsky::dayOrNight))
+		while (bMain && (Allsky::lastDayOrNight == Allsky::dayOrNight))
 		{
-			// date/time is added to many log entries to make it easier to associate them
-			// with an image (which has the date/time in the filename).
-			timeval t;
-			t = Allsky::getTimeval();
-			char exposureStart[128];
-			char f[10] = "%F %T";
-			snprintf(exposureStart, sizeof(exposureStart), "%s", Allsky::formatTime(t, f));
-			Allsky::Info("STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(Allsky::currentExposure_us, true));
 
-			// Get start time for overlay.  Make sure it has the same time as exposureStart.
-			if (Allsky::showTime == 1)
-				sprintf(Allsky::bufTime, "%s", Allsky::formatTime(t, Allsky::timeFormat));
-
-			myCam->setup();
-			// Capture and save image
+			Allsky::setupCapture();
+			myCam->setupCapture();
 			int retCode = myCam->capture();
 			if (retCode == 0)
 			{
 				myCam->postCapture();
+				myCam->deliverImage();
 			}
 			else
 			{
 				printf(" >>> Unable to take picture, return code=%d\n", (retCode >> 8));
 				Allsky::Warning("  > Sleeping from failed exposure: %.1f seconds\n", (float)Allsky::currentDelay_ms / MS_IN_SEC);
 				usleep(Allsky::currentDelay_ms * US_IN_MS); // TODO: move to waitForNextCapture
-				continue;
+				continue; // TODO: ist das notwendig ?
 			}
-
-			myCam->deliverImage();
 			myCam->waitForNextCapture();
 
 			// Check for day or night based on location and angle
@@ -206,12 +180,6 @@ int main(int argc, char *argv[])
 			Allsky::Info("----------------------------\n");
 		}
 
-		// Check for night situation
-		if (lastDayOrNight == "NIGHT")
-		{
-			// Flag end of night processing is needed
-			Allsky::endOfNight = true;
-		}
 		Allsky::Info("============================\n");
 		Allsky::Info("%s\n", Allsky::dayOrNight.c_str());
 		Allsky::Info("============================\n");

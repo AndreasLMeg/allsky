@@ -27,7 +27,7 @@ void CameraRPi::kill()
 }
 
 
-void CameraRPi::setup() 
+void CameraRPi::setupCapture() 
 {
 	// Define command line.
 	string command;
@@ -454,7 +454,7 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 	// Convert command to character variable
 	strcpy(cmd, command.c_str());
 
-	Allsky::Info("  > Capture command: %s\n", cmd);
+	Allsky::Debug("> Capture command: %s\n", cmd);
 
 	// Execute the command.
 	int ret = system(cmd);

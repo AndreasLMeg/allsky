@@ -157,6 +157,7 @@ class Allsky: public Log {
 		static int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
 		static int gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 		static std::string dayOrNight;
+		static std::string lastDayOrNight;
 		static int currentDelay_ms;
 		static int numExposures;	// how many valid pictures have we taken so far?
 		static int asiDayAutoGain;
@@ -223,6 +224,7 @@ class Allsky: public Log {
 		// main functions
 		static void init(int argc, char *argv[]);
 		static void info(void);
+		static void setupCapture(void);
 		static void prepareForDayOrNight(void);
 		static void deliverImage(void);
 		static void waitForNextCapture(void);
