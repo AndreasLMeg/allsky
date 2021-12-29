@@ -84,7 +84,20 @@
 #endif
 
 class Allsky: public Log {
+
+	//enums
 	public:
+		enum Status
+		{
+			StatusUndefined = 0,
+			StatusInit,
+			StatusLoop,
+			StatusCloseup
+		};
+
+	//variables
+	public:
+		static Status status;
 		static int showTime;
 		static cv::Mat pRgb;	// the image
 		static char bufTime[128];
@@ -94,7 +107,7 @@ class Allsky: public Log {
 		static double fontsize;
 		static int linewidth;
 	 	static int linetype[3];
-		static int linenumber;
+		static int linenumber; // todo: change the name
 		static int fontname[];
 		static char const *fontnames[];
 		static int fontnumber;
@@ -155,7 +168,7 @@ class Allsky: public Log {
 		static int asiNightAutoExposure;	// is it on or off for nighttime?
 		static int asiDayAutoExposure;	// is it on or off for daylight?
 		static int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
-		static int gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
+		static bool gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 		static std::string dayOrNight;
 		static std::string lastDayOrNight;
 		static int currentDelay_ms;
@@ -224,7 +237,7 @@ class Allsky: public Log {
 		// main functions
 		static void init(int argc, char *argv[]);
 		static void info(void);
-		static void setupCapture(void);
+		static void preCapture(void);
 		static void prepareForDayOrNight(void);
 		static void deliverImage(void);
 		static void waitForNextCapture(void);

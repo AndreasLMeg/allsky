@@ -131,7 +131,7 @@ int Allsky::asiNightAutoExposure = DEFAULT_NIGHTAUTOEXPOSURE;	// is it on or off
 int Allsky::daytimeCapture = DEFAULT_DAYTIMECAPTURE;  // are we capturing daytime pictures?
 int Allsky::quality = NOT_SET;
 const char *Allsky::sType;		// displayed in output
-int Allsky::gotSignal = 0;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
+bool Allsky::gotSignal = true;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 int Allsky::CamNum = 0;
 bool Allsky::bDisplay = false;
 pthread_t Allsky::thread_display = 0;
@@ -682,13 +682,6 @@ void closeUp(int e)
 
 	printf("     ***** Stopping AllSky *****\n");
 	exit(e);
-}
-*/
-/*
-void IntHandle(int i)
-{
-	gotSignal = 1;
-	closeUp(0);
 }
 */
 /*

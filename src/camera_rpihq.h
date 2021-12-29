@@ -7,7 +7,7 @@
 class CameraRPi : public Camera {
   public:
 		void kill();
-		void setupCapture();
+		void setupForCapture();
 		int capture();
 		void postCapture(void);
 	private:

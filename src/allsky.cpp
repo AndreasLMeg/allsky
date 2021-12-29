@@ -588,7 +588,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-fonttype") == 0)
 			{
-				Allsky::linenumber = atoi(argv[++i]);
+				Allsky::linenumber = atoi(argv[++i]);  // TODO - change the name....
 			}
 			else if (strcmp(argv[i], "-fontsize") == 0)
 			{
@@ -891,6 +891,7 @@ void Allsky::init(int argc, char *argv[])
 	// other = ZWO
 #endif
 
+	status = StatusInit;
 }
 
 
@@ -1046,20 +1047,23 @@ std::string Allsky::exec(const char *cmd)
 	return result;
 }
 
+// Signalhandling
 void Allsky::IntHandle(int i)
 {
-	gotSignal = 1;
+	gotSignal = true;
 	closeUp(0);
 }
 
 // Exit the program gracefully.
 void Allsky::closeUp(int e)
 {
-	static int closingUp = 0;		// indicates if we're in the process of exiting.
+	static bool closingUp = false;		// indicates if we're in the process of exiting.
 	// For whatever reason, we're sometimes called twice, but we should only execute once.
 	if (closingUp) return;
 
-	closingUp = 1;
+  Debug("closingUp...\n");
+	closingUp = true;
+	status = StatusCloseup;
 
 #ifdef CAM_RPIHQ
 #else
@@ -1313,7 +1317,7 @@ void Allsky::prepareForDayOrNight(void)
 /*
 all common things before the capture
 */
-void Allsky::setupCapture(void) {
+void Allsky::preCapture(void) {
 	// date/time is added to many log entries to make it easier to associate them
 	// with an image (which has the date/time in the filename).
 	timeval t;

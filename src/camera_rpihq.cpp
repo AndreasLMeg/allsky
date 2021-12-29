@@ -27,7 +27,7 @@ void CameraRPi::kill()
 }
 
 
-void CameraRPi::setupCapture() 
+void CameraRPi::setupForCapture() 
 {
 	// Define command line.
 	string command;
