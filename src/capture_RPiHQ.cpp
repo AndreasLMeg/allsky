@@ -15,6 +15,7 @@
 #include "allsky.h"
 #include "camera.h"
 #include "camera_rpihq.h"
+//#include "camera_zwo.h"
 #include "allskyStatic.h"
 
 using namespace std;

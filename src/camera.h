@@ -4,6 +4,8 @@
 // Base class
 class Camera: public Allsky {
   public:
+		/* all camara depending things before using */
+		virtual void initCamera(void) = 0;
 		/* all camara depending things before the capture */
 		virtual void setupForCapture(void) = 0;
 		/* Camera captures one image */

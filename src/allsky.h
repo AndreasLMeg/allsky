@@ -6,13 +6,19 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/core/types.hpp>
 #include <opencv2/freetype.hpp>
+
+#ifdef CAM_RPIHQ
 // new includes (MEAN)
 #include "include/RPiHQ_raspistill.h"
 #include "include/mode_RPiHQ_mean.h"
+#else
+#include "include/ASICamera2.h"
+#include "camera_zwo.h"
+#endif
+
 #include "log.h"
 
 #define NOT_SET				  -1		// signifies something isn't set yet
-
 
 #ifndef ASICAMERA2_H
 #define ASI_TRUE true
@@ -81,6 +87,12 @@
 	#define DEFAULT_ASINIGHTEXPOSURE (5 * US_IN_SEC)	// 5 seconds
 	#define DEFAULT_NIGHTAUTOEXPOSURE 1
 	#define DEFAULT_ASIGAMMA         50		// not supported by all cameras
+	#define DEFAULT_BOX_SIZEX       500     // Must be a multiple of 2
+	#define DEFAULT_BOX_SIZEY       500     // Must be a multiple of 2
+	#define DEFAULT_BOX_FROM_LEFT   0.5
+	#define DEFAULT_BOX_FROM_TOP    0.5
+	#define DEFAULT_PERCENTCHANGE 10.0	// percent of ORIGINAL difference
+	#define DEFAULT_ASIDAYGHTGAIN    0
 #endif
 
 class Allsky: public Log {
@@ -176,7 +188,10 @@ class Allsky: public Log {
 		static int asiDayAutoGain;
 		static int asiDayExposure_us;
     static char const *cameraName;
-
+		static bool endOfNight;
+		static int asiNightExposure_us;
+		static std::vector<int> compression_params;
+		static char exposureStart[128];
 #ifdef CAM_RPIHQ
 		static modeMeanSetting myModeMeanSetting;
 		static raspistillSetting myRaspistillSetting;
@@ -188,19 +203,12 @@ class Allsky: public Log {
 		static int background;
 		static float saturation;
 		static bool is_libcamera;
-		static std::vector<int> compression_params;
 		static int min_brightness;					// what user enters on command line
 		static int max_brightness;
 		static int default_brightness;
 		static float min_saturation;				// produces black and white
 		static float max_saturation;
 		static float default_saturation;
-		//maybe for all ?
-		static bool endOfNight;
-		static int asiNightExposure_us;
-
-
-	
 #else
 		static const char *sType;		// displayed in output
 		static int asiWBR;
@@ -232,6 +240,40 @@ class Allsky: public Log {
 		static bool bSaveRun;
 		static pthread_mutex_t mtx_SaveImg;
 		static pthread_cond_t cond_SatrtSave;
+		static ASI_ERROR_CODE asiRetCode;  // used for return code from ASI functions.
+		static long bufferSize;
+		#ifdef USE_HISTOGRAM
+		static float histogramBoxPercentFromLeft;
+		static float histogramBoxPercentFromTop;
+		static int showHistogram;
+		static int maxHistogramAttempts;	// max number of times we'll try for a better histogram mean
+		static int showHistogramBox;
+		static const int percent_change;
+		#endif	// USE_HISTOGRAM
+		static int current_histogramBoxSizeX;
+		static int current_histogramBoxSizeY;
+		static int histogramBoxSizeX;
+		static int histogramBoxSizeY;
+		static int originalITextX;
+		static int originalITextY;
+		static int originalFontsize;
+		static int originalLinewidth;
+		static long current_exposure_us;
+		static int gainChange;			// how much to change gain up or down
+		static long camera_max_autoexposure_us;	// camera's max auto-exposure
+		static long camera_min_exposure_us;	// camera's minimum exposure
+		static int asiDayGain;
+		static int numGainChanges;		// This is reset at every day/night and night/day transition.
+		static bool adjustGain;	// Should we adjust the gain?  Set by user on command line.
+		static bool currentAdjustGain;	// Adjusting it right now?
+		static int totalAdjustGain;	// The total amount to adjust gain.
+		static int perImageAdjustGain;	// Amount of gain to adjust each image
+		static int gainTransitionImages;
+		static int displayedNoDaytimeMsg;
+		static int exitCode;
+		static std::vector<int> compression_parameters; // todo needed ????
+		static bool bSavingImg;
+		static ASI_CONTROL_CAPS ControlCaps;
 
 #endif
 		// main functions

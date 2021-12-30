@@ -26,6 +26,10 @@ void CameraRPi::kill()
 	system(kcmd);						// Stop any currently running process
 }
 
+void CameraRPi::initCamera()
+{
+	// nothing to do
+}
 
 void CameraRPi::setupForCapture() 
 {

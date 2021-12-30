@@ -119,7 +119,7 @@ sunwait:
 
 capture:capture.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC)  $@.cpp -o $@  allsky.cpp $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
+	@$(CC)  $@.cpp log.cpp camera_zwo.cpp allsky.cpp -o $@  allsky.cpp $(CFLAGS) $(OPENCV) -lASICamera2 $(USB)
 	@echo `date +%F\ %R:%S` Done.
 
 capture_RPiHQ:capture_RPiHQ.cpp
