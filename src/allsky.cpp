@@ -1296,6 +1296,7 @@ void Allsky::prepareForDayOrNight(void)
 		*/
 
 		// TODO: if not the first time, should we free the old pRgb?
+		pRgb.release();
 		if (Allsky::Image_type == ASI_IMG_RAW16)
 		{
 			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_16UC1);

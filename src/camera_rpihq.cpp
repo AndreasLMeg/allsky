@@ -51,15 +51,16 @@ void CameraRPi::setupForCapture()
 // Build capture command to capture the image from the HQ camera
 int CameraRPi::capture() 
 {
-		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, Allsky::is_libcamera, &Allsky::pRgb);
+		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, Allsky::is_libcamera);
 }
 
-int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera, cv::Mat *image)
+int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera)
 {
 	// Define command line.
 	string command;
 	if (libcamera) command = "libcamera-still";
 	else command = "raspistill";
+	Allsky::Info("RPiHQcapture:0\n");
 
 	// Ensure no process is still running.
 	// Include "--" so we only find the command, not a different program with the command
@@ -69,7 +70,9 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 	strcpy(kcmd, kill.c_str());			// Convert command to character variable
 
 	Allsky::Trace(" > Kill command: %s\n", kcmd);
+	Allsky::Info("RPiHQcapture:1\n");
 	system(kcmd);						// Stop any currently running process
+	Allsky::Info("RPiHQcapture:2\n");
 
 	stringstream ss;
 
@@ -122,6 +125,8 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 			command += "=1";
 	}
 
+	Allsky::Info("RPiHQcapture:3\n");
+
 	if (bin > 3) 	{
 		bin = 3;
 	}
@@ -166,6 +171,8 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 		}
 	}
 
+	Allsky::Info("RPiHQcapture:4\n");
+
 	if (Allsky::myModeMeanSetting.mode_mean)
 		*exposure_us = Allsky::myRaspistillSetting.shutter_us;
 
@@ -204,6 +211,8 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 			command += " --exposure off";
 		command += " --shutter " + ss.str();
 	}
+
+	Allsky::Info("RPiHQcapture:5\n");
 
 	// Check if auto gain is selected
 	if (auto_gain)
@@ -251,6 +260,8 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 		else
 			command += " --analoggain " + ss.str();
 	}
+
+	Allsky::Info("RPiHQcapture:6\n");
 
 	if (Allsky::myModeMeanSetting.mode_mean) {
 		 	stringstream Str_ExposureTime;
@@ -411,6 +422,8 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 				command += " " + info_text;
 		}
 
+	Allsky::Info("RPiHQcapture:7\n");
+
 if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 {
 		if (fontsize < 6)
@@ -442,6 +455,7 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 }
 	}
 
+	Allsky::Info("RPiHQcapture:8\n");
 
 	if (libcamera)
 	{
@@ -452,24 +466,40 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 	if (libcamera)
 		command += " 2> /dev/null";	// gets rid of a bunch of libcamera verbose messages
 
+	command += "; sync";
+
+	Allsky::Info("RPiHQcapture:9\n");
+
 	// Define char variable
 	char cmd[command.length() + 1];
+
+	Allsky::Info("RPiHQcapture:10\n");
 
 	// Convert command to character variable
 	strcpy(cmd, command.c_str());
 
+	Allsky::Info("RPiHQcapture:11\n");
+
 	Allsky::Debug("> Capture command: %s\n", cmd);
 
+	system("sync;");
 	// Execute the command.
 	int ret = system(cmd);
 
+	Allsky::Info("RPiHQcapture:12 ret=%d\n", ret);
 	if (ret == 0)
 	{
-		*image = cv::imread(Allsky::fileName, cv::IMREAD_UNCHANGED);
-		if (! image->data) {
+		Allsky::Info("RPiHQcapture:13\n");
+		pRgb.release();
+		Allsky::Info("RPiHQcapture:13a\n");
+		pRgb = cv::imread(Allsky::fileName, cv::IMREAD_UNCHANGED);
+		Allsky::Info("RPiHQcapture:14\n");
+		if (! pRgb.data) {
+			Allsky::Info("RPiHQcapture:15\n");
 			printf("WARNING: Error re-reading file '%s'; skipping further processing.\n", basename(Allsky::fileName));
 		}
 	}
+	Allsky::Info("RPiHQcapture:16\n");
 	return(ret);
 }
 

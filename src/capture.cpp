@@ -23,26 +23,22 @@
 #include <stdarg.h>
 
 #include "allsky.h"
-#include "camera.h"
-//#include "camera_rpihq.h"
 #include "camera_zwo.h"
 #include "allskyStatic.h"
 
 #define USE_HISTOGRAM                     // use the histogram code as a workaround to ZWO's bug
 
-// Forward definitions
-//char *getRetCode(ASI_ERROR_CODE);
-
 Camera* myCam;
 
 int main(int argc, char *argv[])
 {
+	/*
 	Allsky::tty = isatty(fileno(stdout)) ? true : false;
 	signal(SIGINT, Allsky::IntHandle);
 	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
 	pthread_mutex_init(&Allsky::mtx_SaveImg, 0);
 	pthread_cond_init(&Allsky::cond_SatrtSave, 0);
-
+*/
 
 
 	// Some settings have both day and night versions, some have only one version that applies to both,
@@ -55,7 +51,7 @@ int main(int argc, char *argv[])
 
 	// #define the defaults so we can use the same value in the help message.
 
-#define SMALLFONTSIZE_MULTIPLIER 0.08
+//#define SMALLFONTSIZE_MULTIPLIER 0.08
 
 	
 	//-------------------------------------------------------------------------------------------------------
@@ -77,9 +73,6 @@ int main(int argc, char *argv[])
 	{
 		Allsky::prepareForDayOrNight();
 
-
-
-
 		while (Allsky::status == Allsky::StatusLoop && (Allsky::lastDayOrNight == Allsky::dayOrNight))
 		{
 			Allsky::preCapture();
@@ -87,7 +80,7 @@ int main(int argc, char *argv[])
 			int retCode = myCam->capture();
 			if (retCode == 0) {
 				myCam->postCapture();
-				Allsky::deliverImage();
+				myCam->deliverImage();
 			}
 			else {
 				// Check if we reached the maximum number of consective errors
@@ -97,7 +90,7 @@ int main(int argc, char *argv[])
 				usleep(Allsky::currentDelay_ms * US_IN_MS); // TODO: move to waitForNextCapture
 				continue; // TODO: ist das notwendig ?
 			}
-			Allsky::waitForNextCapture();
+			myCam->waitForNextCapture();
 			
 			// Check for day or night based on location and angle
 			Allsky::calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
