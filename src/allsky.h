@@ -7,16 +7,17 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/freetype.hpp>
 
+#include "log.h"
+
 #ifdef CAM_RPIHQ
 // new includes (MEAN)
 #include "include/RPiHQ_raspistill.h"
 #include "include/mode_RPiHQ_mean.h"
 #else
 #include "include/ASICamera2.h"
-#include "camera_zwo.h"
+//#include "camera_zwo.h"
 #endif
 
-#include "log.h"
 
 #define NOT_SET				  -1		// signifies something isn't set yet
 

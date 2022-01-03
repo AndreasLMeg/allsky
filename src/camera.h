@@ -1,6 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "allsky.h"
+
 // Base class
 class Camera: public Allsky {
   public:

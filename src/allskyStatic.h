@@ -183,6 +183,33 @@ int Allsky::exitCode = 0;    // Exit code for main()
 std::vector<int> Allsky::compression_parameters;
 bool Allsky::bSavingImg;
 ASI_CONTROL_CAPS Allsky::ControlCaps;
+pthread_mutex_t Allsky::mtx_SaveImg;
+pthread_cond_t Allsky::cond_SatrtSave;
+int Allsky::asi_day_max_autoexposure_ms= DEFAULT_ASIDAYMAXAUTOEXPOSURE_MS;
+int Allsky::current_skip_frames = NOT_SET;
+int Allsky::day_skip_frames = DEFAULT_DAYSKIPFRAMES;
+int Allsky::night_skip_frames = DEFAULT_NIGHTSKIPFRAMES;
+int Allsky::asi_night_max_autoexposure_ms = DEFAULT_ASINIGHTMAXAUTOEXPOSURE_MS;
+long Allsky::current_max_autoexposure_us  = NOT_SET;
+long Allsky::asi_day_exposure_us = DEFAULT_ASIDAYEXPOSURE;
+long Allsky::asi_night_exposure_us = DEFAULT_ASINIGHTEXPOSURE;
+int Allsky::CamNum = 0;
+int Allsky::asiNightMaxGain = DEFAULT_ASINIGHTMAXGAIN;
+long Allsky::asiTargetTemp = 0;
+bool Allsky::use_new_exposure_algorithm = true;
+int Allsky::asiBandwidth = DEFAULT_ASIBANDWIDTH;
+int Allsky::asiAutoBandwidth = 0;	// is Auto Bandwidth on or off?
+int Allsky::asiCoolerEnabled = 0;
+int Allsky::aggression = DEFAULT_AGGRESSION; // ala PHD2.  Percent of change made, 1 - 100.
+const char *Allsky::sType;		// displayed in output
+int Allsky::asiGamma = DEFAULT_ASIGAMMA;
+ASI_CAMERA_INFO Allsky::ASICameraInfo;
+int Allsky::gainTransitionTime = DEFAULT_GAIN_TRANSITION_TIME;
+pthread_t Allsky::thread_display = 0;
+pthread_t Allsky::hthdSave = 0;
+bool Allsky::bSaveRun = false;
+void *Allsky::retval;
+bool Allsky::bDisplay = false;
 #endif
 
 // Todo:

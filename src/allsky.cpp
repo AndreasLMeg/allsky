@@ -9,6 +9,11 @@
 
 #include "allsky.h"
 
+#ifdef CAM_RPIHQ
+#else
+#include "camera_zwo.h"
+#endif
+
 using namespace std;
 
 
