@@ -85,7 +85,7 @@ const char *imagetype = "";
 		imagetype = "jpg";
 		Allsky::compression_parameters.push_back(cv::IMWRITE_JPEG_QUALITY);
 		// want dark frames to be at highest quality
-		if (Allsky::quality > 100 || Allsky::taking_dark_frames)
+		if (Allsky::quality > 100 || settings.taking_dark_frames)
 		{
 			Allsky::quality = 100;
 		}
@@ -98,7 +98,7 @@ const char *imagetype = "";
 	{
 		imagetype = "png";
 		Allsky::compression_parameters.push_back(cv::IMWRITE_PNG_COMPRESSION);
-		if (Allsky::taking_dark_frames)
+		if (settings.taking_dark_frames)
 		{
 			Allsky::quality = 0;	// actually, it's PNG compression - 0 is highest quality
 		}
@@ -119,7 +119,7 @@ const char *imagetype = "";
 	}
 	Allsky::compression_parameters.push_back(Allsky::quality);
 
-	if (Allsky::taking_dark_frames)
+	if (settings.taking_dark_frames)
 	{
 		// To avoid overwriting the optional notification inage with the dark image,
 		// during dark frames we use a different file name.
@@ -282,7 +282,7 @@ const char *imagetype = "";
 
 	// Get a few values from the camera that we need elsewhere.
 	ASIGetNumOfControls(Allsky::CamNum, &iNumOfCtrl);
-	if (Allsky::debugLevel >= 4)
+	if (settings.debugLevel >= 4)
 		printf("Control Caps:\n");
 	for (int i = 0; i < iNumOfCtrl; i++)
 	{
@@ -301,7 +301,7 @@ const char *imagetype = "";
 			break;
 #endif
 		}
-		if (Allsky::debugLevel >= 4)
+		if (settings.debugLevel >= 4)
 		{
 			printf("- %s:\n", Allsky::ControlCaps.Name);
 			printf("   - Description = %s\n", Allsky::ControlCaps.Description);
@@ -335,7 +335,7 @@ const char *imagetype = "";
 	   	Allsky::asi_night_exposure_us = Allsky::camera_max_autoexposure_us;
 	}
 
-	if (Allsky::debugLevel >= 4)
+	if (settings.debugLevel >= 4)
 	{
 		printf("Supported video formats:\n");
 		for (int i = 0; i < 8; i++)
@@ -447,7 +447,7 @@ const char *imagetype = "";
 	// so don't transition.
 	// gainTransitionTime of 0 means don't adjust gain.
 	// No need to adjust gain if day and night gain are the same.
-	if (Allsky::asiDayAutoGain == 1 || Allsky::asiNightAutoGain == 1 || Allsky::gainTransitionTime == 0 || Allsky::asiDayGain == Allsky::asiNightGain || Allsky::taking_dark_frames == 1)
+	if (Allsky::asiDayAutoGain == 1 || Allsky::asiNightAutoGain == 1 || Allsky::gainTransitionTime == 0 || Allsky::asiDayGain == Allsky::asiNightGain || settings.taking_dark_frames == 1)
 	{
 		Allsky::adjustGain = false;
 		Allsky::Debug("Will NOT adjust gain at transitions\n");
@@ -462,7 +462,7 @@ const char *imagetype = "";
 		Allsky::Warning("Extra Text File Age Disabled So Displaying Anyway\n");
 	}
 
-	if (Allsky::tty)
+	if (settings.tty)
 		printf("*** Press Ctrl+C to stop ***\n\n");
 	else
 		printf("*** Stop the allsky service to end this process. ***\n\n");
@@ -498,7 +498,7 @@ int CameraZWO::capture()
 				numErrors = 0;
 				Allsky::numExposures++;
 
-				if (Allsky::numExposures == 0 && Allsky::preview == 1)
+				if (Allsky::numExposures == 0 && settings.preview == 1)
 				{
 					// Start the preview thread at the last possible moment.
 					Allsky::bDisplay = 1;
@@ -509,7 +509,7 @@ int CameraZWO::capture()
 				int usedHistogram = 0;	// did we use the histogram method?
 
 				// We don't use this at night since the ZWO bug is only when it's light outside.
-				if (Allsky::dayOrNight == "DAY" && Allsky::asiDayAutoExposure && ! Allsky::taking_dark_frames)
+				if (Allsky::dayOrNight == "DAY" && Allsky::asiDayAutoExposure && ! settings.taking_dark_frames)
 				{
 					usedHistogram = 1;	// we are using the histogram code on this exposure
 					attempts = 0;
@@ -870,7 +870,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 				writeTemperatureToFile((float)Allsky::actualTemp / 10.0);
 
 				// If taking_dark_frames is off, add overlay text to the image
-				if (! Allsky::taking_dark_frames)
+				if (! settings.taking_dark_frames)
 				{
 					int iYOffset = 0;
 					Allsky::overlayText(iYOffset);
@@ -947,7 +947,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					// TODO: wait for the prior image to finish saving.
 				}
 
-				if (Allsky::asiNightAutoGain == 1 && Allsky::dayOrNight == "NIGHT" && ! Allsky::taking_dark_frames)
+				if (Allsky::asiNightAutoGain == 1 && Allsky::dayOrNight == "NIGHT" && ! settings.taking_dark_frames)
 				{
 					ASIGetControlValue(Allsky::CamNum, ASI_GAIN, &actualGain, &bAuto);
 					Allsky::Warning("  > Auto Gain value: %ld\n", actualGain);
@@ -964,7 +964,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 #endif
 
 					// Delay applied before next exposure
-					if (Allsky::dayOrNight == "NIGHT" && Allsky::asiNightAutoExposure == 1 && last_exposure_us < (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) && ! Allsky::taking_dark_frames)
+					if (Allsky::dayOrNight == "NIGHT" && Allsky::asiNightAutoExposure == 1 && last_exposure_us < (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) && ! settings.taking_dark_frames)
 					{
 						// If using auto-exposure and the actual exposure is less than the max,
 						// we still wait until we reach maxexposure, then wait for the delay period.
@@ -979,14 +979,14 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					{
 						// Sleep even if taking dark frames so the sensor can cool between shots like it would
 						// do on a normal night.  With no delay the sensor may get hotter than it would at night.
-						Allsky::Debug("  > Sleeping %s from %s exposure\n", Allsky::length_in_units(Allsky::currentDelay_ms * US_IN_MS, false), Allsky::taking_dark_frames ? "dark frame" : "auto");
+						Allsky::Debug("  > Sleeping %s from %s exposure\n", Allsky::length_in_units(Allsky::currentDelay_ms * US_IN_MS, false), settings.taking_dark_frames ? "dark frame" : "auto");
 						usleep(Allsky::currentDelay_ms * US_IN_MS);
 					}
 				}
 				else
 				{
 					std::string s;
-				   if (Allsky::taking_dark_frames)
+				   if (settings.taking_dark_frames)
 						s = "dark frame";
 				   else
 						s = "manual";
@@ -997,7 +997,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					Allsky::Debug("  > Sleeping %s from %s exposure\n", Allsky::length_in_units(Allsky::currentDelay_ms * US_IN_MS, false), s.c_str());
 					usleep(Allsky::currentDelay_ms * US_IN_MS);
 				}
-				Allsky::calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
+				calculateDayOrNight();
 
 	} else {
 		return 1;
@@ -1379,8 +1379,8 @@ bool CameraZWO::resetGainTransitionVariables(int dayGain, int nightGain)
 	{
 		// At nightime if the exposure is less than the max, we wait until max has expired,
 		// so use it instead of the exposure time.
-		totalTimeInSec = (Allsky::asi_night_max_autoexposure_ms / MS_IN_SEC) + (Allsky::nightDelay_ms / MS_IN_SEC);
-		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_night_max_autoexposure_ms=%'dms, nightDelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_night_max_autoexposure_ms, Allsky::nightDelay_ms);
+		totalTimeInSec = (Allsky::asi_night_max_autoexposure_ms / MS_IN_SEC) + (settings.night.nightDelay_ms / MS_IN_SEC);
+		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_night_max_autoexposure_ms=%'dms, nightDelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_night_max_autoexposure_ms, settings.night.nightDelay_ms);
 	}
 
 	Allsky::gainTransitionImages = ceil(Allsky::gainTransitionTime / totalTimeInSec);
@@ -1425,7 +1425,7 @@ void * CameraZWO::SaveImgThd(void *para)
 
 		Allsky::bSavingImg = true;
 
-		Allsky::Warning("  > Saving %s image '%s'\n", Allsky::taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), Allsky::fileName);
+		Allsky::Warning("  > Saving %s image '%s'\n", settings.taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), Allsky::fileName);
 		int64 st, et;
 
 		bool result = false;

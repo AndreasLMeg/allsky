@@ -280,11 +280,11 @@ void Allsky::waitToFix(char const *msg)
 	printf("**********\n");
 	printf("%s\n", msg);
 	printf("*** After fixing, ");
-	if (tty)
+	if (settings.tty)
 		printf("restart allsky.sh.\n");
 	else
 		printf("restart the allsky service.\n");
-	if (notificationImages)
+	if (settings.notificationImages)
 		system("scripts/copy_notification_image.sh Error &");
 	sleep(5);	// give time for image to be copied
 	printf("*** Sleeping until you fix the problem.\n");
@@ -294,8 +294,18 @@ void Allsky::waitToFix(char const *msg)
 
 void Allsky::init(int argc, char *argv[])
 {
-
-	Allsky::tty = isatty(fileno(stdout)) ? true : false;
+	settings.debugLevel = 0;
+	settings.tty = isatty(fileno(stdout)) ? true : false;	// are we on a tty?
+	settings.notificationImages = DEFAULT_NOTIFICATIONIMAGES;
+	settings.angle = DEFAULT_ANGLE;
+	settings.latitude = DEFAULT_LATITUDE;
+	settings.longitude = DEFAULT_LONGITUDE;
+	settings.taking_dark_frames = 0;
+	settings.preview = 0;
+	// day
+	settings.day.daytimeCapture = DEFAULT_DAYTIMECAPTURE;  // are we capturing daytime pictures?
+	// night
+	settings.night.nightDelay_ms = 10;	// Delay in milliseconds.
 
 	signal(SIGINT, Allsky::IntHandle);
 	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
@@ -479,7 +489,7 @@ void Allsky::init(int argc, char *argv[])
 #endif
 			else if (strcmp(argv[i], "-tty") == 0)	// overrides what was automatically determined
 			{
-				Allsky::tty = atoi(argv[++i]) ? true : false;
+				settings.tty = atoi(argv[++i]) ? true : false;
 			}
 			else if (strcmp(argv[i], "-width") == 0)
 			{
@@ -541,7 +551,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-nightdelay") == 0 || strcmp(argv[i], "-delay") == 0)
 			{
-				nightDelay_ms = atoi(argv[++i]);
+				settings.night.nightDelay_ms = atoi(argv[++i]);
 			}
 			else if ((strcmp(argv[i], "-autowhitebalance") == 0) || (strcmp(argv[i], "-awb") == 0))
 			{
@@ -615,19 +625,19 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-latitude") == 0)
 			{
-				latitude = argv[++i];
+				settings.latitude = argv[++i];
 			}
 			else if (strcmp(argv[i], "-longitude") == 0)
 			{
-				longitude = argv[++i];
+				settings.longitude = argv[++i];
 			}
 			else if (strcmp(argv[i], "-angle") == 0)
 			{
-				angle = argv[++i];
+				settings.angle = argv[++i];
 			}
 			else if (strcmp(argv[i], "-notificationimages") == 0)
 			{
-				Allsky::notificationImages = atoi(argv[++i]);
+				settings.notificationImages = atoi(argv[++i]);
 			}
 #ifdef USE_HISTOGRAM
 			else if (strcmp(argv[i], "-histogrambox") == 0)
@@ -658,12 +668,12 @@ void Allsky::init(int argc, char *argv[])
 #endif
 			else if (strcmp(argv[i], "-preview") == 0)
 			{
-				preview = atoi(argv[++i]);
+				settings.preview = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-debuglevel") == 0)
 			{
-				Allsky::debugLevel = atoi(argv[++i]);
-				Log::SetLevel ((Log::Level)debugLevel);
+				settings.debugLevel = atoi(argv[++i]);
+				Log::SetLevel ((Log::Level)settings.debugLevel);
 			}
 			else if (strcmp(argv[i], "-showTime") == 0 || strcmp(argv[i], "-time") == 0)
 			{
@@ -675,7 +685,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-darkframe") == 0)
 			{
-				taking_dark_frames = atoi(argv[++i]);
+				settings.taking_dark_frames = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-showDetails") == 0)
 			{
@@ -714,7 +724,7 @@ void Allsky::init(int argc, char *argv[])
 #endif
 			else if (strcmp(argv[i], "-daytime") == 0)
 			{
-				daytimeCapture = atoi(argv[++i]);
+				settings.day.daytimeCapture = atoi(argv[++i]);
 			}
 		}
 	}
@@ -821,7 +831,7 @@ void Allsky::init(int argc, char *argv[])
 
 	//some other settings
 	// for all
-	if (Allsky::taking_dark_frames)
+	if (settings.taking_dark_frames)
 	{
 		// To avoid overwriting the optional notification inage with the dark image,
 		// during dark frames we use a different file name.
@@ -921,9 +931,9 @@ void Allsky::info(void)
 #endif
 	printf(" Resolution (before any binning): %dx%d\n", width, height);
 	printf(" Quality: %d\n", quality);
-	printf(" Daytime capture: %s\n", yesNo(daytimeCapture));
+	printf(" Daytime capture: %s\n", yesNo(settings.day.daytimeCapture));
 	printf(" Delay (day): %'dms\n", dayDelay_ms);
-	printf(" Delay (night): %'dms\n", nightDelay_ms);
+	printf(" Delay (night): %'dms\n", settings.night.nightDelay_ms);
 	printf(" Brightness (day): %d\n", asiDayBrightness);
 	printf(" Brightness (night): %d\n", asiNightBrightness);
 	printf(" Binning (day): %d\n", dayBin);
@@ -941,20 +951,20 @@ void Allsky::info(void)
 	printf(" Outline Font : %s\n", yesNo(Allsky::outlinefont));
 	printf(" Flip Image: %d\n", asiFlip);
 	printf(" Filename: %s\n", fileName);
-	printf(" Latitude: %s, Longitude: %s\n", latitude, longitude);
-	printf(" Sun Elevation: %s\n", angle);
+	printf(" Latitude: %s, Longitude: %s\n", settings.latitude, settings.longitude);
+	printf(" Sun Elevation: %s\n", settings.angle);
 	printf(" Locale: %s\n", locale);
-	printf(" Notification Images: %s\n", yesNo(Allsky::notificationImages));
+	printf(" Notification Images: %s\n", yesNo(settings.notificationImages));
 	printf(" Show Time: %s (format: %s)\n", yesNo(showTime), timeFormat);
 	printf(" Show Details: %s\n", yesNo(showDetails));
 	printf(" Show Temperature: %s, type: %s\n", yesNo(Allsky::showTemp), Allsky::tempType);
 	printf(" Show Exposure: %s\n", yesNo(Allsky::showExposure));
 	printf(" Show Gain: %s\n", yesNo(Allsky::showGain));
 	printf(" Show Brightness: %s\n", yesNo(Allsky::showBrightness));
-	printf(" Preview: %s\n", yesNo(preview));
-	printf(" Taking Dark Frames: %s\n", yesNo(taking_dark_frames));
-	printf(" Debug Level: %d\n", Allsky::debugLevel);
-	printf(" On TTY: %s\n", Allsky::tty ? "Yes" : "No");
+	printf(" Preview: %s\n", yesNo(settings.preview));
+	printf(" Taking Dark Frames: %s\n", yesNo(settings.taking_dark_frames));
+	printf(" Debug Level: %d\n", settings.debugLevel);
+	printf(" On TTY: %s\n", settings.tty ? "Yes" : "No");
 #ifdef CAM_RPIHQ
 #else
 	printf(" Aggression: %d%%\n", aggression);
@@ -997,7 +1007,7 @@ char const *Allsky::yesNo(int flag)
 // Return the string for the specified color, or "" if we're not on a tty.
 char const *Allsky::c(char const *color)
 {
-	if (Allsky::tty)
+	if (settings.tty)
 	{
 		return(color);
 	}
@@ -1094,7 +1104,7 @@ void Allsky::closeUp(int e)
 	// Unfortunately we don't know if the service is stopping us, or restarting us.
 	// If it was restarting there'd be no reason to copy a notification image since it
 	// will soon be overwritten.  Since we don't know, always copy it.
-	if (Allsky::notificationImages) {
+	if (settings.notificationImages) {
 		system("scripts/copy_notification_image.sh NotRunning &");
 		// Sleep to give it a chance to print any messages so they (hopefully) get printed
 		// before the one below.  This is only so it looks nicer in the log file.
@@ -1106,13 +1116,13 @@ void Allsky::closeUp(int e)
 }
 
 // Calculate if it is day or night
-void Allsky::calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
+void Allsky::calculateDayOrNight(void)
 {
 
 	lastDayOrNight = dayOrNight;
 
 	char sunwaitCommand[128];
-	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
+	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", settings.angle, settings.latitude, settings.longitude);
 	dayOrNight = Allsky::exec(sunwaitCommand);
 	dayOrNight.erase(std::remove(dayOrNight.begin(), dayOrNight.end(), '\n'), dayOrNight.end());
 
@@ -1134,11 +1144,11 @@ void Allsky::calculateDayOrNight(const char *latitude, const char *longitude, co
 
 
 // Calculate how long until nighttime.
-int Allsky::calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle)
+int Allsky::calculateTimeToNightTime(void)
 {
 	std::string t;
 	char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
-	sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", angle, latitude, longitude);
+	sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", settings.angle, settings.latitude, settings.longitude);
 	t = Allsky::exec(sunwaitCommand);
 	t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
 
@@ -1170,7 +1180,7 @@ void Allsky::prepareForDayOrNight(void)
 	int displayedNoDaytimeMsg = 0;
 	
 	// Find out if it is currently DAY or NIGHT
-	calculateDayOrNight(latitude, longitude, angle);
+	calculateDayOrNight();
 	lastDayOrNight = dayOrNight;
 
 		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
@@ -1181,19 +1191,19 @@ void Allsky::prepareForDayOrNight(void)
 				RPiHQcalcMean(Allsky::fileName, asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 		}
 
-		if (Allsky::taking_dark_frames) {
+		if (settings.taking_dark_frames) {
 			// We're doing dark frames so turn off autoexposure and autogain, and use
 			// nightime gain, delay, exposure, and brightness to mimic a nightime shot.
 			Allsky::currentAutoExposure = 0;
 			Allsky::currentAutoGain = 0;
 			Allsky::currentGain = Allsky::asiNightGain;
-			currentDelay_ms = Allsky::nightDelay_ms;
+			currentDelay_ms = settings.night.nightDelay_ms;
 			Allsky::currentExposure_us = asiNightExposure_us;
 			Allsky::currentBrightness = Allsky::asiNightBrightness;
 			Allsky::currentBin = Allsky::nightBin;
 
  			Allsky::Info("Taking dark frames...\n");
-			if (Allsky::notificationImages) {
+			if (settings.notificationImages) {
 				system("scripts/copy_notification_image.sh DarkFrames &");
 			}
 		}
@@ -1212,19 +1222,19 @@ void Allsky::prepareForDayOrNight(void)
 			}
 
 			// Check if images should not be captured during day-time
-			if (Allsky::daytimeCapture != 1)
+			if (settings.day.daytimeCapture != 1)
 			{
 				// Only display messages once a day.
 				if (displayedNoDaytimeMsg == 0) {
-					if (Allsky::notificationImages) {
+					if (settings.notificationImages) {
 						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
 					}
 					Allsky::Info("It's daytime... we're not saving images.\n%s\n",
-						Allsky::tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
+						settings.tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
 					displayedNoDaytimeMsg = 1;
 
 					// sleep until almost nighttime, then wake up and sleep a short time
-					int secsTillNight = Allsky::calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
+					int secsTillNight = Allsky::calculateTimeToNightTime();
 					sleep(secsTillNight - 10);
 				}
 				else
@@ -1278,7 +1288,7 @@ void Allsky::prepareForDayOrNight(void)
 			}
 			Allsky::currentAutoExposure = Allsky::asiNightAutoExposure;
 			Allsky::currentBrightness = Allsky::asiNightBrightness;
-			currentDelay_ms = Allsky::nightDelay_ms;
+			currentDelay_ms = settings.night.nightDelay_ms;
 			Allsky::currentBin = Allsky::nightBin;
 			Allsky::currentGain = Allsky::asiNightGain;
 			Allsky::currentAutoGain = Allsky::asiNightAutoGain;
@@ -1310,7 +1320,7 @@ void Allsky::prepareForDayOrNight(void)
 			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC1);
 		}
 
-		if (Allsky::tty)
+		if (settings.tty)
 			printf("Press Ctrl+Z to stop\n\n");	// xxx ECC: Ctrl-Z stops a process, it doesn't kill it
 		else
 			printf("Stop the allsky service to end this process.\n\n");
@@ -1320,13 +1330,13 @@ void Allsky::prepareForDayOrNight(void)
 void Allsky::prepareForDayOrNight(void) 
 {
 		// Find out if it is currently DAY or NIGHT
-		Allsky::calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
+		calculateDayOrNight();
 
-		if (! Allsky::taking_dark_frames)
+		if (! settings.taking_dark_frames)
 			currentAdjustGain = CameraZWO::resetGainTransitionVariables(asiDayGain, Allsky::asiNightGain);
 
 		lastDayOrNight = Allsky::dayOrNight;
-		if (Allsky::taking_dark_frames)
+		if (settings.taking_dark_frames)
 		{
 				// We're doing dark frames so turn off autoexposure and autogain, and use
 				// nightime gain, delay, max exposure, bin, and brightness to mimic a nightime shot.
@@ -1336,14 +1346,14 @@ void Allsky::prepareForDayOrNight(void)
 				// Don't need to set ASI_AUTO_MAX_GAIN since we're not using auto gain
 				Allsky::currentGain = Allsky::asiNightGain;
 				gainChange = 0;
-				Allsky::currentDelay_ms = Allsky::nightDelay_ms;
+				Allsky::currentDelay_ms = settings.night.nightDelay_ms;
 				Allsky::current_max_autoexposure_us = current_exposure_us = Allsky::asi_night_max_autoexposure_ms * US_IN_MS;
 				Allsky::currentBin = Allsky::nightBin;
 				Allsky::currentBrightness = Allsky::asiNightBrightness;
 
 				Allsky::Info("Taking dark frames...\n");
 
-				if (Allsky::notificationImages) {
+				if (settings.notificationImages) {
 					system("scripts/copy_notification_image.sh DarkFrames &");
 				}
 		}
@@ -1359,19 +1369,19 @@ void Allsky::prepareForDayOrNight(void)
 				displayedNoDaytimeMsg = 0;
 			}
 
-			if (Allsky::daytimeCapture != 1)
+			if (settings.day.daytimeCapture != 1)
 			{
 				// Only display messages once a day.
 				if (displayedNoDaytimeMsg == 0) {
-					if (Allsky::notificationImages) {
+					if (settings.notificationImages) {
 						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
 					}
 					Allsky::Debug("It's daytime... we're not saving images.\n*** %s ***\n",
-						Allsky::tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
+						settings.tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
 					displayedNoDaytimeMsg = 1;
 
 					// sleep until almost nighttime, then wake up and sleep a short time
-					int secsTillNight = Allsky::calculateTimeToNightTime(Allsky::latitude, Allsky::longitude, Allsky::angle);
+					int secsTillNight = Allsky::calculateTimeToNightTime();
 					sleep(secsTillNight - 10);
 				}
 				else
@@ -1470,7 +1480,7 @@ void Allsky::prepareForDayOrNight(void)
 
 			Allsky::currentAutoExposure = Allsky::asiNightAutoExposure ? ASI_TRUE : ASI_FALSE;
 			Allsky::currentBrightness = Allsky::asiNightBrightness;
-			Allsky::currentDelay_ms = Allsky::nightDelay_ms;
+			Allsky::currentDelay_ms = settings.night.nightDelay_ms;
 			Allsky::currentBin = Allsky::nightBin;
 			Allsky::current_max_autoexposure_us = Allsky::asi_night_max_autoexposure_ms * US_IN_MS;
 			Allsky::currentGain = Allsky::asiNightGain;	// must come before determineGainChange() below
@@ -1596,7 +1606,7 @@ void Allsky::waitForNextCapture(void)
 			}
 			else if ((Allsky::dayOrNight == "NIGHT"))
 			{
-				us = (Allsky::asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (Allsky::nightDelay_ms * US_IN_MS);
+				us = (Allsky::asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (settings.night.nightDelay_ms * US_IN_MS);
 			}
 			else
 			{

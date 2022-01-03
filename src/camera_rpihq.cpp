@@ -51,7 +51,7 @@ void CameraRPi::setupForCapture()
 // Build capture command to capture the image from the HQ camera
 int CameraRPi::capture() 
 {
-		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, Allsky::taking_dark_frames, Allsky::preview, Allsky::width, Allsky::height, Allsky::is_libcamera);
+		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, Allsky::width, Allsky::height, Allsky::is_libcamera);
 }
 
 int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera)
@@ -85,7 +85,7 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 		command += " --thumb none --burst -st";
 
 	// --timeout (in MS) determines how long the video will run before it takes a picture.
-	if (Allsky::preview)
+	if (settings.preview)
 	{
 		stringstream wh;
 		wh << Allsky::width << "," << Allsky::height;
@@ -378,7 +378,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 	ss << Allsky::quality;
 	command += " --quality " + ss.str();
 
-	if (!Allsky::taking_dark_frames) {
+	if (!settings.taking_dark_frames) {
 		string info_text = "";
 
 		if (Allsky::showDetails)
@@ -404,7 +404,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 		if (strcmp(ImgText, "") != 0) {
 			ss.str("");
 			ss << " " << ImgText; 
-			if (Allsky::debugLevel > 1) {
+			if (settings.debugLevel > 1) {
 				ss << " (li-" << __TIMESTAMP__ 
 				<< ") br:" << Allsky::myRaspistillSetting.brightness 
 				<< " WBR:" << WBR 
@@ -508,7 +508,7 @@ void  CameraRPi::postCapture(void)
 				Allsky::numExposures++;
 
 				// If taking_dark_frames is off, add overlay text to the image
-				if (! Allsky::taking_dark_frames)
+				if (! settings.taking_dark_frames)
 				{
 
 					Allsky::lastGain = Allsky::currentGain;	// to be compatible with ZWO - ZWO gain=0.1 dB , RPiHQ gain=factor

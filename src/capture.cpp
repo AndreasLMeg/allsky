@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 			myCam->waitForNextCapture();
 			
 			// Check for day or night based on location and angle
-			Allsky::calculateDayOrNight(Allsky::latitude, Allsky::longitude, Allsky::angle);
+			Allsky::calculateDayOrNight();
 			Allsky::Info("----------------------------\n");
 		}
 

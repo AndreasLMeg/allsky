@@ -96,6 +96,7 @@
 	#define DEFAULT_ASIDAYGHTGAIN    0
 #endif
 
+
 class Allsky: public Log {
 
 	//enums
@@ -110,6 +111,22 @@ class Allsky: public Log {
 
 	//variables
 	public:
+		struct Allsky_settings {
+			int debugLevel;
+			bool tty;
+			int notificationImages;
+			char const *angle;
+			char const *latitude;
+			char const *longitude;
+			int taking_dark_frames;
+			int preview;
+			struct day{
+				int daytimeCapture;  // are we capturing daytime pictures?
+			} day;
+			struct night{
+				int nightDelay_ms;	// Delay in milliseconds.
+			} night;
+		} static settings;
 		static Status status;
 		static int showTime;
 		static cv::Mat pRgb;	// the image
@@ -148,22 +165,14 @@ class Allsky: public Log {
 		static long actualTemp;	// actual sensor temp, per the camera
 		static char const *tempType;	// Celsius
 		static char debugText[500];		// buffer to hold debug messages
-		static int debugLevel;
 		static char const *ImgExtraText;
 		static int extraFileAge;   // 0 disables it
-		static bool tty;	// are we on a tty?
-		static int notificationImages;
 		static char const *timeFormat;
 		static int asiAutoAWB;	// is Auto White Balance on or off?
-		static int taking_dark_frames;
-		static int preview;
 		static int showDetails;
 		static const char *locale;
 	// angle of the sun with the horizon
 	// (0=sunset, -6=civil twilight, -12=nautical twilight, -18=astronomical twilight)
-		static char const *angle;
-		static char const *latitude;
-		static char const *longitude;
 		static char const *fileName;
 		static int asiFlip;
 		static int width;		
@@ -173,8 +182,6 @@ class Allsky: public Log {
 		static int dayBin;
 		static int nightBin;
 		static int dayDelay_ms;	// Delay in milliseconds.
-		static int nightDelay_ms;	// Delay in milliseconds.
-		static int daytimeCapture;  // are we capturing daytime pictures?
 		static int quality;
 		static int asiNightBrightness;
 		static int asiDayBrightness;
@@ -299,8 +306,8 @@ class Allsky: public Log {
 		static std::string exec(const char *cmd);
 		static void IntHandle(int i);
 		static void closeUp(int e);
-		static void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle);
-		static int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle);
+		static void calculateDayOrNight(void);
+		static int calculateTimeToNightTime(void);
 };
 
 #endif

@@ -12,16 +12,7 @@ std::string Allsky::lastDayOrNight;
 Log::Level Log::m_LogLevel = Log::LevelError;
 
 // settings (json) - don't change !
-int Allsky::daytimeCapture = DEFAULT_DAYTIMECAPTURE;  // are we capturing daytime pictures?
-int Allsky::debugLevel = 0;
-bool Allsky::tty = false;	// are we on a tty?
-int Allsky::notificationImages = DEFAULT_NOTIFICATIONIMAGES;
-char const *Allsky::angle = DEFAULT_ANGLE;
-char const *Allsky::latitude = DEFAULT_LATITUDE;
-char const *Allsky::longitude = DEFAULT_LONGITUDE;
-int Allsky::taking_dark_frames = 0;
-int Allsky::preview = 0;
-int Allsky::nightDelay_ms = 10;	// Delay in milliseconds.
+Allsky::Allsky_settings Allsky::settings;
 #ifdef CAM_RPIHQ
 int Allsky::dayDelay_ms = 15;	// Delay in milliseconds.
 #else
