@@ -25,19 +25,19 @@ void Allsky::overlayText(int &iYOffset) {
 	if (showTime == 1)
 	{
 		// The time and ImgText are in the larger font; everything else is in smaller font.
-		cvText(pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * 0.1, linewidth,
 			linetype[linenumber], fontname[fontnumber], fontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 			iYOffset += iTextLineHeight;
 	}
 
 	if (ImgText[0] != '\0')
 	{
-		cvText(Allsky::pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * 0.1, linewidth,
 			linetype[linenumber], fontname[fontnumber], fontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset+=iTextLineHeight;
 	}
 
@@ -53,10 +53,10 @@ void Allsky::overlayText(int &iYOffset) {
 			sprintf(F, "  %.0fF", (((float)actualTemp / 10 * 1.8) + 32));
 		}
 		sprintf(bufTemp, "Sensor: %s %s", C, F);
-		cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -69,10 +69,10 @@ void Allsky::overlayText(int &iYOffset) {
 			sprintf(bufTemp, "Exposure: %'.2f ms%s", (float)currentExposure_us / US_IN_MS, bufTemp2);
 		// Indicate if in auto-exposure mode.
 		if (currentAutoExposure == ASI_TRUE) strcat(bufTemp, " (auto)");
-		cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -81,20 +81,20 @@ void Allsky::overlayText(int &iYOffset) {
 		sprintf(bufTemp, "Gain: %1.2f", lastGain);
 		// Indicate if in auto gain mode.
 		if (currentAutoGain == ASI_TRUE) strcat(bufTemp, " (auto)");
-		cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
 	if (showBrightness == 1)
 	{
 		sprintf(bufTemp, "Brightness: %d", currentBrightness);
-		cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -102,10 +102,10 @@ void Allsky::overlayText(int &iYOffset) {
 	if (showMean == 1 && myModeMeanSetting.mode_mean)
 	{
 		sprintf(bufTemp, "Mean: %.6f", lastMean);
-		cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 #endif
@@ -113,11 +113,11 @@ void Allsky::overlayText(int &iYOffset) {
 #ifdef CAM_RPIHQ
 	if (showFocus == 1)
 	{
-		sprintf(bufTemp, "Focus: %.2f", get_focus_measure(pRgb, myModeMeanSetting));
-		cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		sprintf(bufTemp, "Focus: %.2f", get_focus_measure(settings.image.pRgb, myModeMeanSetting));
+		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			Image_type, outlinefont);
+			settings.image.Image_type, outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 #endif
@@ -172,10 +172,10 @@ void Allsky::overlayText(int &iYOffset) {
 							line[slen-1] = '\0';
 						}
 
-						cvText(pRgb, line, iTextX, iTextY + (iYOffset / currentBin),
+						cvText(settings.image.pRgb, line, iTextX, iTextY + (iYOffset / currentBin),
 							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 							linetype[linenumber], fontname[fontnumber],
-							smallFontcolor, Image_type, outlinefont);
+							smallFontcolor, settings.image.Image_type, outlinefont);
 						iYOffset += iTextLineHeight;
 
 						//freetext
@@ -187,7 +187,7 @@ void Allsky::overlayText(int &iYOffset) {
 						cv::Ptr<cv::freetype::FreeType2> ft2;
 						ft2 = cv::freetype::createFreeType2();
 						ft2->loadFontData( "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf", 0 );
-						ft2->putText(pRgb, line, textOrg, fontHeight,
+						ft2->putText(settings.image.pRgb, line, textOrg, fontHeight,
                cv::Scalar::all(255), thickness, linestyle, true );
 						iYOffset += iTextLineHeight;
 					}
@@ -304,8 +304,21 @@ void Allsky::init(int argc, char *argv[])
 	settings.preview = 0;
 	// day
 	settings.day.daytimeCapture = DEFAULT_DAYTIMECAPTURE;  // are we capturing daytime pictures?
+	settings.day.dayDelay_ms = DEFAULT_DAYDELAY;	// Delay in milliseconds.
 	// night
 	settings.night.nightDelay_ms = 10;	// Delay in milliseconds.
+	// image-capture
+	settings.image.pRgb.release();	// the image
+	settings.image.asiFlip = 0;
+	#ifdef CAM_RPIHQ
+	settings.image.asiRotation = 0;
+	#endif
+	//   - image-destination
+	settings.image.fileName = DEFAULT_FILENAME;
+	settings.image.Image_type = DEFAULT_IMAGE_TYPE;
+	settings.image.width = DEFAULT_WIDTH;		
+	settings.image.height = DEFAULT_HEIGHT;	
+	settings.image.quality = NOT_SET;
 
 	signal(SIGINT, Allsky::IntHandle);
 	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
@@ -360,7 +373,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-rotation") == 0)
 			{
-				asiRotation = atoi(argv[++i]);
+				settings.image.asiRotation = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-background") == 0)
 			{
@@ -493,19 +506,19 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-width") == 0)
 			{
-				width = atoi(argv[++i]);
+				settings.image.width = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-height") == 0)
 			{
-				height = atoi(argv[++i]);
+				settings.image.height = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-type") == 0)
 			{
-				Allsky::Image_type = atoi(argv[++i]);
+				settings.image.Image_type = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-quality") == 0)
 			{
-				quality = atoi(argv[++i]);
+				settings.image.quality = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-dayautoexposure") == 0)
 			{
@@ -547,7 +560,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-daydelay") == 0 || strcmp(argv[i], "-daytimeDelay") == 0)
 			{
-				dayDelay_ms = atoi(argv[++i]);
+				settings.day.dayDelay_ms = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-nightdelay") == 0 || strcmp(argv[i], "-delay") == 0)
 			{
@@ -613,11 +626,11 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-flip") == 0)
 			{
-				asiFlip = atoi(argv[++i]);
+				settings.image.asiFlip = atoi(argv[++i]);
 			}
-			else if (strcmp(argv[i], "-filename") == 0)
+			else if (strcmp(argv[i], "-fileName") == 0)
 			{
-				fileName = argv[++i];
+				settings.image.fileName = argv[++i];
 			}
 			else if (strcmp(argv[i], "-camera") == 0)
 			{
@@ -835,15 +848,30 @@ void Allsky::init(int argc, char *argv[])
 	{
 		// To avoid overwriting the optional notification inage with the dark image,
 		// during dark frames we use a different file name.
-		Allsky::fileName = "dark.jpg";
+		settings.image.fileName = "dark.jpg";
 	}
 
 	// Handle "auto" image_type.
-	if (Allsky::Image_type == AUTO_IMAGE_TYPE)
+	if (settings.image.Image_type == AUTO_IMAGE_TYPE)
 	{
 		// user will have to manually set for 8- or 16-bit mono mode
-		Allsky::Image_type = ASI_IMG_RGB24;
+		settings.image.Image_type = ASI_IMG_RGB24;
 	}
+
+	// check limits of quality (jpg)
+	if (settings.image.quality > 100 || settings.taking_dark_frames)
+	{
+		settings.image.quality = 100;
+	}
+	else if (settings.image.quality == NOT_SET)
+	{
+		settings.image.quality = 95;
+	}
+	else if (settings.image.quality < 0)
+	{
+		settings.image.quality = 0;
+	}
+
 
 #ifdef CAM_RPIHQ
 	// for RPiHQ
@@ -877,13 +905,13 @@ void Allsky::init(int argc, char *argv[])
 	int iMaxWidth = 4096;
 	int iMaxHeight = 3040;
 	double pixelSize = 1.55;
-	if (Allsky::width == 0 || Allsky::height == 0)
+	if (settings.image.width == 0 || settings.image.height == 0)
 	{
-		Allsky::width  = iMaxWidth;
-		Allsky::height = iMaxHeight;
+		settings.image.width  = iMaxWidth;
+		settings.image.height = iMaxHeight;
 	}
-	Allsky::originalWidth = Allsky::width;
-	Allsky::originalHeight = Allsky::height;
+	Allsky::originalWidth = settings.image.width;
+	Allsky::originalHeight = settings.image.height;
 
 	printf(" Camera: Raspberry Pi HQ camera\n");
 	printf("  - Resolution: %dx%d\n", iMaxWidth, iMaxHeight);
@@ -929,10 +957,10 @@ void Allsky::info(void)
 	printf(" Gamma: %d\n", asiGamma);
 	printf(" Image Type: %s\n", sType);
 #endif
-	printf(" Resolution (before any binning): %dx%d\n", width, height);
-	printf(" Quality: %d\n", quality);
+	printf(" Resolution (before any binning): %dx%d\n", settings.image.width, settings.image.height);
+	printf(" Quality: %d\n", settings.image.quality);
 	printf(" Daytime capture: %s\n", yesNo(settings.day.daytimeCapture));
-	printf(" Delay (day): %'dms\n", dayDelay_ms);
+	printf(" Delay (day): %'dms\n", settings.day.dayDelay_ms);
 	printf(" Delay (night): %'dms\n", settings.night.nightDelay_ms);
 	printf(" Brightness (day): %d\n", asiDayBrightness);
 	printf(" Brightness (night): %d\n", asiNightBrightness);
@@ -949,8 +977,8 @@ void Allsky::info(void)
 	printf(" Font Size: %1.1f\n", Allsky::fontsize);
 	printf(" Font Line Width: %d\n", Allsky::linewidth);
 	printf(" Outline Font : %s\n", yesNo(Allsky::outlinefont));
-	printf(" Flip Image: %d\n", asiFlip);
-	printf(" Filename: %s\n", fileName);
+	printf(" Flip Image: %d\n", settings.image.asiFlip);
+	printf(" Filename: %s\n", settings.image.fileName);
 	printf(" Latitude: %s, Longitude: %s\n", settings.latitude, settings.longitude);
 	printf(" Sun Elevation: %s\n", settings.angle);
 	printf(" Locale: %s\n", locale);
@@ -1188,7 +1216,7 @@ void Allsky::prepareForDayOrNight(void)
 
 // TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
 // xxxxxx and "currentGain" instead of "asiNightGain"?
-				RPiHQcalcMean(Allsky::fileName, asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+				RPiHQcalcMean(settings.image.fileName, asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 		}
 
 		if (settings.taking_dark_frames) {
@@ -1268,7 +1296,7 @@ void Allsky::prepareForDayOrNight(void)
 								}
 				Allsky::currentAutoExposure = Allsky::asiDayAutoExposure;
 				Allsky::currentBrightness = Allsky::asiDayBrightness;
-				currentDelay_ms = Allsky::dayDelay_ms;
+				currentDelay_ms = settings.day.dayDelay_ms;
 				Allsky::currentBin = Allsky::dayBin;
 				Allsky::currentGain = Allsky::asiDayGain;
 				Allsky::currentAutoGain = asiDayAutoGain;
@@ -1297,27 +1325,27 @@ void Allsky::prepareForDayOrNight(void)
 		// Adjusting variables for chosen binning
 		// TODO: too much ????
 		/*
-		Allsky::height    = Allsky::originalHeight / Allsky::currentBin;
-		Allsky::width     = Allsky::originalWidth / Allsky::currentBin;
+		settings.image.height    = Allsky::originalHeight / Allsky::currentBin;
+		settings.image.width     = Allsky::originalWidth / Allsky::currentBin;
 		Allsky::iTextX    = originalITextY /Allsky::currentBin;
 		Allsky::iTextY    = originalITextY / Allsky::currentBin;
 		Allsky::fontsize  = originalFontsize / Allsky::currentBin;
 		Allsky::linewidth = originalLinewidth / Allsky::currentBin;
 		*/
 
-		// TODO: if not the first time, should we free the old pRgb?
-		pRgb.release();
-		if (Allsky::Image_type == ASI_IMG_RAW16)
+		// TODO: if not the first time, should we free the old settings.image.pRgb?
+		settings.image.pRgb.release();
+		if (settings.image.Image_type == ASI_IMG_RAW16)
 		{
-			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_16UC1);
+			settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_16UC1);
 		}
-		else if (Allsky::Image_type == ASI_IMG_RGB24)
+		else if (settings.image.Image_type == ASI_IMG_RGB24)
 		{
-			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC3);
+			settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_8UC3);
 		}
 		else // RAW8 and Y8
 		{
-			Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC1);
+			settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_8UC1);
 		}
 
 		if (settings.tty)
@@ -1436,7 +1464,7 @@ void Allsky::prepareForDayOrNight(void)
 				Allsky::currentAutoExposure = Allsky::asiDayAutoExposure ? ASI_TRUE : ASI_FALSE;
 #endif
 				Allsky::currentBrightness = Allsky::asiDayBrightness;
-				Allsky::currentDelay_ms = Allsky::dayDelay_ms;
+				Allsky::currentDelay_ms = settings.day.dayDelay_ms;
 				Allsky::currentBin = Allsky::dayBin;
 				Allsky::currentGain = asiDayGain;	// must come before determineGainChange() below
 				if (currentAdjustGain)
@@ -1513,8 +1541,8 @@ void Allsky::prepareForDayOrNight(void)
 		{
 			// Adjusting variables for chosen binning.
 			// Only need to do at the beginning and if bin changes.
-			Allsky::height    = Allsky::originalHeight / Allsky::currentBin;
-			Allsky::width     = Allsky::originalWidth / Allsky::currentBin;
+			settings.image.height    = Allsky::originalHeight / Allsky::currentBin;
+			settings.image.width     = Allsky::originalWidth / Allsky::currentBin;
 			Allsky::iTextX    = originalITextX / Allsky::currentBin;
 			Allsky::iTextY    = originalITextY / Allsky::currentBin;
 			Allsky::fontsize  = originalFontsize / Allsky::currentBin;
@@ -1522,25 +1550,25 @@ void Allsky::prepareForDayOrNight(void)
 			current_histogramBoxSizeX = histogramBoxSizeX / Allsky::currentBin;
 			current_histogramBoxSizeY = histogramBoxSizeY / Allsky::currentBin;
 
-			bufferSize = Allsky::width * Allsky::height * CameraZWO::bytesPerPixel((ASI_IMG_TYPE) Allsky::Image_type);
+			bufferSize = settings.image.width * settings.image.height * CameraZWO::bytesPerPixel((ASI_IMG_TYPE) settings.image.Image_type);
 			Allsky::Trace("Buffer size: %ld\n", bufferSize);
 
 // TODO: if not the first time, should we free the old pRgb?
-			if (Allsky::Image_type == ASI_IMG_RAW16)
+			if (settings.image.Image_type == ASI_IMG_RAW16)
 			{
-				Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_16UC1);
+				settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_16UC1);
 			}
-			else if (Allsky::Image_type == ASI_IMG_RGB24)
+			else if (settings.image.Image_type == ASI_IMG_RGB24)
 			{
-				Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC3);
+				settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_8UC3);
 			}
 			else // RAW8 and Y8
 			{
-				Allsky::pRgb.create(cv::Size(Allsky::width, Allsky::height), CV_8UC1);
+				settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_8UC1);
 			}
 
 // TODO: ASISetStartPos(CamNum, from_left_xxx, from_top_xxx);
-			asiRetCode = ASISetROIFormat(Allsky::CamNum, Allsky::width, Allsky::height, Allsky::currentBin, (ASI_IMG_TYPE)Allsky::Image_type);
+			asiRetCode = ASISetROIFormat(Allsky::CamNum, settings.image.width, settings.image.height, Allsky::currentBin, (ASI_IMG_TYPE)settings.image.Image_type);
 			if (asiRetCode != ASI_SUCCESS)
 			{
 				if (asiRetCode == ASI_ERROR_INVALID_SIZE)
@@ -1550,7 +1578,7 @@ void Allsky::prepareForDayOrNight(void)
 				}
 				else
 				{
-					printf("ASISetROIFormat(%d, %dx%d, %d, %d) = %s\n", Allsky::CamNum, Allsky::width, Allsky::height, Allsky::currentBin, Allsky::Image_type, CameraZWO::getRetCode(asiRetCode));
+					printf("ASISetROIFormat(%d, %dx%d, %d, %d) = %s\n", Allsky::CamNum, settings.image.width, settings.image.height, Allsky::currentBin, settings.image.Image_type, CameraZWO::getRetCode(asiRetCode));
 					Allsky::closeUp(100);
 				}
 			}

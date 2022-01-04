@@ -59,8 +59,8 @@
 #define DEFAULT_NIGHTBIN         1
 #define DEFAULT_DAYSKIPFRAMES    5
 #define DEFAULT_NIGHTSKIPFRAMES  1
-#define DEFAULT_DAYDELAY     (5 * MS_IN_SEC)	// 5 seconds
-#define DEFAULT_NIGHTDELAY   (10 * MS_IN_SEC)	// 10 seconds
+#define DEFAULT_DAYDELAY     (30 * MS_IN_SEC)	// 30 seconds
+#define DEFAULT_NIGHTDELAY   (30 * MS_IN_SEC)	// 30 seconds
 #define DEFAULT_DAYTIMECAPTURE   0
 // todo: some values are different (ASI / RPiHQ)
 #ifdef CAM_RPIHQ
@@ -122,14 +122,28 @@ class Allsky: public Log {
 			int preview;
 			struct day{
 				int daytimeCapture;  // are we capturing daytime pictures?
+				int dayDelay_ms;	// Delay in milliseconds.
 			} day;
 			struct night{
 				int nightDelay_ms;	// Delay in milliseconds.
 			} night;
+			struct image{
+				//   - image-capture
+				cv::Mat pRgb;	// the image
+				int asiFlip;
+				#ifdef CAM_RPIHQ
+				int asiRotation;
+				#endif
+				//   - image-destination
+				char const *fileName;
+				int Image_type;
+				int width;		
+				int height;	
+				int quality;
+			} image;
 		} static settings;
 		static Status status;
 		static int showTime;
-		static cv::Mat pRgb;	// the image
 		static char bufTime[128];
 		static int iTextX;
 		static int iTextY;
@@ -173,16 +187,10 @@ class Allsky: public Log {
 		static const char *locale;
 	// angle of the sun with the horizon
 	// (0=sunset, -6=civil twilight, -12=nautical twilight, -18=astronomical twilight)
-		static char const *fileName;
-		static int asiFlip;
-		static int width;		
 		static int originalWidth;
-		static int height;
 		static int originalHeight;
 		static int dayBin;
 		static int nightBin;
-		static int dayDelay_ms;	// Delay in milliseconds.
-		static int quality;
 		static int asiNightBrightness;
 		static int asiDayBrightness;
 		static int asiNightAutoExposure;	// is it on or off for nighttime?
@@ -207,7 +215,6 @@ class Allsky: public Log {
 		static double asiWBB;
 		static double asiNightGain;
 	  static double asiDayGain;
-		static int asiRotation;
 		static int background;
 		static float saturation;
 		static bool is_libcamera;

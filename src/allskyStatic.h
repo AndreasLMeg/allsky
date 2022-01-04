@@ -13,23 +13,6 @@ Log::Level Log::m_LogLevel = Log::LevelError;
 
 // settings (json) - don't change !
 Allsky::Allsky_settings Allsky::settings;
-#ifdef CAM_RPIHQ
-int Allsky::dayDelay_ms = 15;	// Delay in milliseconds.
-#else
-int Allsky::dayDelay_ms = DEFAULT_DAYDELAY;	// Delay in milliseconds.
-#endif
-//   - image-capture
-cv::Mat Allsky::pRgb;	// the image
-int Allsky::asiFlip = 0;
-#ifdef CAM_RPIHQ
-int Allsky::asiRotation = 0;
-#endif
-//   - image-destination
-char const *Allsky::fileName = DEFAULT_FILENAME;
-int Allsky::Image_type = DEFAULT_IMAGE_TYPE;
-int Allsky::width = DEFAULT_WIDTH;		
-int Allsky::height = DEFAULT_HEIGHT;	
-int Allsky::quality = NOT_SET;
 //   - camera
 char const *Allsky::cameraName = "RPiHQ";
 #ifdef CAM_RPIHQ

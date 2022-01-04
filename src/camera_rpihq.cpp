@@ -39,7 +39,7 @@ void CameraRPi::setupForCapture()
 	else command = "raspistill";
 
 	stringstream ss;
-	ss << Allsky::fileName;
+	ss << settings.image.fileName;
 	command += " --output '" + ss.str() + "'";
 	if (Allsky::is_libcamera)
 		// xxx TODO: does this do anything?
@@ -51,7 +51,7 @@ void CameraRPi::setupForCapture()
 // Build capture command to capture the image from the HQ camera
 int CameraRPi::capture() 
 {
-		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, Allsky::asiRotation, Allsky::asiFlip, Allsky::saturation, Allsky::currentBrightness, Allsky::quality, Allsky::fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, Allsky::width, Allsky::height, Allsky::is_libcamera);
+		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, settings.image.asiRotation, settings.image.asiFlip, Allsky::saturation, Allsky::currentBrightness, settings.image.quality, settings.image.fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, settings.image.width, settings.image.height, Allsky::is_libcamera);
 }
 
 int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera)
@@ -76,7 +76,7 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 
 	stringstream ss;
 
-	ss << Allsky::fileName;
+	ss << settings.image.fileName;
 	command += " --output '" + ss.str() + "'";
 	if (libcamera)
 		// xxx TODO: does this do anything?
@@ -88,7 +88,7 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 	if (settings.preview)
 	{
 		stringstream wh;
-		wh << Allsky::width << "," << Allsky::height;
+		wh << settings.image.width << "," << settings.image.height;
 		command += " --timeout 5000";
 		command += " --preview '0,0," + wh.str() + "'";	// x,y,width,height
 	}
@@ -366,16 +366,8 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 	}
 	command += " --brightness " + ss.str();
 
-	if (Allsky::quality < 0)
-	{
-		Allsky::quality = 0;
-	}
-	else if (Allsky::quality > 100)
-	{
-		Allsky::quality = 100;
-	}
 	ss.str("");
-	ss << Allsky::quality;
+	ss << settings.image.quality;
 	command += " --quality " + ss.str();
 
 	if (!settings.taking_dark_frames) {
@@ -490,13 +482,13 @@ if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 	if (ret == 0)
 	{
 		Allsky::Info("RPiHQcapture:13\n");
-		pRgb.release();
+		settings.image.pRgb.release();
 		Allsky::Info("RPiHQcapture:13a\n");
-		pRgb = cv::imread(Allsky::fileName, cv::IMREAD_UNCHANGED);
+		settings.image.pRgb = cv::imread(settings.image.fileName, cv::IMREAD_UNCHANGED);
 		Allsky::Info("RPiHQcapture:14\n");
-		if (! pRgb.data) {
+		if (! settings.image.pRgb.data) {
 			Allsky::Info("RPiHQcapture:15\n");
-			printf("WARNING: Error re-reading file '%s'; skipping further processing.\n", basename(Allsky::fileName));
+			printf("WARNING: Error re-reading file '%s'; skipping further processing.\n", basename(settings.image.fileName));
 		}
 	}
 	Allsky::Info("RPiHQcapture:16\n");
@@ -517,7 +509,7 @@ void  CameraRPi::postCapture(void)
 
 					if (Allsky::myModeMeanSetting.mode_mean)
 					{
-						Allsky::lastMean = RPiHQcalcMean(Allsky::fileName, Allsky::asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+						Allsky::lastMean = RPiHQcalcMean(settings.image.fileName, Allsky::asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 						Allsky::Debug("  > exposure: %d shutter: %1.4f s quickstart: %d\n", Allsky::asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, Allsky::myModeMeanSetting.quickstart);
 					}
 
@@ -526,11 +518,11 @@ void  CameraRPi::postCapture(void)
 
 					if (iYOffset > 0)	// if we added anything to overlay, write the file out
 					{
-						bool result = cv::imwrite(Allsky::fileName, Allsky::pRgb, Allsky::compression_params);
+						bool result = cv::imwrite(settings.image.fileName, settings.image.pRgb, Allsky::compression_params);
 						if (! result) 
-							Allsky::Error("Unable to write to '%s'\n", Allsky::fileName);
+							Allsky::Error("Unable to write to '%s'\n", settings.image.fileName);
 						else
-							Allsky::Debug("'%s' saved with extratext\n", Allsky::fileName);
+							Allsky::Debug("'%s' saved with extratext\n", settings.image.fileName);
 					}
 				}
 }

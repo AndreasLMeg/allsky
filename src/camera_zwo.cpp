@@ -73,10 +73,10 @@ void CameraZWO::kill()
 void CameraZWO::initCamera()
 {
 const char *imagetype = "";
-	const char *ext = strrchr(Allsky::fileName, '.');
+	const char *ext = strrchr(settings.image.fileName, '.');
 	if (strcasecmp(ext + 1, "jpg") == 0 || strcasecmp(ext + 1, "jpeg") == 0)
 	{
-		if (Allsky::Image_type == ASI_IMG_RAW16)
+		if (settings.image.Image_type == ASI_IMG_RAW16)
 		{
 			Allsky::waitToFix("*** ERROR: RAW16 images only work with .png files; either change the Image Type or the Filename.\n");
 			exit(2);
@@ -85,13 +85,13 @@ const char *imagetype = "";
 		imagetype = "jpg";
 		Allsky::compression_parameters.push_back(cv::IMWRITE_JPEG_QUALITY);
 		// want dark frames to be at highest quality
-		if (Allsky::quality > 100 || settings.taking_dark_frames)
+		if (settings.image.quality > 100 || settings.taking_dark_frames)
 		{
-			Allsky::quality = 100;
+			settings.image.quality = 100;
 		}
-		else if (Allsky::quality == NOT_SET)
+		else if (settings.image.quality == NOT_SET)
 		{
-			Allsky::quality = 95;
+			settings.image.quality = 95;
 		}
 	}
 	else if (strcasecmp(ext + 1, "png") == 0)
@@ -100,15 +100,15 @@ const char *imagetype = "";
 		Allsky::compression_parameters.push_back(cv::IMWRITE_PNG_COMPRESSION);
 		if (settings.taking_dark_frames)
 		{
-			Allsky::quality = 0;	// actually, it's PNG compression - 0 is highest quality
+			settings.image.quality = 0;	// actually, it's PNG compression - 0 is highest quality
 		}
-		else if (Allsky::quality > 9)
+		else if (settings.image.quality > 9)
 		{
-			Allsky::quality = 9;
+			settings.image.quality = 9;
 		}
-		else if (Allsky::quality == NOT_SET)
+		else if (settings.image.quality == NOT_SET)
 		{
-			Allsky::quality = 3;
+			settings.image.quality = 3;
 		}
 	}
 	else
@@ -117,7 +117,7 @@ const char *imagetype = "";
 		Allsky::waitToFix(Allsky::debugText);
 		exit(100);
 	}
-	Allsky::compression_parameters.push_back(Allsky::quality);
+	Allsky::compression_parameters.push_back(settings.image.quality);
 
 	if (settings.taking_dark_frames)
 	{
@@ -125,7 +125,7 @@ const char *imagetype = "";
 		// during dark frames we use a different file name.
 		static char darkFilename[200];
 		sprintf(darkFilename, "dark.%s", imagetype);
-		Allsky::fileName = darkFilename;
+		settings.image.fileName = darkFilename;
 	}
 
 	int numDevices = ASIGetNumOfConnectedCameras();
@@ -160,13 +160,13 @@ const char *imagetype = "";
 	iMaxWidth  = Allsky::ASICameraInfo.MaxWidth;
 	iMaxHeight = Allsky::ASICameraInfo.MaxHeight;
 	pixelSize  = Allsky::ASICameraInfo.PixelSize;
-	if (Allsky::width == 0 || Allsky::height == 0)
+	if (settings.image.width == 0 || settings.image.height == 0)
 	{
-		Allsky::width  = iMaxWidth;
-		Allsky::height = iMaxHeight;
+		settings.image.width  = iMaxWidth;
+		settings.image.height = iMaxHeight;
 	}
-	Allsky::originalWidth = Allsky::width;
-	Allsky::originalHeight = Allsky::height;
+	Allsky::originalWidth = settings.image.width;
+	Allsky::originalHeight = settings.image.height;
 
 #ifdef USE_HISTOGRAM
 	int centerX, centerY;
@@ -191,14 +191,14 @@ const char *imagetype = "";
 	}
 	else
 	{
-		centerX = Allsky::width * histogramBoxPercentFromLeft;
-		centerY = Allsky::height * histogramBoxPercentFromTop;
+		centerX = settings.image.width * histogramBoxPercentFromLeft;
+		centerY = settings.image.height * histogramBoxPercentFromTop;
 		left_of_box = centerX - (histogramBoxSizeX / 2);
 		right_of_box = centerX + (histogramBoxSizeX / 2);
 		top_of_box = centerY - (histogramBoxSizeY / 2);
 		bottom_of_box = centerY + (histogramBoxSizeY / 2);
 
-		if (left_of_box < 0 || right_of_box >= Allsky::width || top_of_box < 0 || bottom_of_box >= Allsky::height)
+		if (left_of_box < 0 || right_of_box >= settings.image.width || top_of_box < 0 || bottom_of_box >= settings.image.height)
 		{
 			fprintf(stderr, "%s*** ERROR: Histogram box location must fit on image; upper left of box is %dx%d, lower right %dx%d%s\n", Allsky::c(KRED), left_of_box, top_of_box, right_of_box, bottom_of_box, Allsky::c(KNRM));
 			ok = false;
@@ -358,34 +358,34 @@ const char *imagetype = "";
 	printf("- Sensor temperature: %0.2f\n", (float)Allsky::actualTemp / 10.0);
 
 	// Handle "auto" Image_type.
-	if (Allsky::Image_type == AUTO_IMAGE_TYPE)
+	if (settings.image.Image_type == AUTO_IMAGE_TYPE)
 	{
 		// If it's a color camera, create color pictures.
 		// If it's a mono camera use RAW16 if the image file is a .png, otherwise use RAW8.
 		// There is no good way to handle Y8 automatically so it has to be set manually.
 		if (Allsky::ASICameraInfo.IsColorCam)
-			Allsky::Image_type = ASI_IMG_RGB24;
+			settings.image.Image_type = ASI_IMG_RGB24;
 		else if (strcmp(imagetype, "png") == 0)
-			Allsky::Image_type = ASI_IMG_RAW16;
+			settings.image.Image_type = ASI_IMG_RAW16;
 		else // jpg
-			Allsky::Image_type = ASI_IMG_RAW8;
+			settings.image.Image_type = ASI_IMG_RAW8;
 	}
 
 	
-	if (Allsky::Image_type == ASI_IMG_RAW16)
+	if (settings.image.Image_type == ASI_IMG_RAW16)
 	{
 		Allsky::sType = "ASI_IMG_RAW16";
 	}
-	else if (Allsky::Image_type == ASI_IMG_RGB24)
+	else if (settings.image.Image_type == ASI_IMG_RGB24)
 	{
 		Allsky::sType = "ASI_IMG_RGB24";
 	}
-	else if (Allsky::Image_type == ASI_IMG_RAW8)
+	else if (settings.image.Image_type == ASI_IMG_RAW8)
 	{
 		// Color cameras should use Y8 instead of RAW8.  Y8 is the mono mode for color cameras.
 		if (Allsky::ASICameraInfo.IsColorCam)
 		{
-			Allsky::Image_type = ASI_IMG_Y8;
+			settings.image.Image_type = ASI_IMG_Y8;
 			Allsky::sType = "ASI_IMG_Y8 (not RAW8 for color cameras)";
 		}
 		else
@@ -393,13 +393,13 @@ const char *imagetype = "";
 			Allsky::sType = "ASI_IMG_RAW8";
 		}
 	}
-	else if (Allsky::Image_type == ASI_IMG_RAW8)
+	else if (settings.image.Image_type == ASI_IMG_RAW8)
 	{
 		Allsky::sType = "ASI_IMG_Y8";
 	}
 	else
 	{
-		sprintf(Allsky::debugText, "*** ERROR: ASI_IMG_TYPE: %d\n", Allsky::Image_type);
+		sprintf(Allsky::debugText, "*** ERROR: ASI_IMG_TYPE: %d\n", settings.image.Image_type);
 		Allsky::waitToFix(Allsky::debugText);
 		exit(100);
 	}
@@ -416,7 +416,7 @@ const char *imagetype = "";
 		setControl(Allsky::CamNum, ASI_WB_B, Allsky::asiWBB, Allsky::asiAutoAWB == 1 ? ASI_TRUE : ASI_FALSE);
 	}
 	setControl(Allsky::CamNum, ASI_GAMMA, Allsky::asiGamma, ASI_FALSE);
-	setControl(Allsky::CamNum, ASI_FLIP, Allsky::asiFlip, ASI_FALSE);
+	setControl(Allsky::CamNum, ASI_FLIP, settings.image.asiFlip, ASI_FALSE);
 
 	if (Allsky::ASICameraInfo.IsCoolerCam)
 	{
@@ -493,7 +493,7 @@ void CameraZWO::setupForCapture()
 int CameraZWO::capture() 
 {
 	ASI_ERROR_CODE asiRetCode;
-	asiRetCode = takeOneExposure(Allsky::CamNum, Allsky::current_exposure_us, Allsky::pRgb.data, Allsky::width, Allsky::height, (ASI_IMG_TYPE) Allsky::Image_type, histogram, &mean);
+	asiRetCode = takeOneExposure(Allsky::CamNum, Allsky::current_exposure_us, settings.image.pRgb.data, settings.image.width, settings.image.height, (ASI_IMG_TYPE) settings.image.Image_type, histogram, &mean);
 	if (asiRetCode == ASI_SUCCESS) {
 				numErrors = 0;
 				Allsky::numExposures++;
@@ -502,7 +502,7 @@ int CameraZWO::capture()
 				{
 					// Start the preview thread at the last possible moment.
 					Allsky::bDisplay = 1;
-					pthread_create(&Allsky::thread_display, NULL, Display, (void *)&Allsky::pRgb);
+					pthread_create(&Allsky::thread_display, NULL, Display, (void *)&settings.image.pRgb);
 				}
 
 #ifdef USE_HISTOGRAM
@@ -761,7 +761,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						 prior_mean = mean;
 						 prior_mean_diff = last_mean_diff;
 
-						 asiRetCode = takeOneExposure(Allsky::CamNum, Allsky::current_exposure_us, Allsky::pRgb.data, Allsky::width, Allsky::height, (ASI_IMG_TYPE) Allsky::Image_type, histogram, &mean);
+						 asiRetCode = takeOneExposure(Allsky::CamNum, Allsky::current_exposure_us, settings.image.pRgb.data, settings.image.width, settings.image.height, (ASI_IMG_TYPE) settings.image.Image_type, histogram, &mean);
 						 if (asiRetCode == ASI_SUCCESS)
 						 {
 
@@ -887,10 +887,10 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					if (showHistogram)
 					{
 						sprintf(Allsky::bufTemp, "Mean: %d", mean);
-						Allsky::cvText(Allsky::pRgb, Allsky::bufTemp, Allsky::iTextX, Allsky::iTextY + (iYOffset / Allsky::currentBin),
+						Allsky::cvText(settings.image.pRgb, Allsky::bufTemp, Allsky::iTextX, Allsky::iTextY + (iYOffset / Allsky::currentBin),
 							Allsky::fontsize * SMALLFONTSIZE_MULTIPLIER, Allsky::linewidth,
 							Allsky::linetype[Allsky::linenumber], Allsky::fontname[Allsky::fontnumber], Allsky::smallFontcolor,
-							Allsky::Image_type, Allsky::outlinefont);
+							settings.image.Image_type, Allsky::outlinefont);
 						iYOffset += Allsky::iTextLineHeight;
 					}
 					if (showHistogramBox && usedHistogram)
@@ -899,13 +899,13 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 						// Put a black and white line one next to each other so they
 						// can be seen in light and dark images.
 						int lt = cv::LINE_AA, thickness = 2;
-						int X1 = (Allsky::width * histogramBoxPercentFromLeft) - (histogramBoxSizeX / 2);
+						int X1 = (settings.image.width * histogramBoxPercentFromLeft) - (histogramBoxSizeX / 2);
 						int X2 = X1 + histogramBoxSizeX;
-						int Y1 = (Allsky::height * histogramBoxPercentFromTop) - (histogramBoxSizeY / 2);
+						int Y1 = (settings.image.height * histogramBoxPercentFromTop) - (histogramBoxSizeY / 2);
 						int Y2 = Y1 + histogramBoxSizeY;
 						cv::Scalar outer_line, inner_line;
 // xxxxxxx  TODO: can we use Scalar(x,y,z) for both?
-						if (1 || Allsky::Image_type == ASI_IMG_RAW16)
+						if (1 || settings.image.Image_type == ASI_IMG_RAW16)
 						{
 							outer_line = cv::Scalar(0,0,0);
 							inner_line = cv::Scalar(255,255,255);
@@ -915,8 +915,8 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 							outer_line = cv::Scalar(0,0,0, 255);
 							inner_line = cv::Scalar(255,255,255, 255);
 						}
-						cv::rectangle(Allsky::pRgb, cv::Point(X1, Y1), cv::Point(X2, Y2), outer_line,  thickness, lt, 0);
-						cv::rectangle(Allsky::pRgb, cv::Point(X1+thickness, Y1+thickness), cv::Point(X2-thickness, Y2-thickness), inner_line,  thickness, lt, 0);
+						cv::rectangle(settings.image.pRgb, cv::Point(X1, Y1), cv::Point(X2, Y2), outer_line,  thickness, lt, 0);
+						cv::rectangle(settings.image.pRgb, cv::Point(X1+thickness, Y1+thickness), cv::Point(X2-thickness, Y2-thickness), inner_line,  thickness, lt, 0);
 					}
 #endif
 				}
@@ -1372,8 +1372,8 @@ bool CameraZWO::resetGainTransitionVariables(int dayGain, int nightGain)
 	float totalTimeInSec;
 	if (Allsky::dayOrNight == "DAY")
 	{
-		totalTimeInSec = (Allsky::asi_day_exposure_us / US_IN_SEC) + (Allsky::dayDelay_ms / MS_IN_SEC);
-		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_day_exposure_us, Allsky::dayDelay_ms);
+		totalTimeInSec = (Allsky::asi_day_exposure_us / US_IN_SEC) + (settings.day.dayDelay_ms / MS_IN_SEC);
+		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_day_exposure_us, settings.day.dayDelay_ms);
 	}
 	else	// NIGHT
 	{
@@ -1425,11 +1425,11 @@ void * CameraZWO::SaveImgThd(void *para)
 
 		Allsky::bSavingImg = true;
 
-		Allsky::Warning("  > Saving %s image '%s'\n", settings.taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), Allsky::fileName);
+		Allsky::Warning("  > Saving %s image '%s'\n", settings.taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), settings.image.fileName);
 		int64 st, et;
 
 		bool result = false;
-		if (Allsky::pRgb.data)
+		if (settings.image.pRgb.data)
 		{
 			const char *s;	// TODO: use saveImage.sh
 			if (Allsky::dayOrNight == "NIGHT")
@@ -1445,11 +1445,11 @@ void * CameraZWO::SaveImgThd(void *para)
 			// imwrite() may take several seconds and while it's running, "fileName" could change,
 			// so set "cmd" before imwrite().
 			// The temperature must be a 2-digit number with an optional "-" sign.
-			sprintf(cmd, "%s %s '%s' '%2.0f' %ld &", s, Allsky::dayOrNight.c_str(), Allsky::fileName, (float) Allsky::actualTemp/10, Allsky::current_exposure_us);
+			sprintf(cmd, "%s %s '%s' '%2.0f' %ld &", s, Allsky::dayOrNight.c_str(), settings.image.fileName, (float) Allsky::actualTemp/10, Allsky::current_exposure_us);
 			st = cv::getTickCount();
 			try
 			{
-				result = imwrite(Allsky::fileName, Allsky::pRgb, Allsky::compression_parameters);
+				result = imwrite(settings.image.fileName, settings.image.pRgb, Allsky::compression_parameters);
 			}
 			catch (const cv::Exception& ex)
 			{
@@ -1460,7 +1460,7 @@ void * CameraZWO::SaveImgThd(void *para)
 			if (result)
 				system(cmd);
 			else
-				printf("*** ERROR: Unable to save image '%s'.\n", Allsky::fileName);
+				printf("*** ERROR: Unable to save image '%s'.\n", settings.image.fileName);
 
 		} else {
 			// This can happen if the program is closed before the first picture.
