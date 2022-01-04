@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	
 	//-------------------------------------------------------------------------------------------------------
 	Allsky::init(argc, argv);
-	assert(Allsky::status == Allsky::StatusInit);
+	assert(Allsky::runtime.status == Allsky::StatusInit);
 
 	//if (strcmp(Allsky::cameraName, "RPiHQ") == 0)
 		//myCam = new CameraRPi();
@@ -68,12 +68,12 @@ int main(int argc, char *argv[])
 
 	Allsky::info();
 	
-	Allsky::status = Allsky::StatusLoop;
-	while (Allsky::status == Allsky::StatusLoop)
+	Allsky::runtime.status = Allsky::StatusLoop;
+	while (Allsky::runtime.status == Allsky::StatusLoop)
 	{
 		Allsky::prepareForDayOrNight();
 
-		while (Allsky::status == Allsky::StatusLoop && (Allsky::lastDayOrNight == Allsky::dayOrNight))
+		while (Allsky::runtime.status == Allsky::StatusLoop && Allsky::dayOrNightNotChanged())
 		{
 			Allsky::preCapture();
 			myCam->setupForCapture();
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
 		}
 
 		Allsky::Info("============================\n");
-		Allsky::Info("%s\n", Allsky::dayOrNight.c_str());
+		Allsky::Info("%s\n", Allsky::runtime.dayOrNight.c_str());
 		Allsky::Info("============================\n");
 	}
 

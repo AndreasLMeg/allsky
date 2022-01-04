@@ -3,13 +3,8 @@
 
 #include "allsky.h"
 
-// program
-Allsky::Status Allsky::status = StatusUndefined;
-bool Allsky::endOfNight = false;
-bool Allsky::gotSignal = false;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
-std::string Allsky::dayOrNight;
-std::string Allsky::lastDayOrNight;
-Log::Level Log::m_LogLevel = Log::LevelError;
+// runtime / program
+Allsky::Allsky_runtime Allsky::runtime;
 
 // settings (json) - don't change !
 Allsky::Allsky_settings Allsky::settings;
@@ -185,6 +180,9 @@ bool Allsky::bSaveRun = false;
 void *Allsky::retval;
 bool Allsky::bDisplay = false;
 #endif
+
+//Log Static Todo: move to own file ?
+Log::Level Log::m_LogLevel = Log::LevelError;
 
 // Todo:
 int Allsky::originalHeight = DEFAULT_HEIGHT; //Todo: change to current an do not change settings

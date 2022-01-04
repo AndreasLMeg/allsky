@@ -509,7 +509,7 @@ int CameraZWO::capture()
 				int usedHistogram = 0;	// did we use the histogram method?
 
 				// We don't use this at night since the ZWO bug is only when it's light outside.
-				if (Allsky::dayOrNight == "DAY" && Allsky::asiDayAutoExposure && ! settings.taking_dark_frames)
+				if (runtime.dayOrNight == "DAY" && Allsky::asiDayAutoExposure && ! settings.taking_dark_frames)
 				{
 					usedHistogram = 1;	// we are using the histogram code on this exposure
 					attempts = 0;
@@ -947,7 +947,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					// TODO: wait for the prior image to finish saving.
 				}
 
-				if (Allsky::asiNightAutoGain == 1 && Allsky::dayOrNight == "NIGHT" && ! settings.taking_dark_frames)
+				if (Allsky::asiNightAutoGain == 1 && runtime.dayOrNight == "NIGHT" && ! settings.taking_dark_frames)
 				{
 					ASIGetControlValue(Allsky::CamNum, ASI_GAIN, &actualGain, &bAuto);
 					Allsky::Warning("  > Auto Gain value: %ld\n", actualGain);
@@ -957,14 +957,14 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 				{
 #ifndef USE_HISTOGRAM
 
-					if (Allsky::dayOrNight == "DAY")
+					if (runtime.dayOrNight == "DAY")
 					{
 						Allsky::current_exposure_us = last_exposure_us;
 					}
 #endif
 
 					// Delay applied before next exposure
-					if (Allsky::dayOrNight == "NIGHT" && Allsky::asiNightAutoExposure == 1 && last_exposure_us < (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) && ! settings.taking_dark_frames)
+					if (runtime.dayOrNight == "NIGHT" && Allsky::asiNightAutoExposure == 1 && last_exposure_us < (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) && ! settings.taking_dark_frames)
 					{
 						// If using auto-exposure and the actual exposure is less than the max,
 						// we still wait until we reach maxexposure, then wait for the delay period.
@@ -1311,7 +1311,7 @@ int CameraZWO::determineGainChange(int dayGain, int nightGain)
 
 	Allsky::numGainChanges++;
 	int amt;	// amount to adjust gain on next picture
-	if (Allsky::dayOrNight == "DAY")
+	if (runtime.dayOrNight == "DAY")
 	{
 		// During DAY, want to start out adding the full gain adjustment minus the increment on the first image,
 		// then DECREASE by totalAdjustGain each exposure.
@@ -1337,7 +1337,7 @@ int CameraZWO::determineGainChange(int dayGain, int nightGain)
 	}
 
 	Allsky::Trace("  xxxx Adjusting %s gain by %d on next picture to %d; will be gain change # %d of %d.\n",
-		Allsky::dayOrNight.c_str(), amt, amt+Allsky::currentGain, Allsky::numGainChanges, Allsky::gainTransitionImages);
+		runtime.dayOrNight.c_str(), amt, amt+Allsky::currentGain, Allsky::numGainChanges, Allsky::gainTransitionImages);
 	return(amt);
 }
 
@@ -1347,7 +1347,7 @@ int CameraZWO::determineGainChange(int dayGain, int nightGain)
 bool CameraZWO::resetGainTransitionVariables(int dayGain, int nightGain)
 {
 	// Many of the "xxx" messages below will go away once we're sure gain transition works.
-	Allsky::Trace("xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, Allsky::dayOrNight.c_str());
+	Allsky::Trace("xxx resetGainTransitionVariables(%d, %d) called at %s\n", dayGain, nightGain, runtime.dayOrNight.c_str());
 
 	if (Allsky::adjustGain == false)
 	{
@@ -1370,7 +1370,7 @@ bool CameraZWO::resetGainTransitionVariables(int dayGain, int nightGain)
 	// but day exposure is in microseconds, night max is in milliseconds,
 	// and delays are in milliseconds, so convert to seconds.
 	float totalTimeInSec;
-	if (Allsky::dayOrNight == "DAY")
+	if (runtime.dayOrNight == "DAY")
 	{
 		totalTimeInSec = (Allsky::asi_day_exposure_us / US_IN_SEC) + (settings.day.dayDelay_ms / MS_IN_SEC);
 		Allsky::Trace("xxx totalTimeInSec=%.1fs, asi_day_exposure_us=%'ldus , daydelay_ms=%'dms\n", totalTimeInSec, Allsky::asi_day_exposure_us, settings.day.dayDelay_ms);
@@ -1416,7 +1416,7 @@ void * CameraZWO::SaveImgThd(void *para)
 		pthread_mutex_lock(&Allsky::mtx_SaveImg);
 		pthread_cond_wait(&Allsky::cond_SatrtSave, &Allsky::mtx_SaveImg);
 
-		if (Allsky::gotSignal)
+		if (runtime.gotSignal)
 		{
 			// we got a signal to exit, so don't save the (probably incomplete) image
 			pthread_mutex_unlock(&Allsky::mtx_SaveImg);
@@ -1425,14 +1425,14 @@ void * CameraZWO::SaveImgThd(void *para)
 
 		Allsky::bSavingImg = true;
 
-		Allsky::Warning("  > Saving %s image '%s'\n", settings.taking_dark_frames ? "dark" : Allsky::dayOrNight.c_str(), settings.image.fileName);
+		Allsky::Warning("  > Saving %s image '%s'\n", settings.taking_dark_frames ? "dark" : runtime.dayOrNight.c_str(), settings.image.fileName);
 		int64 st, et;
 
 		bool result = false;
 		if (settings.image.pRgb.data)
 		{
 			const char *s;	// TODO: use saveImage.sh
-			if (Allsky::dayOrNight == "NIGHT")
+			if (runtime.dayOrNight == "NIGHT")
 			{
 				s = "scripts/saveImageNight.sh";
 			}
@@ -1445,7 +1445,7 @@ void * CameraZWO::SaveImgThd(void *para)
 			// imwrite() may take several seconds and while it's running, "fileName" could change,
 			// so set "cmd" before imwrite().
 			// The temperature must be a 2-digit number with an optional "-" sign.
-			sprintf(cmd, "%s %s '%s' '%2.0f' %ld &", s, Allsky::dayOrNight.c_str(), settings.image.fileName, (float) Allsky::actualTemp/10, Allsky::current_exposure_us);
+			sprintf(cmd, "%s %s '%s' '%2.0f' %ld &", s, runtime.dayOrNight.c_str(), settings.image.fileName, (float) Allsky::actualTemp/10, Allsky::current_exposure_us);
 			st = cv::getTickCount();
 			try
 			{

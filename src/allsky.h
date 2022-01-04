@@ -111,6 +111,14 @@ class Allsky: public Log {
 
 	//variables
 	public:
+		struct Allsky_runtime {
+			Status status;
+			bool endOfNight;
+			bool gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
+			std::string dayOrNight;
+			std::string lastDayOrNight;
+		} static runtime;
+
 		struct Allsky_settings {
 			int debugLevel;
 			bool tty;
@@ -142,7 +150,6 @@ class Allsky: public Log {
 				int quality;
 			} image;
 		} static settings;
-		static Status status;
 		static int showTime;
 		static char bufTime[128];
 		static int iTextX;
@@ -196,15 +203,11 @@ class Allsky: public Log {
 		static int asiNightAutoExposure;	// is it on or off for nighttime?
 		static int asiDayAutoExposure;	// is it on or off for daylight?
 		static int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
-		static bool gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
-		static std::string dayOrNight;
-		static std::string lastDayOrNight;
 		static int currentDelay_ms;
 		static int numExposures;	// how many valid pictures have we taken so far?
 		static int asiDayAutoGain;
 		static int asiDayExposure_us;
     static char const *cameraName;
-		static bool endOfNight;
 		static int asiNightExposure_us;
 		static std::vector<int> compression_params;
 		static char exposureStart[128];
@@ -298,7 +301,7 @@ class Allsky: public Log {
 		static void prepareForDayOrNight(void);
 		static void deliverImage(void);
 		static void waitForNextCapture(void);
-
+		static bool dayOrNightNotChanged(void);
 		//helper functions
 		static void overlayText(int &);
 		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);

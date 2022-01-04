@@ -294,6 +294,11 @@ void Allsky::waitToFix(char const *msg)
 
 void Allsky::init(int argc, char *argv[])
 {
+	// runtime
+  runtime.endOfNight = false;
+	runtime.gotSignal = false;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
+
+	// settings
 	settings.debugLevel = 0;
 	settings.tty = isatty(fileno(stdout)) ? true : false;	// are we on a tty?
 	settings.notificationImages = DEFAULT_NOTIFICATIONIMAGES;
@@ -928,7 +933,8 @@ void Allsky::init(int argc, char *argv[])
 	// other = ZWO
 #endif
 
-	status = StatusInit;
+	// runtime
+	runtime.status = StatusInit;
 }
 
 
@@ -1087,7 +1093,7 @@ std::string Allsky::exec(const char *cmd)
 // Signalhandling
 void Allsky::IntHandle(int i)
 {
-	gotSignal = true;
+	runtime.gotSignal = true;
 	closeUp(0);
 }
 
@@ -1100,7 +1106,7 @@ void Allsky::closeUp(int e)
 
   Debug("closingUp...\n");
 	closingUp = true;
-	status = StatusCloseup;
+	runtime.status = StatusCloseup;
 
 #ifdef CAM_RPIHQ
 #else
@@ -1147,25 +1153,25 @@ void Allsky::closeUp(int e)
 void Allsky::calculateDayOrNight(void)
 {
 
-	lastDayOrNight = dayOrNight;
+	runtime.lastDayOrNight = runtime.dayOrNight;
 
 	char sunwaitCommand[128];
 	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", settings.angle, settings.latitude, settings.longitude);
-	dayOrNight = Allsky::exec(sunwaitCommand);
-	dayOrNight.erase(std::remove(dayOrNight.begin(), dayOrNight.end(), '\n'), dayOrNight.end());
+	runtime.dayOrNight = Allsky::exec(sunwaitCommand);
+	runtime.dayOrNight.erase(std::remove(runtime.dayOrNight.begin(), runtime.dayOrNight.end(), '\n'), runtime.dayOrNight.end());
 
-	if (dayOrNight != "DAY" && dayOrNight != "NIGHT")
+	if (runtime.dayOrNight != "DAY" && runtime.dayOrNight != "NIGHT")
 	{
-		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", dayOrNight == "" ? "[empty]" : dayOrNight.c_str());
+		sprintf(Allsky::debugText, "*** ERROR: dayOrNight isn't DAY or NIGHT, it's '%s'\n", runtime.dayOrNight == "" ? "[empty]" : runtime.dayOrNight.c_str());
 		Allsky::waitToFix(Allsky::debugText);
 		Allsky::closeUp(2);
 	}
 
 	// Check for night situation
-	if ((lastDayOrNight == "NIGHT") && (dayOrNight == "DAY"))
+	if ((runtime.lastDayOrNight == "NIGHT") && (runtime.dayOrNight == "DAY"))
 	{
 		// Flag end of night processing is needed
-		endOfNight = true;
+		runtime.endOfNight = true;
 	  Info("endOfNight detected\n");
 	}
 }
@@ -1209,7 +1215,7 @@ void Allsky::prepareForDayOrNight(void)
 	
 	// Find out if it is currently DAY or NIGHT
 	calculateDayOrNight();
-	lastDayOrNight = dayOrNight;
+	runtime.lastDayOrNight = runtime.dayOrNight;
 
 		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
 // TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
@@ -1236,15 +1242,15 @@ void Allsky::prepareForDayOrNight(void)
 			}
 		}
 
-		else if (Allsky::dayOrNight == "DAY")
+		else if (runtime.dayOrNight == "DAY")
 		{
-			if (Allsky::endOfNight == true)		// Execute end of night script
+			if (runtime.endOfNight)		// Execute end of night script
 			{
  			  Info("starting endOfNight.sh\n");
 				system("scripts/endOfNight.sh &");
 
 				// Reset end of night indicator
-				endOfNight = false;
+				runtime.endOfNight = false;
 
 				displayedNoDaytimeMsg = 0;
 			}
@@ -1363,7 +1369,7 @@ void Allsky::prepareForDayOrNight(void)
 		if (! settings.taking_dark_frames)
 			currentAdjustGain = CameraZWO::resetGainTransitionVariables(asiDayGain, Allsky::asiNightGain);
 
-		lastDayOrNight = Allsky::dayOrNight;
+		runtime.lastDayOrNight = runtime.dayOrNight;
 		if (settings.taking_dark_frames)
 		{
 				// We're doing dark frames so turn off autoexposure and autogain, and use
@@ -1386,14 +1392,14 @@ void Allsky::prepareForDayOrNight(void)
 				}
 		}
 
-		else if (Allsky::dayOrNight == "DAY")
+		else if (runtime.dayOrNight == "DAY")
 		{
 			// Setup the daytime capture parameters
-			if (endOfNight == true)	// Execute end of night script
+			if (runtime.endOfNight)	// Execute end of night script
 			{
 				Allsky::Info("Processing end of night data\n");
 				system("scripts/endOfNight.sh &");
-				endOfNight = false;
+				runtime.endOfNight = false;
 				displayedNoDaytimeMsg = 0;
 			}
 
@@ -1611,7 +1617,7 @@ void Allsky::preCapture(void) {
 void Allsky::deliverImage(void)
 {
 			// Check for night time
-			if (Allsky::dayOrNight == "NIGHT")
+			if (runtime.dayOrNight == "NIGHT")
 			{
 				// Preserve image during night time
 				system("scripts/saveImageNight.sh &");
@@ -1632,7 +1638,7 @@ void Allsky::waitForNextCapture(void)
 			{
 				us = 1 * US_IN_SEC;
 			}
-			else if ((Allsky::dayOrNight == "NIGHT"))
+			else if ((runtime.dayOrNight == "NIGHT"))
 			{
 				us = (Allsky::asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (settings.night.nightDelay_ms * US_IN_MS);
 			}
@@ -1652,3 +1658,8 @@ void Allsky::waitForNextCapture(void)
 	usleep(us);
 }
 #endif
+
+bool Allsky::dayOrNightNotChanged(void)
+{
+	return (runtime.lastDayOrNight == runtime.dayOrNight);
+}

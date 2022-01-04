@@ -104,7 +104,7 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 				// We do our own auto-exposure so no need to wait at all.
 				ss << 1;
 			}
-			else if (Allsky::dayOrNight == "DAY")
+			else if (runtime.dayOrNight == "DAY")
 			{
 				ss << 1000;
 			}
