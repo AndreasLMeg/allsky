@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 	Allsky::init(argc, argv);
 	assert(Allsky::runtime.status == Allsky::StatusInit);
 
-	if (strcmp(Allsky::cameraName, "RPiHQ") == 0)
+	if (strcmp(Allsky::settings.camera.cameraName, "RPiHQ") == 0)
 		myCam = new CameraRPi();
 	// TODO: other cameras....
 

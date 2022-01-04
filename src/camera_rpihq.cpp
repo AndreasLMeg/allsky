@@ -13,7 +13,7 @@ void CameraRPi::kill()
 	// Ensure no process is still running.
 	// Define command line.
 	string command;
-	if (is_libcamera) command = "libcamera-still";
+	if (settings.camera.is_libcamera) command = "libcamera-still";
 	else command = "raspistill";
 
 	// Include "--" so we only find the command, not a different program with the command
@@ -35,13 +35,13 @@ void CameraRPi::setupForCapture()
 {
 	// Define command line.
 	string command;
-	if (is_libcamera) command = "libcamera-still";
+	if (settings.camera.is_libcamera) command = "libcamera-still";
 	else command = "raspistill";
 
 	stringstream ss;
 	ss << settings.image.fileName;
 	command += " --output '" + ss.str() + "'";
-	if (Allsky::is_libcamera)
+	if (settings.camera.is_libcamera)
 		// xxx TODO: does this do anything?
 		command += " --tuning-file /usr/share/libcamera/ipa/raspberrypi/imx477.json";
 	else
@@ -51,7 +51,7 @@ void CameraRPi::setupForCapture()
 // Build capture command to capture the image from the HQ camera
 int CameraRPi::capture() 
 {
-		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, Allsky::asiAutoAWB, Allsky::currentGain, Allsky::currentBin, Allsky::asiWBR, Allsky::asiWBB, settings.image.asiRotation, settings.image.asiFlip, Allsky::saturation, Allsky::currentBrightness, settings.image.quality, settings.image.fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, settings.image.width, settings.image.height, Allsky::is_libcamera);
+		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, settings.camera.asiAutoAWB, Allsky::currentGain, Allsky::currentBin, settings.camera.asiWBR, settings.camera.asiWBB, settings.image.asiRotation, settings.image.asiFlip, settings.camera.saturation, Allsky::currentBrightness, settings.image.quality, settings.image.fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, settings.image.width, settings.image.height, settings.camera.is_libcamera);
 }
 
 int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera)
@@ -338,12 +338,12 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 		command += " --vflip";
 	}
 
-	if (Allsky::saturation < Allsky::min_saturation)
-		Allsky::saturation = Allsky::min_saturation;
-	else if (Allsky::saturation > Allsky::max_saturation)
-		Allsky::saturation = Allsky::max_saturation;
+	if (settings.camera.saturation < Allsky::min_saturation)
+		settings.camera.saturation = Allsky::min_saturation;
+	else if (settings.camera.saturation > Allsky::max_saturation)
+		settings.camera.saturation = Allsky::max_saturation;
 	ss.str("");
-	ss << Allsky::saturation;
+	ss << settings.camera.saturation;
 	command += " --saturation "+ ss.str();
 
 	ss.str("");
@@ -509,7 +509,7 @@ void  CameraRPi::postCapture(void)
 
 					if (Allsky::myModeMeanSetting.mode_mean)
 					{
-						Allsky::lastMean = RPiHQcalcMean(settings.image.fileName, Allsky::asiNightExposure_us, Allsky::asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+						Allsky::lastMean = RPiHQcalcMean(settings.image.fileName, Allsky::asiNightExposure_us, settings.camera.asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 						Allsky::Debug("  > exposure: %d shutter: %1.4f s quickstart: %d\n", Allsky::asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, Allsky::myModeMeanSetting.quickstart);
 					}
 

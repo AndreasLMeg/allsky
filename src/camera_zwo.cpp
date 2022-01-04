@@ -319,7 +319,7 @@ const char *imagetype = "";
 	   	fprintf(stderr, "*** WARNING: daytime exposure %'ld us less than camera minimum of %'ld us; setting to minimum\n", Allsky::asi_day_exposure_us, Allsky::camera_min_exposure_us);
 	   	Allsky::asi_day_exposure_us = Allsky::camera_min_exposure_us;
 	}
-	else if (Allsky::asiDayAutoExposure && Allsky::asi_day_exposure_us > Allsky::camera_max_autoexposure_us)
+	else if (settings.camera.asiDayAutoExposure && Allsky::asi_day_exposure_us > Allsky::camera_max_autoexposure_us)
 	{
 	   	fprintf(stderr, "*** WARNING: daytime exposure %'ld us greater than camera maximum of %'ld us; setting to maximum\n", Allsky::asi_day_exposure_us, Allsky::camera_max_autoexposure_us);
 	   	Allsky::asi_day_exposure_us = Allsky::camera_max_autoexposure_us;
@@ -329,7 +329,7 @@ const char *imagetype = "";
 	   	fprintf(stderr, "*** WARNING: nighttime exposure %'ld us less than camera minimum of %'ld us; setting to minimum\n", Allsky::asi_night_exposure_us, Allsky::camera_min_exposure_us);
 	   	Allsky::asi_night_exposure_us = Allsky::camera_min_exposure_us;
 	}
-	else if (Allsky::asiNightAutoExposure && Allsky::asi_night_exposure_us > Allsky::camera_max_autoexposure_us)
+	else if (settings.camera.asiNightAutoExposure && Allsky::asi_night_exposure_us > Allsky::camera_max_autoexposure_us)
 	{
 	   	fprintf(stderr, "*** WARNING: nighttime exposure %'ld us greater than camera maximum of %'ld us; setting to maximum\n", Allsky::asi_night_exposure_us, Allsky::camera_max_autoexposure_us);
 	   	Allsky::asi_night_exposure_us = Allsky::camera_max_autoexposure_us;
@@ -412,8 +412,8 @@ const char *imagetype = "";
 	setControl(Allsky::CamNum, ASI_HIGH_SPEED_MODE, 0, ASI_FALSE);  // ZWO sets this in their program
 	if (Allsky::ASICameraInfo.IsColorCam)
 	{
-		setControl(Allsky::CamNum, ASI_WB_R, Allsky::asiWBR, Allsky::asiAutoAWB == 1 ? ASI_TRUE : ASI_FALSE);
-		setControl(Allsky::CamNum, ASI_WB_B, Allsky::asiWBB, Allsky::asiAutoAWB == 1 ? ASI_TRUE : ASI_FALSE);
+		setControl(Allsky::CamNum, ASI_WB_R, settings.camera.asiWBR, settings.camera.asiAutoAWB == 1 ? ASI_TRUE : ASI_FALSE);
+		setControl(Allsky::CamNum, ASI_WB_B, settings.camera.asiWBB, settings.camera.asiAutoAWB == 1 ? ASI_TRUE : ASI_FALSE);
 	}
 	setControl(Allsky::CamNum, ASI_GAMMA, Allsky::asiGamma, ASI_FALSE);
 	setControl(Allsky::CamNum, ASI_FLIP, settings.image.asiFlip, ASI_FALSE);
@@ -447,7 +447,7 @@ const char *imagetype = "";
 	// so don't transition.
 	// gainTransitionTime of 0 means don't adjust gain.
 	// No need to adjust gain if day and night gain are the same.
-	if (Allsky::asiDayAutoGain == 1 || Allsky::asiNightAutoGain == 1 || Allsky::gainTransitionTime == 0 || Allsky::asiDayGain == Allsky::asiNightGain || settings.taking_dark_frames == 1)
+	if (Allsky::asiDayAutoGain == 1 || settings.camera.asiNightAutoGain == 1 || Allsky::gainTransitionTime == 0 || settings.camera.asiDayGain == settings.camera.asiNightGain || settings.taking_dark_frames == 1)
 	{
 		Allsky::adjustGain = false;
 		Allsky::Debug("Will NOT adjust gain at transitions\n");
@@ -509,7 +509,7 @@ int CameraZWO::capture()
 				int usedHistogram = 0;	// did we use the histogram method?
 
 				// We don't use this at night since the ZWO bug is only when it's light outside.
-				if (runtime.dayOrNight == "DAY" && Allsky::asiDayAutoExposure && ! settings.taking_dark_frames)
+				if (runtime.dayOrNight == "DAY" && settings.camera.asiDayAutoExposure && ! settings.taking_dark_frames)
 				{
 					usedHistogram = 1;	// we are using the histogram code on this exposure
 					attempts = 0;
@@ -530,7 +530,7 @@ int CameraZWO::capture()
 					long temp_min_exposure_us = hist_min_exposure_us;
 					long temp_max_exposure_us = Allsky::current_max_autoexposure_us;
 
-					if (Allsky::asiDayBrightness != DEFAULT_BRIGHTNESS)
+					if (settings.camera.asiDayBrightness != DEFAULT_BRIGHTNESS)
 					{
 						// Adjust brightness based on asiDayBrightness.
 						// The default value has no adjustment.
@@ -558,7 +558,7 @@ int CameraZWO::capture()
 							// See how many multiples we're different.
 							// If asiDayBrightnes < DEFAULT_BRIGHTNESS then numMultiples will be negative,
 							// which is ok - it just means the multiplier will be less than 1.
-							numMultiples = (float)(Allsky::asiDayBrightness - DEFAULT_BRIGHTNESS) / DEFAULT_BRIGHTNESS;
+							numMultiples = (float)(settings.camera.asiDayBrightness - DEFAULT_BRIGHTNESS) / DEFAULT_BRIGHTNESS;
 							exposureAdjustment = 1 + (numMultiples * adjustmentAmountPerMultiple);
 							Allsky::Debug("  > >>> Adjusting exposure x %.2f (%.1f%%) for daybrightness\n", exposureAdjustment, (exposureAdjustment - 1) * 100);
 							showedMessage = 1;
@@ -879,7 +879,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					{
 						// Determine if we need to change the gain on the next image.
 						// This must come AFTER the "showGain" above.
-						Allsky::gainChange = determineGainChange(Allsky::asiDayGain, Allsky::asiNightGain);
+						Allsky::gainChange = determineGainChange(settings.camera.asiDayGain, settings.camera.asiNightGain);
 						setControl(Allsky::CamNum, ASI_GAIN, Allsky::currentGain + Allsky::gainChange, (ASI_BOOL)Allsky::currentAutoGain);
 					}
 
@@ -947,7 +947,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					// TODO: wait for the prior image to finish saving.
 				}
 
-				if (Allsky::asiNightAutoGain == 1 && runtime.dayOrNight == "NIGHT" && ! settings.taking_dark_frames)
+				if (settings.camera.asiNightAutoGain == 1 && runtime.dayOrNight == "NIGHT" && ! settings.taking_dark_frames)
 				{
 					ASIGetControlValue(Allsky::CamNum, ASI_GAIN, &actualGain, &bAuto);
 					Allsky::Warning("  > Auto Gain value: %ld\n", actualGain);
@@ -964,7 +964,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 #endif
 
 					// Delay applied before next exposure
-					if (runtime.dayOrNight == "NIGHT" && Allsky::asiNightAutoExposure == 1 && last_exposure_us < (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) && ! settings.taking_dark_frames)
+					if (runtime.dayOrNight == "NIGHT" && settings.camera.asiNightAutoExposure == 1 && last_exposure_us < (Allsky::asi_night_max_autoexposure_ms * US_IN_MS) && ! settings.taking_dark_frames)
 					{
 						// If using auto-exposure and the actual exposure is less than the max,
 						// we still wait until we reach maxexposure, then wait for the delay period.

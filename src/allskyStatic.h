@@ -8,30 +8,8 @@ Allsky::Allsky_runtime Allsky::runtime;
 
 // settings (json) - don't change !
 Allsky::Allsky_settings Allsky::settings;
-//   - camera
-char const *Allsky::cameraName = "RPiHQ";
-#ifdef CAM_RPIHQ
-bool Allsky::is_libcamera;
-#endif
-int Allsky::asiNightBrightness = DEFAULT_BRIGHTNESS;
-int Allsky::asiDayBrightness = DEFAULT_BRIGHTNESS;
-int Allsky::asiNightAutoExposure = DEFAULT_NIGHTAUTOEXPOSURE;	// is it on or off for nighttime?
-int Allsky::asiDayAutoExposure = DEFAULT_DAYAUTOEXPOSURE;	// is it on or off for daylight?
-int Allsky::asiAutoAWB = DEFAULT_AUTOWHITEBALANCE;	// is Auto White Balance on or off?
-int Allsky::asiNightAutoGain = DEFAULT_NIGHTAUTOGAIN;	// is Auto Gain on or off for nighttime?
-#ifdef CAM_RPIHQ
-float Allsky::saturation = 0;
-double Allsky::asiWBR         = 2.5;
-double Allsky::asiWBB         = 2;
-double Allsky::asiNightGain   = 4.0;
-double Allsky::asiDayGain     = 1.0;
-#else
-int Allsky::asiWBR = DEFAULT_ASIWBR;
-int Allsky::asiWBB = DEFAULT_ASIWBB;
-int Allsky::asiNightGain = DEFAULT_ASINIGHTGAIN;
-#endif
-int Allsky::dayBin = DEFAULT_DAYBIN;
-int Allsky::nightBin  = DEFAULT_NIGHTBIN;
+
+// todo: use structs !
 //   - annotate
 const char *Allsky::locale = DEFAULT_LOCALE;
 char const *Allsky::timeFormat = DEFAULT_TIMEFORMAT;
@@ -139,7 +117,6 @@ long Allsky::current_exposure_us = NOT_SET;
 int Allsky::gainChange = 0;			// how much to change gain up or down
 long Allsky::camera_max_autoexposure_us= NOT_SET;	// camera's max auto-exposure
 long Allsky::camera_min_exposure_us= 100;	// camera's minimum exposure
-int Allsky::asiDayGain = DEFAULT_ASIDAYGHTGAIN;
 int Allsky::numGainChanges = 0;		// This is reset at every day/night and night/day transition.
 bool Allsky::adjustGain = false;	// Should we adjust the gain?  Set by user on command line.
 bool Allsky::currentAdjustGain = false;	// Adjusting it right now?

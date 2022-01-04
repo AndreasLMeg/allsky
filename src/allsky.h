@@ -8,6 +8,11 @@
 #include <opencv2/freetype.hpp>
 
 #include "log.h"
+/*
+#include "camera.h"
+#include "camera_rpihq.h"
+#include "camera_zwo.h"
+*/
 
 #ifdef CAM_RPIHQ
 // new includes (MEAN)
@@ -15,7 +20,6 @@
 #include "include/mode_RPiHQ_mean.h"
 #else
 #include "include/ASICamera2.h"
-//#include "camera_zwo.h"
 #endif
 
 
@@ -117,6 +121,7 @@ class Allsky: public Log {
 			bool gotSignal;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 			std::string dayOrNight;
 			std::string lastDayOrNight;
+			//Camera* myCam;
 		} static runtime;
 
 		struct Allsky_settings {
@@ -149,6 +154,32 @@ class Allsky: public Log {
 				int height;	
 				int quality;
 			} image;
+			struct camera{
+				char const *cameraName;
+				#ifdef CAM_RPIHQ
+				bool is_libcamera;
+				#endif
+				int asiNightBrightness;
+				int asiDayBrightness;
+				int asiNightAutoExposure;	// is it on or off for nighttime?
+				int asiDayAutoExposure;	// is it on or off for daylight?
+				int asiAutoAWB;	// is Auto White Balance on or off?
+				int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
+				#ifdef CAM_RPIHQ
+				float saturation;
+				double asiWBR;
+				double asiWBB;
+				double asiNightGain;
+				double asiDayGain;
+				#else
+				int asiWBR;
+				int asiWBB;
+				int asiDayGain;
+				int asiNightGain;
+				#endif
+				int dayBin;
+				int nightBin;
+			} camera;
 		} static settings;
 		static int showTime;
 		static char bufTime[128];
@@ -189,38 +220,23 @@ class Allsky: public Log {
 		static char const *ImgExtraText;
 		static int extraFileAge;   // 0 disables it
 		static char const *timeFormat;
-		static int asiAutoAWB;	// is Auto White Balance on or off?
 		static int showDetails;
 		static const char *locale;
 	// angle of the sun with the horizon
 	// (0=sunset, -6=civil twilight, -12=nautical twilight, -18=astronomical twilight)
 		static int originalWidth;
 		static int originalHeight;
-		static int dayBin;
-		static int nightBin;
-		static int asiNightBrightness;
-		static int asiDayBrightness;
-		static int asiNightAutoExposure;	// is it on or off for nighttime?
-		static int asiDayAutoExposure;	// is it on or off for daylight?
-		static int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
 		static int currentDelay_ms;
 		static int numExposures;	// how many valid pictures have we taken so far?
 		static int asiDayAutoGain;
 		static int asiDayExposure_us;
-    static char const *cameraName;
 		static int asiNightExposure_us;
 		static std::vector<int> compression_params;
 		static char exposureStart[128];
 #ifdef CAM_RPIHQ
 		static modeMeanSetting myModeMeanSetting;
 		static raspistillSetting myRaspistillSetting;
-		static double asiWBR;
-		static double asiWBB;
-		static double asiNightGain;
-	  static double asiDayGain;
 		static int background;
-		static float saturation;
-		static bool is_libcamera;
 		static int min_brightness;					// what user enters on command line
 		static int max_brightness;
 		static int default_brightness;
@@ -229,8 +245,6 @@ class Allsky: public Log {
 		static float default_saturation;
 #else
 		static const char *sType;		// displayed in output
-		static int asiWBR;
-		static int asiWBB;
 		static bool use_new_exposure_algorithm;
 		static int asiBandwidth;
 		static int asiAutoBandwidth;	// is Auto Bandwidth on or off?
@@ -280,7 +294,6 @@ class Allsky: public Log {
 		static int gainChange;			// how much to change gain up or down
 		static long camera_max_autoexposure_us;	// camera's max auto-exposure
 		static long camera_min_exposure_us;	// camera's minimum exposure
-		static int asiDayGain;
 		static int numGainChanges;		// This is reset at every day/night and night/day transition.
 		static bool adjustGain;	// Should we adjust the gain?  Set by user on command line.
 		static bool currentAdjustGain;	// Adjusting it right now?
