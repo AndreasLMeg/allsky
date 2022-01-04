@@ -888,8 +888,8 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					{
 						sprintf(Allsky::bufTemp, "Mean: %d", mean);
 						Allsky::cvText(settings.image.pRgb, Allsky::bufTemp, Allsky::iTextX, Allsky::iTextY + (iYOffset / Allsky::currentBin),
-							Allsky::fontsize * SMALLFONTSIZE_MULTIPLIER, Allsky::linewidth,
-							Allsky::linetype[Allsky::linenumber], Allsky::fontname[Allsky::fontnumber], Allsky::smallFontcolor,
+							settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, Allsky::linewidth,
+							Allsky::linetype[Allsky::linenumber], Allsky::fontname[settings.fonts.fontnumber], Allsky::smallFontcolor,
 							settings.image.Image_type, Allsky::outlinefont);
 						iYOffset += Allsky::iTextLineHeight;
 					}

@@ -180,19 +180,24 @@ class Allsky: public Log {
 				int dayBin;
 				int nightBin;
 			} camera;
+			struct fonts{
+				double fontsize;
+				int fontnumber;
+				int fontcolor[3];
+				int smallFontcolor[3];
+				int outlinefont;
+			} fonts;
 		} static settings;
 		static int showTime;
 		static char bufTime[128];
 		static int iTextX;
 		static int iTextY;
 		static int currentBin;
-		static double fontsize;
 		static int linewidth;
 	 	static int linetype[3];
 		static int linenumber; // todo: change the name
 		static int fontname[];
 		static char const *fontnames[];
-		static int fontnumber;
 		static int fontcolor[3];
 		static int smallFontcolor[3];
 		static int Image_type;

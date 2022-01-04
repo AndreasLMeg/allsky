@@ -25,16 +25,10 @@ char const *Allsky::ImgText   = "";
 char const *Allsky::tempType       = "C";	// Celsius
 char const *Allsky::ImgExtraText = "";
 int Allsky::extraFileAge = 0;   // 0 disables it
-//   - fonts
 int Allsky::iTextX = DEFAULT_ITEXTX;
 int Allsky::iTextY = DEFAULT_ITEXTY;
-double Allsky::fontsize = DEFAULT_FONTSIZE;
 int Allsky::linewidth = DEFAULT_LINEWIDTH;
 int Allsky::linenumber = DEFAULT_LINENUMBER;
-int Allsky::fontnumber = DEFAULT_FONTNUMBER;
-int Allsky::fontcolor[3] = { 255, 0, 0 };
-int Allsky::smallFontcolor[3] = { 0, 0, 255 };
-int Allsky::outlinefont = DEFAULT_OUTLINEFONT;
 int Allsky::iTextLineHeight = DEFAULT_ITEXTLINEHEIGHT;
 #ifdef CAM_RPIHQ
 int Allsky::background = 0;

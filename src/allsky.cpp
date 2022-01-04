@@ -26,18 +26,18 @@ void Allsky::overlayText(int &iYOffset) {
 	{
 		// The time and ImgText are in the larger font; everything else is in smaller font.
 		cvText(settings.image.pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * 0.1, linewidth,
-			linetype[linenumber], fontname[fontnumber], fontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * 0.1, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.fontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 			iYOffset += iTextLineHeight;
 	}
 
 	if (ImgText[0] != '\0')
 	{
 		cvText(settings.image.pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * 0.1, linewidth,
-			linetype[linenumber], fontname[fontnumber], fontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * 0.1, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.fontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset+=iTextLineHeight;
 	}
 
@@ -54,9 +54,9 @@ void Allsky::overlayText(int &iYOffset) {
 		}
 		sprintf(bufTemp, "Sensor: %s %s", C, F);
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -70,9 +70,9 @@ void Allsky::overlayText(int &iYOffset) {
 		// Indicate if in auto-exposure mode.
 		if (currentAutoExposure == ASI_TRUE) strcat(bufTemp, " (auto)");
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -82,9 +82,9 @@ void Allsky::overlayText(int &iYOffset) {
 		// Indicate if in auto gain mode.
 		if (currentAutoGain == ASI_TRUE) strcat(bufTemp, " (auto)");
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -92,9 +92,9 @@ void Allsky::overlayText(int &iYOffset) {
 	{
 		sprintf(bufTemp, "Brightness: %d", currentBrightness);
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 
@@ -103,9 +103,9 @@ void Allsky::overlayText(int &iYOffset) {
 	{
 		sprintf(bufTemp, "Mean: %.6f", lastMean);
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 #endif
@@ -115,9 +115,9 @@ void Allsky::overlayText(int &iYOffset) {
 	{
 		sprintf(bufTemp, "Focus: %.2f", get_focus_measure(settings.image.pRgb, myModeMeanSetting));
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
-			fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-			linetype[linenumber], fontname[fontnumber], smallFontcolor,
-			settings.image.Image_type, outlinefont);
+			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
+			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
 #endif
@@ -173,9 +173,9 @@ void Allsky::overlayText(int &iYOffset) {
 						}
 
 						cvText(settings.image.pRgb, line, iTextX, iTextY + (iYOffset / currentBin),
-							fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
-							linetype[linenumber], fontname[fontnumber],
-							smallFontcolor, settings.image.Image_type, outlinefont);
+							settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
+							linetype[linenumber], fontname[settings.fonts.fontnumber],
+							settings.fonts.smallFontcolor, settings.image.Image_type, settings.fonts.outlinefont);
 						iYOffset += iTextLineHeight;
 
 						//freetext
@@ -298,7 +298,6 @@ void Allsky::init(int argc, char *argv[])
   runtime.endOfNight = false;
 	runtime.gotSignal = false;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
 
-
 	// settings
 	settings.debugLevel = 0;
 	settings.tty = isatty(fileno(stdout)) ? true : false;	// are we on a tty?
@@ -346,6 +345,17 @@ void Allsky::init(int argc, char *argv[])
 	#endif
 	settings.camera.dayBin = DEFAULT_DAYBIN;
 	settings.camera.nightBin  = DEFAULT_NIGHTBIN;
+	//   - Fonts
+	settings.fonts.fontsize = DEFAULT_FONTSIZE;
+	settings.fonts.fontnumber = DEFAULT_FONTNUMBER;
+	settings.fonts.fontcolor[0] = 255;
+	settings.fonts.fontcolor[1] = 0;
+	settings.fonts.fontcolor[2] = 0;
+	settings.fonts.smallFontcolor [0] = 0;
+	settings.fonts.smallFontcolor [1] = 0;
+	settings.fonts.smallFontcolor [2] = 255;
+	settings.fonts.outlinefont = DEFAULT_OUTLINEFONT;
+
 
 
 	signal(SIGINT, Allsky::IntHandle);
@@ -357,7 +367,7 @@ void Allsky::init(int argc, char *argv[])
 
 	printf("\n%s", c(KGRN));
 	printf("**********************************************\n");
-	printf("*** Allsky Camera Software v0.8.2c |  2021 ***\n");
+	printf("*** Allsky Camera Software %s (%s) %s ***\n", VERSION_TAG, VERSION_BUILD, VERSION_BUILD_DATE);
 	printf("**********************************************\n\n");
 	printf("Capture images of the sky with a Raspberry Pi and an ASI Camera\n");
 	printf("%s\n", c(KNRM));
@@ -624,16 +634,16 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-fontname") == 0)
 			{
-				Allsky::fontnumber = atoi(argv[++i]);
+				settings.fonts.fontnumber = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-fontcolor") == 0)
 			{
-				if (sscanf(argv[++i], "%d %d %d", &Allsky::fontcolor[0], &Allsky::fontcolor[1], &Allsky::fontcolor[2]) != 3)
+				if (sscanf(argv[++i], "%d %d %d", &settings.fonts.fontcolor[0], &settings.fonts.fontcolor[1], &settings.fonts.fontcolor[2]) != 3)
 					fprintf(stderr, "%s*** ERROR: Not enough font color parameters: '%s'%s\n", c(KRED), argv[i], c(KNRM));
 			}
 			else if (strcmp(argv[i], "-smallfontcolor") == 0)
 			{
-				if (sscanf(argv[++i], "%d %d %d", &Allsky::smallFontcolor[0], &Allsky::smallFontcolor[1], &Allsky::smallFontcolor[2]) != 3)
+				if (sscanf(argv[++i], "%d %d %d", &settings.fonts.smallFontcolor[0], &settings.fonts.smallFontcolor[1], &settings.fonts.smallFontcolor[2]) != 3)
 					fprintf(stderr, "%s*** ERROR: Not enough small font color parameters: '%s'%s\n", c(KRED), argv[i], c(KNRM));
 			}
 			else if (strcmp(argv[i], "-fonttype") == 0)
@@ -642,7 +652,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-fontsize") == 0)
 			{
-				Allsky::fontsize = atof(argv[++i]);
+				settings.fonts.fontsize = atof(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-fontline") == 0)
 			{
@@ -650,7 +660,7 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-outlinefont") == 0)
 			{
-				Allsky::outlinefont = atoi(argv[++i]);
+				settings.fonts.outlinefont = atoi(argv[++i]);
 			}
 			else if (strcmp(argv[i], "-flip") == 0)
 			{
@@ -1007,13 +1017,13 @@ void Allsky::info(void)
 	printf(" Text Extra File: %s, Age: %d seconds\n", Allsky::ImgExtraText[0] == '\0' ? "[none]" : Allsky::ImgExtraText, Allsky::extraFileAge);
 	printf(" Text Line Height %dpx\n", Allsky::iTextLineHeight);
 	printf(" Text Position: %dpx from left, %dpx from top\n", Allsky::iTextX, Allsky::iTextY);
-	printf(" Font Name:  %s (%d)\n", Allsky::fontnames[Allsky::fontnumber], Allsky::fontname[Allsky::fontnumber]);
-	printf(" Font Color: %d, %d, %d\n", Allsky::fontcolor[0], Allsky::fontcolor[1], Allsky::fontcolor[2]);
-	printf(" Small Font Color: %d, %d, %d\n", Allsky::smallFontcolor[0], Allsky::smallFontcolor[1], Allsky::smallFontcolor[2]);
+	printf(" Font Name:  %s (%d)\n", Allsky::fontnames[settings.fonts.fontnumber], Allsky::fontname[settings.fonts.fontnumber]);
+	printf(" Font Color: %d, %d, %d\n", settings.fonts.fontcolor[0], settings.fonts.fontcolor[1], settings.fonts.fontcolor[2]);
+	printf(" Small Font Color: %d, %d, %d\n", settings.fonts.smallFontcolor[0], settings.fonts.smallFontcolor[1], settings.fonts.smallFontcolor[2]);
 	printf(" Font Line Type: %d\n", Allsky::linetype[Allsky::linenumber]);
-	printf(" Font Size: %1.1f\n", Allsky::fontsize);
+	printf(" Font Size: %1.1f\n", settings.fonts.fontsize);
 	printf(" Font Line Width: %d\n", Allsky::linewidth);
-	printf(" Outline Font : %s\n", yesNo(Allsky::outlinefont));
+	printf(" Outline Font : %s\n", yesNo(settings.fonts.outlinefont));
 	printf(" Flip Image: %d\n", settings.image.asiFlip);
 	printf(" Filename: %s\n", settings.image.fileName);
 	printf(" Latitude: %s, Longitude: %s\n", settings.latitude, settings.longitude);
@@ -1366,7 +1376,7 @@ void Allsky::prepareForDayOrNight(void)
 		settings.image.width     = Allsky::originalWidth / Allsky::currentBin;
 		Allsky::iTextX    = originalITextY /Allsky::currentBin;
 		Allsky::iTextY    = originalITextY / Allsky::currentBin;
-		Allsky::fontsize  = originalFontsize / Allsky::currentBin;
+		settings.fonts.fontsize  = originalFontsize / Allsky::currentBin;
 		Allsky::linewidth = originalLinewidth / Allsky::currentBin;
 		*/
 
@@ -1582,7 +1592,7 @@ void Allsky::prepareForDayOrNight(void)
 			settings.image.width     = Allsky::originalWidth / Allsky::currentBin;
 			Allsky::iTextX    = originalITextX / Allsky::currentBin;
 			Allsky::iTextY    = originalITextY / Allsky::currentBin;
-			Allsky::fontsize  = originalFontsize / Allsky::currentBin;
+			settings.fonts.fontsize  = originalFontsize / Allsky::currentBin;
 			Allsky::linewidth = originalLinewidth / Allsky::currentBin;
 			current_histogramBoxSizeX = histogramBoxSizeX / Allsky::currentBin;
 			current_histogramBoxSizeY = histogramBoxSizeY / Allsky::currentBin;

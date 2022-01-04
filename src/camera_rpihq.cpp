@@ -51,7 +51,7 @@ void CameraRPi::setupForCapture()
 // Build capture command to capture the image from the HQ camera
 int CameraRPi::capture() 
 {
-		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, settings.camera.asiAutoAWB, Allsky::currentGain, Allsky::currentBin, settings.camera.asiWBR, settings.camera.asiWBB, settings.image.asiRotation, settings.image.asiFlip, settings.camera.saturation, Allsky::currentBrightness, settings.image.quality, settings.image.fileName, Allsky::showTime, Allsky::ImgText, Allsky::fontsize, Allsky::fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, settings.image.width, settings.image.height, settings.camera.is_libcamera);
+		return RPiHQcapture(Allsky::currentAutoExposure, &Allsky::currentExposure_us, Allsky::currentAutoGain, settings.camera.asiAutoAWB, Allsky::currentGain, Allsky::currentBin, settings.camera.asiWBR, settings.camera.asiWBB, settings.image.asiRotation, settings.image.asiFlip, settings.camera.saturation, Allsky::currentBrightness, settings.image.quality, settings.image.fileName, Allsky::showTime, Allsky::ImgText, settings.fonts.fontsize, settings.fonts.fontcolor, Allsky::background, settings.taking_dark_frames, settings.preview, settings.image.width, settings.image.height, settings.camera.is_libcamera);
 }
 
 int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int currentBrightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int taking_dark_frames, int preview, int width, int height, bool libcamera)
@@ -418,22 +418,22 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 
 if (! libcamera)	// xxxx libcamera doesn't have fontsize, color, or background.
 {
-		if (fontsize < 6)
-			fontsize = 6;
-		else if (fontsize > 160)
-			fontsize = 160;
+		if (settings.fonts.fontsize < 6)
+			settings.fonts.fontsize = 6;
+		else if (settings.fonts.fontsize > 160)
+			settings.fonts.fontsize = 160;
 
 		ss.str("");
-		ss << fontsize;
+		ss << settings.fonts.fontsize;
 
 		// xxxxxxxx use all 3
-		if (Allsky::fontcolor[0] < 0)
-			Allsky::fontcolor[0] = 0;
-		else if (Allsky::fontcolor[0] > 255)
-			Allsky::fontcolor[0] = 255;
+		if (settings.fonts.fontcolor[0] < 0)
+			settings.fonts.fontcolor[0] = 0;
+		else if (settings.fonts.fontcolor[0] > 255)
+			settings.fonts.fontcolor[0] = 255;
 
 		std::stringstream C;
-		C  << std::setfill ('0') << std::setw(2) << std::hex << Allsky::fontcolor[0];
+		C  << std::setfill ('0') << std::setw(2) << std::hex << settings.fonts.fontcolor[0];
 
 		if (Allsky::background < 0)
 			Allsky::background = 0;
