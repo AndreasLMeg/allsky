@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 ME="$(basename "$BASH_ARGV0")"
 
@@ -79,7 +79,7 @@ fi
 # If upload is true, optionally create a smaller version of the image; either way, upload it
 if [ "$UPLOAD_IMG" = true ] ; then
 	if [[ "$RESIZE_UPLOADS" == "true" ]]; then
-			IMAGE_DEST="RU_${IMAGE_TO_USE}"
+		IMAGE_DEST="RU_${IMAGE_TO_USE}"
 		# Create a smaller version for upload
 		[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Resizing upload file '${IMAGE_TO_USE}' to ${RESIZE_UPLOADS_SIZE}"
 		convert "$IMAGE_TO_USE" -resize "$RESIZE_UPLOADS_SIZE" -gravity East -chop 2x0 "$IMAGE_DEST"
@@ -89,7 +89,7 @@ if [ "$UPLOAD_IMG" = true ] ; then
 		IMAGE_TO_USE="${IMAGE_DEST}"
 	fi
 
-	"${ALLSKY_SCRIPTS}/upload.sh" "${IMAGE_TO_USE}" "${IMGDIR}" "${IMAGE_TO_USE}" "SaveImageDay"
+	"${ALLSKY_SCRIPTS}/upload.sh" "${IMAGE_TO_USE}" "${IMGDIR}" "${FULL_FILENAME}" "SaveImageDay"
 	exit $?
 fi
 
