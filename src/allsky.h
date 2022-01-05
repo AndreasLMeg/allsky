@@ -312,9 +312,22 @@ class Allsky: public Log {
 		static ASI_CONTROL_CAPS ControlCaps;
 
 #endif
+
+		Allsky ();
+		Allsky (int argc, char *argv[]);
+
+		//
+		/* Camera captures one image */
+		virtual int capture(void) = 0;
+		/* all camara depending things after the capture */
+		virtual void postCapture(void) = 0;
+		/* all camara depending things before the capture */
+		virtual void setupForCapture(void) = 0;
+
 		// main functions
-		static void init(int argc, char *argv[]);
+		void init(int argc, char *argv[]);
 		static void info(void);
+		int run(void);
 		static void preCapture(void);
 		static void prepareForDayOrNight(void);
 		static void deliverImage(void);

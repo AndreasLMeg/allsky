@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash 
 
 ME="$(basename "$BASH_ARGV0")"
 

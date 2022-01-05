@@ -1704,3 +1704,52 @@ bool Allsky::dayOrNightNotChanged(void)
 {
 	return (runtime.lastDayOrNight == runtime.dayOrNight);
 }
+
+int Allsky::run(void) {
+		
+	runtime.status = StatusLoop;
+	while (runtime.status == StatusLoop)
+	{
+		prepareForDayOrNight();
+
+		// Wait for switch day time -> night time or night time -> day time
+		while (runtime.status == StatusLoop && dayOrNightNotChanged())
+		{
+			preCapture();
+			setupForCapture();
+			int retCode = capture();
+			if (retCode == 0) {
+				postCapture();
+				deliverImage();
+			}
+			else {
+				printf(" >>> Unable to take picture, return code=%d\n", (retCode >> 8));
+				Warning("  > Sleeping from failed exposure: %.1f seconds\n", (float)currentDelay_ms / MS_IN_SEC);
+				usleep(currentDelay_ms * US_IN_MS); // TODO: move to waitForNextCapture
+				continue; // TODO: ist das notwendig ?
+			}
+			waitForNextCapture();
+
+			// Check for day or night based on location and angle
+			calculateDayOrNight();
+			Info("----------------------------\n");
+		}
+
+		Info("============================\n");
+		Info("%s\n", runtime.dayOrNight.c_str());
+		Info("============================\n");
+	}
+	
+	closeUp(0);
+	return 0;
+}
+
+Allsky::Allsky ()
+{
+
+};
+
+Allsky::Allsky (int argc, char *argv[]) 
+{
+	init(argc, argv);
+};

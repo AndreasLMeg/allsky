@@ -6,6 +6,12 @@
 // Derived class
 class CameraRPi : public Camera {
   public:
+		CameraRPi () {};
+		CameraRPi (int argc, char *argv[]) 
+		{
+			init(argc, argv);
+		};
+
 		void kill();
 		void initCamera();
 		void setupForCapture();

@@ -7,6 +7,12 @@
 // Derived class
 class CameraZWO : public Camera {
   public:
+		CameraZWO () {};
+		CameraZWO (int argc, char *argv[]) 
+		{
+			init(argc, argv);
+		};
+
 		void kill();
 		void initCamera();
 		void setupForCapture();
