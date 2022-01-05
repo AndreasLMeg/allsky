@@ -11,8 +11,13 @@ source "${ALLSKY_CONFIG}/ftp-settings.sh"
 cd $ALLSKY_HOME
 
 IMAGE_TO_USE="$FULL_FILENAME"
+if [ "$IMAGE_TO_USE" = "" ]; then
+	echo "${RED}*** $ME: ERROR: IMAGE_TO_USE is null.${NC}"
+	exit 1
+fi
 # quotes around $IMAGE_TO_USE below, in case it has a space or special characters.
 
+IMAGE_DEST=""
 # Quick check to make sure the image isn't corrupted.
 identify "$IMAGE_TO_USE" >/dev/null 2>&1
 if [ $? -ne 0 ] ; then
@@ -22,22 +27,27 @@ fi
 
 # Resize the image if required
 if [[ $IMG_RESIZE == "true" ]]; then
+	IMAGE_DEST="R_${IMAGE_TO_USE}"
 	[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Resizing '${IMAGE_TO_USE}' to ${IMG_WIDTH}x${IMG_HEIGHT}"
-        convert "$IMAGE_TO_USE" -resize "${IMG_WIDTH}x${IMG_HEIGHT}" "$IMAGE_TO_USE"
+        convert "$IMAGE_TO_USE" -resize "${IMG_WIDTH}x${IMG_HEIGHT}" "$IMAGE_DEST"
 	if [ $? -ne 0 ] ; then
 		echo "${RED}*** $ME: ERROR: IMG_RESIZE failed${NC}"
 		exit 4
 	fi
+		IMAGE_TO_USE="${IMAGE_DEST}"
 fi
 
 # Crop the image around the center if required
 if [[ $CROP_IMAGE == "true" ]]; then
+	IMAGE_DEST="C_${IMAGE_TO_USE}"
 	[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Cropping ${IMAGE_TO_USE} to ${CROP_WIDTH}x${CROP_HEIGHT}"
-        convert "$IMAGE_TO_USE" -gravity Center -crop "${CROP_WIDTH}x${CROP_HEIGHT}+${CROP_OFFSET_X}+${CROP_OFFSET_Y}" +repage "$IMAGE_TO_USE"
+        convert "$IMAGE_TO_USE" -gravity Center -crop "${CROP_WIDTH}x${CROP_HEIGHT}+${CROP_OFFSET_X}+${CROP_OFFSET_Y}" +repage "$IMAGE_DEST"
 	if [ $? -ne 0 ] ; then
 		echo "${RED}*** $ME: ERROR: CROP_IMAGE failed${NC}"
 		exit 4
 	fi
+	IMAGE_TO_USE="${IMAGE_DEST}"
+
 fi
 
 # IMG_DIR and IMG_PREFIX are in config.sh
@@ -69,12 +79,14 @@ fi
 # If upload is true, optionally create a smaller version of the image; either way, upload it
 if [ "$UPLOAD_IMG" = true ] ; then
 	if [[ "$RESIZE_UPLOADS" == "true" ]]; then
+			IMAGE_DEST="RU_${IMAGE_TO_USE}"
 		# Create a smaller version for upload
 		[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Resizing upload file '${IMAGE_TO_USE}' to ${RESIZE_UPLOADS_SIZE}"
-		convert "$IMAGE_TO_USE" -resize "$RESIZE_UPLOADS_SIZE" -gravity East -chop 2x0 "$IMAGE_TO_USE"
+		convert "$IMAGE_TO_USE" -resize "$RESIZE_UPLOADS_SIZE" -gravity East -chop 2x0 "$IMAGE_DEST"
 		if [ $? -ne 0 ] ; then
 			echo -e "${YELLOW}*** ${ME}: WARNING: RESIZE_UPLOADS failed; continuing with larger image.${NC}"
 		fi
+		IMAGE_TO_USE="${IMAGE_DEST}"
 	fi
 
 	"${ALLSKY_SCRIPTS}/upload.sh" "${IMAGE_TO_USE}" "${IMGDIR}" "${IMAGE_TO_USE}" "SaveImageDay"

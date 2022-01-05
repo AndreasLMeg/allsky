@@ -26,6 +26,8 @@ if [ "$IMAGE_TO_USE" = "" ]; then
 fi
 # quotes around $IMAGE_TO_USE below, in case it has a space or special characters.
 
+IMAGE_DEST=""
+
 # Make sure the image isn't corrupted
 identify "$IMAGE_TO_USE" >/dev/null 2>&1
 RET=$?
@@ -36,35 +38,41 @@ fi
 
 # Resize the image if required
 if [[ $IMG_RESIZE == "true" ]]; then
+	IMAGE_DEST="R_${IMAGE_TO_USE}"
 	[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Resizing '${IMAGE_TO_USE}' to ${IMG_WIDTH}x${IMG_HEIGHT}"
-        convert "$IMAGE_TO_USE" -resize "$IMG_WIDTH"x"$IMG_HEIGHT" "$IMAGE_TO_USE"
+        convert "$IMAGE_TO_USE" -resize "$IMG_WIDTH"x"$IMG_HEIGHT" "$IMAGE_DEST"
 	RET=$?
 	if [ $RET -ne 0 ] ; then
 		echo -e "${RED}*** ${ME}: ERROR: IMG_RESIZE failed with RET=${RET}{$NC}"
 		exit 4
 	fi
+	IMAGE_TO_USE="${IMAGE_DEST}"
 fi
 
 # Crop the image around the center if required
 if [[ $CROP_IMAGE == "true" ]]; then
+	IMAGE_DEST="C_${IMAGE_TO_USE}"
 	[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Cropping ${IMAGE_TO_USE} to ${CROP_WIDTH}x${CROP_HEIGHT}"
-        convert "$IMAGE_TO_USE" -gravity Center -crop "$CROP_WIDTH"x"$CROP_HEIGHT"+"$CROP_OFFSET_X"+"$CROP_OFFSET_Y" +repage "$IMAGE_TO_USE"
+        convert "$IMAGE_TO_USE" -gravity Center -crop "$CROP_WIDTH"x"$CROP_HEIGHT"+"$CROP_OFFSET_X"+"$CROP_OFFSET_Y" +repage "$IMAGE_DEST"
 	RET=$?
 	if [ $RET -ne 0 ] ; then
 		echo -e "${RED}*** ${ME}: ERROR: CROP_IMAGE failed with RET=${RET}{$NC}"
 		exit 4
 	fi
+	IMAGE_TO_USE="${IMAGE_DEST}"
 fi
 
 # Stretch the image
 if [[ $AUTO_STRETCH == "true" ]]; then
+	IMAGE_DEST="S_${IMAGE_TO_USE}"
 	[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Stretching '${IMAGE_TO_USE}' by ${AUTO_STRETCH_AMOUNT}"
-  	convert "$IMAGE_TO_USE" -sigmoidal-contrast "$AUTO_STRETCH_AMOUNT","$AUTO_STRETCH_MID_POINT" "$IMAGE_TO_USE"
+  	convert "$IMAGE_TO_USE" -sigmoidal-contrast "$AUTO_STRETCH_AMOUNT","$AUTO_STRETCH_MID_POINT" "$IMAGE_DEST"
 	RET=$?
 	if [ $RET -ne 0 ] ; then
 		echo -e "${RED}*** ${ME}: ERROR: AUTO_STRETCH failed with RET=${RET}${NC}"
 		exit 4
 	fi
+	IMAGE_TO_USE="${IMAGE_DEST}"
 fi
 
 # IMG_DIR and IMG_PREFIX are in config.sh
@@ -88,13 +96,15 @@ fi
 # If upload is true, optionally create a smaller version of the image; either way, upload it
 if [[ "$UPLOAD_IMG" == "true" ]] ; then
 	if [[ "$RESIZE_UPLOADS" == "true" ]]; then
+		IMAGE_DEST="RU_${IMAGE_TO_USE}"
 		# Create smaller version for upload
 		[ "${ALLSKY_DEBUG_LEVEL}" -ge 4 ] && echo "${ME}: Resizing upload file '${IMAGE_TO_USE}' to ${RESIZE_UPLOADS_SIZE}"
-		convert "$IMAGE_TO_USE" -resize "$RESIZE_UPLOADS_SIZE" -gravity East -chop 2x0 "$IMAGE_TO_USE"
+		convert "$IMAGE_TO_USE" -resize "$RESIZE_UPLOADS_SIZE" -gravity East -chop 2x0 "$IMAGE_DEST"
 		RET=$?
 		if [ ${RET} -ne 0 ] ; then
 			echo -e "${YELLOW}*** ${ME}: WARNING: RESIZE_UPLOADS failed with RET=${RET}; continuing with larger image.${NC}"
 		fi
+		IMAGE_TO_USE="${IMAGE_DEST}"
 	fi
 
 	"${ALLSKY_SCRIPTS}/upload.sh" "${IMAGE_TO_USE}" "${IMGDIR}" "${IMAGE_TO_USE}" "SaveImageNight"

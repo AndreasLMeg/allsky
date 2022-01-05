@@ -203,6 +203,12 @@ check_capture_SaveImageNight 10
 check_capture_SaveImageNight 5
 check_capture_SaveImageNight 2
 check_capture_SaveImageNight 1 
+check_capture_SaveImageNight 0.5 
+check_capture_SaveImageNight 0.2 
+#check_capture_SaveImageNight 0.1 #1st upload problems
+#check_capture_SaveImageNight 0.05 
+#check_capture_SaveImageNight 0.02 
+#check_capture_SaveImageNight 0.01 
 
 echo "-----------------------------------"
 echo "start allsky"
