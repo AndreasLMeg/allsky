@@ -8,18 +8,14 @@
 #include <opencv2/freetype.hpp>
 
 #include "log.h"
-/*
-#include "camera.h"
-#include "camera_rpihq.h"
-#include "camera_zwo.h"
-*/
 
-#ifdef CAM_RPIHQ
+#if defined CAM_RPIHQ
 // new includes (MEAN)
 #include "include/RPiHQ_raspistill.h"
 #include "include/mode_RPiHQ_mean.h"
-#else
+#elif defined CAM_ZWO
 #include "include/ASICamera2.h"
+#elif defined CAM_NEW
 #endif
 
 
@@ -66,17 +62,16 @@
 #define DEFAULT_DAYDELAY     (30 * MS_IN_SEC)	// 30 seconds
 #define DEFAULT_NIGHTDELAY   (30 * MS_IN_SEC)	// 30 seconds
 #define DEFAULT_DAYTIMECAPTURE   0
+#define DEFAULT_BRIGHTNESS       50
 // todo: some values are different (ASI / RPiHQ)
-#ifdef CAM_RPIHQ
+#if defined CAM_RPIHQ
 	#define DEFAULT_FONTSIZE    32  
-	#define DEFAULT_BRIGHTNESS       50
 	#define DEFAULT_BRIGHTNESS_LIBCAMERA 0
 	#define DEFAULT_NIGHTAUTOGAIN    4
 	#define DEFAULT_DAYAUTOEXPOSURE  0
 	#define DEFAULT_NIGHTAUTOEXPOSURE 0
-#else
+#elif defined CAM_ZWO
 	#define DEFAULT_FONTSIZE    7
-	#define DEFAULT_BRIGHTNESS       50
 	#define DEFAULT_ASIBANDWIDTH    40
 	#define DEFAULT_ASIWBR           65
 	#define DEFAULT_ASIWBB           85
@@ -88,9 +83,7 @@
 	#define DEFAULT_ASINIGHTMAXAUTOEXPOSURE_MS  (20 * MS_IN_SEC)	// 20 seconds
 	#define DEFAULT_ASIDAYEXPOSURE   500	// microseconds - good starting point for daytime exposures
 	#define DEFAULT_ASIDAYMAXAUTOEXPOSURE_MS  (60 * MS_IN_SEC)	// 60 seconds
-	#define DEFAULT_DAYAUTOEXPOSURE  1
 	#define DEFAULT_ASINIGHTEXPOSURE (5 * US_IN_SEC)	// 5 seconds
-	#define DEFAULT_NIGHTAUTOEXPOSURE 1
 	#define DEFAULT_ASIGAMMA         50		// not supported by all cameras
 	#define DEFAULT_BOX_SIZEX       500     // Must be a multiple of 2
 	#define DEFAULT_BOX_SIZEY       500     // Must be a multiple of 2
@@ -98,6 +91,13 @@
 	#define DEFAULT_BOX_FROM_TOP    0.5
 	#define DEFAULT_PERCENTCHANGE 10.0	// percent of ORIGINAL difference
 	#define DEFAULT_ASIDAYGHTGAIN    0
+	#define DEFAULT_DAYAUTOEXPOSURE  1
+	#define DEFAULT_NIGHTAUTOEXPOSURE 1
+#elif defined CAM_NEW
+	#define DEFAULT_FONTSIZE    7
+	#define DEFAULT_NIGHTAUTOGAIN    4 // factor 4
+	#define DEFAULT_DAYAUTOEXPOSURE  1
+	#define DEFAULT_NIGHTAUTOEXPOSURE 1
 #endif
 
 
@@ -124,6 +124,10 @@ class Allsky: public Log {
 			//Camera* myCam;
 		} static runtime;
 
+		struct Allsky_current {
+			int currentDelay_ms;
+		} static current;
+
 		struct Allsky_settings {
 			int debugLevel;
 			bool tty;
@@ -144,7 +148,7 @@ class Allsky: public Log {
 				//   - image-capture
 				cv::Mat pRgb;	// the image
 				int asiFlip;
-				#ifdef CAM_RPIHQ
+				#if defined CAM_RPIHQ
 				int asiRotation;
 				#endif
 				//   - image-destination
@@ -156,7 +160,7 @@ class Allsky: public Log {
 			} image;
 			struct camera{
 				char const *cameraName;
-				#ifdef CAM_RPIHQ
+				#if defined CAM_RPIHQ
 				bool is_libcamera;
 				#endif
 				int asiNightBrightness;
@@ -165,17 +169,22 @@ class Allsky: public Log {
 				int asiDayAutoExposure;	// is it on or off for daylight?
 				int asiAutoAWB;	// is Auto White Balance on or off?
 				int asiNightAutoGain;	// is Auto Gain on or off for nighttime?
-				#ifdef CAM_RPIHQ
+				#if defined CAM_RPIHQ
 				float saturation;
 				double asiWBR;
 				double asiWBB;
 				double asiNightGain;
 				double asiDayGain;
-				#else
+				#elif defined CAM_ZWO
 				int asiWBR;
 				int asiWBB;
 				int asiDayGain;
 				int asiNightGain;
+				#elif defined CAM_NEW
+				double asiWBR;
+				double asiWBB;
+				double asiNightGain;
+				double asiDayGain;
 				#endif
 				int dayBin;
 				int nightBin;
@@ -231,14 +240,13 @@ class Allsky: public Log {
 	// (0=sunset, -6=civil twilight, -12=nautical twilight, -18=astronomical twilight)
 		static int originalWidth;
 		static int originalHeight;
-		static int currentDelay_ms;
 		static int numExposures;	// how many valid pictures have we taken so far?
 		static int asiDayAutoGain;
 		static int asiDayExposure_us;
 		static int asiNightExposure_us;
 		static std::vector<int> compression_params;
 		static char exposureStart[128];
-#ifdef CAM_RPIHQ
+#if defined CAM_RPIHQ
 		static modeMeanSetting myModeMeanSetting;
 		static raspistillSetting myRaspistillSetting;
 		static int background;
@@ -248,7 +256,7 @@ class Allsky: public Log {
 		static float min_saturation;				// produces black and white
 		static float max_saturation;
 		static float default_saturation;
-#else
+#elif defined CAM_ZWO
 		static const char *sType;		// displayed in output
 		static bool use_new_exposure_algorithm;
 		static int asiBandwidth;
@@ -323,15 +331,16 @@ class Allsky: public Log {
 		virtual void postCapture(void) = 0;
 		/* all camara depending things before the capture */
 		virtual void setupForCapture(void) = 0;
+		/* all camara depending things before the capture */
+		virtual void waitForNextCapture(void) = 0;
+		virtual void prepareForDayOrNight(void) = 0;
 
 		// main functions
 		void init(int argc, char *argv[]);
 		static void info(void);
 		int run(void);
 		static void preCapture(void);
-		static void prepareForDayOrNight(void);
 		static void deliverImage(void);
-		static void waitForNextCapture(void);
 		static bool dayOrNightNotChanged(void);
 		//helper functions
 		static void overlayText(int &);

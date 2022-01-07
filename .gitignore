@@ -33,6 +33,7 @@ gmon.out
 # generated binaries
 capture
 capture_RPiHQ
+capture_NewCam
 keogram
 startrails
 sunwait

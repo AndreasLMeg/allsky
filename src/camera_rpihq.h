@@ -12,6 +12,9 @@ class CameraRPi : public Camera {
 			init(argc, argv);
 		};
 
+		void waitForNextCapture(void);
+		void prepareForDayOrNight(void); 
+
 		void kill();
 		void initCamera();
 		void setupForCapture();

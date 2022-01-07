@@ -5,6 +5,7 @@
 #include <string>
 #include <cstring>
 #include <iomanip>
+#include <unistd.h>
 
 using namespace std;
 
@@ -525,4 +526,175 @@ void  CameraRPi::postCapture(void)
 							Allsky::Debug("'%s' saved with extratext\n", settings.image.fileName);
 					}
 				}
+}
+
+void CameraRPi::waitForNextCapture(void)
+{
+			long us;
+			if (Allsky::myModeMeanSetting.mode_mean && Allsky::myModeMeanSetting.quickstart)
+			{
+				us = 1 * US_IN_SEC;
+			}
+			else if ((runtime.dayOrNight == "NIGHT"))
+			{
+				us = (Allsky::asiNightExposure_us - Allsky::myRaspistillSetting.shutter_us) + (settings.night.nightDelay_ms * US_IN_MS);
+			}
+			else
+			{
+				us = current.currentDelay_ms * US_IN_MS;
+			}
+			Allsky::Info("Sleeping %.1f seconds...\n", (float)us / US_IN_SEC);
+			usleep(us);
+}
+
+void CameraRPi::prepareForDayOrNight(void) 
+{
+	// Have we displayed "not taking picture during day" message, if applicable?
+	int displayedNoDaytimeMsg = 0;
+	
+	// Find out if it is currently DAY or NIGHT
+	calculateDayOrNight();
+	runtime.lastDayOrNight = runtime.dayOrNight;
+
+		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
+// TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
+
+// TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
+// xxxxxx and "currentGain" instead of "asiNightGain"?
+				RPiHQcalcMean(settings.image.fileName, asiNightExposure_us, settings.camera.asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+		}
+
+		if (settings.taking_dark_frames) {
+			// We're doing dark frames so turn off autoexposure and autogain, and use
+			// nightime gain, delay, exposure, and brightness to mimic a nightime shot.
+			Allsky::currentAutoExposure = 0;
+			Allsky::currentAutoGain = 0;
+			Allsky::currentGain = settings.camera.asiNightGain;
+			current.currentDelay_ms = settings.night.nightDelay_ms;
+			Allsky::currentExposure_us = asiNightExposure_us;
+			Allsky::currentBrightness = settings.camera.asiNightBrightness;
+			Allsky::currentBin = settings.camera.nightBin;
+
+ 			Allsky::Info("Taking dark frames...\n");
+			if (settings.notificationImages) {
+				system("scripts/copy_notification_image.sh DarkFrames &");
+			}
+		}
+
+		else if (runtime.dayOrNight == "DAY")
+		{
+			if (runtime.endOfNight)		// Execute end of night script
+			{
+ 			  Info("starting endOfNight.sh\n");
+				system("scripts/endOfNight.sh &");
+
+				// Reset end of night indicator
+				runtime.endOfNight = false;
+
+				displayedNoDaytimeMsg = 0;
+			}
+
+			// Check if images should not be captured during day-time
+			if (settings.day.daytimeCapture != 1)
+			{
+				// Only display messages once a day.
+				if (displayedNoDaytimeMsg == 0) {
+					if (settings.notificationImages) {
+						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
+					}
+					Allsky::Info("It's daytime... we're not saving images.\n%s\n",
+						settings.tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
+					displayedNoDaytimeMsg = 1;
+
+					// sleep until almost nighttime, then wake up and sleep a short time
+					int secsTillNight = Allsky::calculateTimeToNightTime();
+					sleep(secsTillNight - 10);
+				}
+				else
+				{
+					// Shouldn't need to sleep more than a few times before nighttime.
+					sleep(5);
+				}
+
+				// No need to do any of the code below so go back to the main loop.
+				return;
+			}
+
+			// Images should be captured during day-time
+			else
+			{
+				Allsky::Info("============= Starting daytime capture =============\n");
+
+								// If we went from Night to Day, then currentExposure_us will be the last night
+								// exposure so leave it if we're using auto-exposure so there's a seamless change from
+								// Night to Day, i.e., if the exposure was fine a minute ago it will likely be fine now.
+								// On the other hand, if this program just started or we're using manual exposures,
+								// use what the user specified.
+								if (numExposures == 0 || ! settings.camera.asiDayAutoExposure)
+								{
+									Allsky::currentExposure_us = asiDayExposure_us;
+									Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
+								}
+								else
+								{
+										Allsky::Debug("Using the last night exposure of %'ld\n", Allsky::currentExposure_us);
+								}
+				Allsky::currentAutoExposure = settings.camera.asiDayAutoExposure;
+				Allsky::currentBrightness = settings.camera.asiDayBrightness;
+				current.currentDelay_ms = settings.day.dayDelay_ms;
+				Allsky::currentBin = settings.camera.dayBin;
+				Allsky::currentGain = settings.camera.asiDayGain;
+				Allsky::currentAutoGain = asiDayAutoGain;
+			}
+		}
+
+		else	// NIGHT
+		{
+			Allsky::Info("============= Starting nighttime capture =============\n");
+
+			// Setup the night time capture parameters
+			if (numExposures == 0 || ! settings.camera.asiNightAutoExposure)
+			{
+				Allsky::currentExposure_us = asiNightExposure_us;
+				Allsky::Debug("Using night exposure (%'ld)\n", asiNightExposure_us);
+				Allsky::myRaspistillSetting.shutter_us = Allsky::currentExposure_us;
+			}
+			Allsky::currentAutoExposure = settings.camera.asiNightAutoExposure;
+			Allsky::currentBrightness = settings.camera.asiNightBrightness;
+			current.currentDelay_ms = settings.night.nightDelay_ms;
+			Allsky::currentBin = settings.camera.nightBin;
+			Allsky::currentGain = settings.camera.asiNightGain;
+			Allsky::currentAutoGain = settings.camera.asiNightAutoGain;
+		}
+
+		// Adjusting variables for chosen binning
+		// TODO: too much ????
+		/*
+		settings.image.height    = Allsky::originalHeight / Allsky::currentBin;
+		settings.image.width     = Allsky::originalWidth / Allsky::currentBin;
+		Allsky::iTextX    = originalITextY /Allsky::currentBin;
+		Allsky::iTextY    = originalITextY / Allsky::currentBin;
+		settings.fonts.fontsize  = originalFontsize / Allsky::currentBin;
+		Allsky::linewidth = originalLinewidth / Allsky::currentBin;
+		*/
+
+		// TODO: if not the first time, should we free the old settings.image.pRgb?
+		settings.image.pRgb.release();
+		if (settings.image.Image_type == ASI_IMG_RAW16)
+		{
+			settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_16UC1);
+		}
+		else if (settings.image.Image_type == ASI_IMG_RGB24)
+		{
+			settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_8UC3);
+		}
+		else // RAW8 and Y8
+		{
+			settings.image.pRgb.create(cv::Size(settings.image.width, settings.image.height), CV_8UC1);
+		}
+
+		if (settings.tty)
+			printf("Press Ctrl+Z to stop\n\n");	// xxx ECC: Ctrl-Z stops a process, it doesn't kill it
+		else
+			printf("Stop the allsky service to end this process.\n\n");
 }

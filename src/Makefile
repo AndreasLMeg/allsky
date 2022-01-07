@@ -101,7 +101,7 @@ CFLAGS += -DVERSION_TAG=\"$(BUILD_TAG)\"
 CFLAGS += -DVERSION_BUILD=\"$(BUILD_INFO)\"
 CFLAGS += -DVERSION_BUILD_DATE=\"$(BUILD_DATE)\"
 
-all:check_deps capture capture_RPiHQ startrails keogram sunwait
+all:check_deps capture capture_RPiHQ capture_NewCam startrails keogram sunwait
 .PHONY : all
 
 ifneq ($(shell id -u), 0)
@@ -146,6 +146,11 @@ capture_RPiHQ:capture.cpp
 	@$(CC) capture.cpp log.cpp camera_rpihq.cpp allsky.cpp mode_RPiHQ_mean.cpp -o $@ $(CFLAGS) -DCAM_RPIHQ $(OPENCV)
 	@echo `date +%F\ %R:%S` Done.
 
+capture_NewCam:capture.cpp
+	@echo `date +%F\ %R:%S` Building $@ program...
+	@$(CC) capture.cpp log.cpp camera_newcam.cpp allsky.cpp -o $@  $(CFLAGS) -DCAM_NEW $(OPENCV)
+	@echo `date +%F\ %R:%S` Done.
+
 keogram:keogram.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
 	@$(CC) $@.cpp -o $@ $(CFLAGS) $(OPENCV)
@@ -160,6 +165,7 @@ symlink: all
 	@echo `date +%F\ %R:%S` Symlinking binaries...
 	@ln -s $$PWD/capture ../
 	@ln -s $$PWD/capture_RPiHQ ../
+	@ln -s $$PWD/capture_NewCam ../
 	@ln -s $$PWD/keogram ../
 	@ln -s $$PWD/startrails ../
 
@@ -176,11 +182,13 @@ install:
 	  [ ! -e $(DESTDIR)$(bindir) ] && mkdir -p $(DESTDIR)$(bindir); \
 	  install capture $(DESTDIR)$(bindir); \
 	  install capture_RPiHQ $(DESTDIR)$(bindir); \
+	  install capture_NewCam $(DESTDIR)$(bindir); \
 	  install keogram $(DESTDIR)$(bindir); \
 	  install startrails $(DESTDIR)$(bindir); \
 	else \
 	  install -o $(SUDO_USER) -g $(SUDO_USER) capture ../; \
 	  install -o $(SUDO_USER) -g $(SUDO_USER) capture_RPiHQ ../; \
+	  install -o $(SUDO_USER) -g $(SUDO_USER) capture_NewCam ../; \
 	  install -o $(SUDO_USER) -g $(SUDO_USER) keogram ../; \
 	  install -o $(SUDO_USER) -g $(SUDO_USER) startrails ../; \
 	fi
@@ -191,12 +199,14 @@ uninstall:
 	@if [ $(PKGBUILD) -eq 1 ]; then \
 	  rm -f $(DESTDIR)$(bindir)/capture; \
 	  rm -f $(DESTDIR)$(bindir)/capture_RPiHQ; \
+	  rm -f $(DESTDIR)$(bindir)/capture_NewCam; \
 	  rm -f $(DESTDIR)$(bindir)/keogram; \
 	  rm -f $(DESTDIR)$(bindir)/startrails; \
 	  rm -f $(DESTDIR)$(bindir)/sunwait; \
 	else \
 	  rm -f ../capture; \
 	  rm -f ../capture_RPiHQ; \
+	  rm -f ../capture_NewCam; \
 	  rm -f ../keogram; \
 	  rm -f ../startrails; \
 	  rm -f $(DESTDIR)$(bindir)/startrails; \
@@ -206,7 +216,7 @@ endif # sudo / root check
 .PHONY : install uninstall
 
 clean:
-	rm -f capture capture_RPiHQ startrails keogram *.o *.a
+	rm -f capture capture_RPiHQ capture_NewCam startrails keogram *.o *.a
 .PHONY : clean
 
 endif # Correct directory structure check

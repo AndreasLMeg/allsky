@@ -6,6 +6,9 @@
 // runtime / program
 Allsky::Allsky_runtime Allsky::runtime;
 
+// current values
+Allsky::Allsky_current Allsky::current;
+
 // settings (json) - don't change !
 Allsky::Allsky_settings Allsky::settings;
 
@@ -30,7 +33,7 @@ int Allsky::iTextY = DEFAULT_ITEXTY;
 int Allsky::linewidth = DEFAULT_LINEWIDTH;
 int Allsky::linenumber = DEFAULT_LINENUMBER;
 int Allsky::iTextLineHeight = DEFAULT_ITEXTLINEHEIGHT;
-#ifdef CAM_RPIHQ
+#if defined CAM_RPIHQ
 int Allsky::background = 0;
 #endif
 
@@ -42,7 +45,6 @@ int Allsky::currentAutoGain = NOT_SET;
 double Allsky::currentGain = NOT_SET;
 int Allsky::currentAutoExposure= 0;
 long Allsky::actualTemp = 0;	// actual sensor temp, per the camera
-int Allsky::currentDelay_ms   = NOT_SET;
 
 // last values
 double Allsky::lastGain = NOT_SET;
@@ -66,7 +68,7 @@ int Allsky::numExposures = 0;	// how many valid pictures have we taken so far?
 char Allsky::exposureStart[128];
 
 //camera depending vars
-#ifdef CAM_RPIHQ
+#if defined CAM_RPIHQ
 modeMeanSetting Allsky::myModeMeanSetting;
 raspistillSetting Allsky::myRaspistillSetting;
 float Allsky::min_saturation;				// produces black and white
@@ -75,7 +77,7 @@ float Allsky::default_saturation;
 int Allsky::min_brightness;					// what user enters on command line
 int Allsky::max_brightness;
 int Allsky::default_brightness;
-#else
+#elif defined CAM_ZWO
 ASI_ERROR_CODE Allsky::asiRetCode;  // used for return code from ASI functions.
 long Allsky::bufferSize;
 #ifdef USE_HISTOGRAM

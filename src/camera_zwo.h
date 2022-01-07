@@ -13,6 +13,8 @@ class CameraZWO : public Camera {
 			init(argc, argv);
 		};
 
+		void prepareForDayOrNight(void) ;
+
 		void kill();
 		void initCamera();
 		void setupForCapture();
