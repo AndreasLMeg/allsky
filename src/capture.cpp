@@ -1,13 +1,15 @@
-#if defined CAM_ZWO
+#if defined CAM_RPIHQ
+#include "camera_rpihq.h"
+#elif defined CAM_ZWO
 #define USE_HISTOGRAM                     // use the histogram code as a workaround to ZWO's bug
+#include "camera_zwo.h"
 #endif
 
 #include "allsky.h"
-#include "camera_rpihq.h"
-#include "camera_zwo.h"
 #include "allskyStatic.h"
 
 Camera* myCam;
+
 //-------------------------------------------------------------------------------------------------------
 int main(int argc, char *argv[])
 {
