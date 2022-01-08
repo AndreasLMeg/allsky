@@ -82,12 +82,12 @@ int ModeMean::calculateExposurelevelChange(float mean_diff)
 	int ExposurelevelChange = shuttersteps / 2;
 
 	// fast forward
-	if ((fastforward) || (mean_diff > (setting_ModeMean.mean_threshold * 2.0))) {
-		ExposurelevelChange = std::max(1.0, setting_ModeMean.mean_p0 + setting_ModeMean.mean_p1 * mean_diff + pow (setting_ModeMean.mean_p2 * mean_diff,2.0));
+	if ((fastforward) || (abs(mean_diff) > (setting_ModeMean.mean_threshold * 2.0))) {
+		ExposurelevelChange = std::max(1.0, setting_ModeMean.mean_p0 + setting_ModeMean.mean_p1 * abs(mean_diff) + pow (setting_ModeMean.mean_p2 * mean_diff,2.0));
 	}
 	// slow forward
 	else if (mean_diff > (setting_ModeMean.mean_threshold)) {
-		ExposurelevelChange = std::max(1.0, setting_ModeMean.mean_p0 + setting_ModeMean.mean_p1 * mean_diff);
+		ExposurelevelChange = std::max(1.0, setting_ModeMean.mean_p0 + setting_ModeMean.mean_p1 * abs(mean_diff));
 	}
 
 	return (ExposurelevelChange);
