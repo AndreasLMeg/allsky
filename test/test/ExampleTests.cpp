@@ -22,6 +22,44 @@ TEST(Allsky, zwoGain2gain) {
 	EXPECT_EQ( Allsky::zwoGain2gain(400),100);
 }
 
+TEST(ModeMean, calculateMeanAVG) {
+	myCam = new CameraNewCam();
+	myCam->values_ModeMean.current_mean = 0.3;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.3);
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.3);
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.3);
+	myCam->values_ModeMean.current_mean = 1.0;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.66666669);
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.66666669);
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.66666669);
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.66666669);
+  //-----------------------------------------------------------
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.66666669); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.8888889); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),1.0); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),1.0); myCam->values_ModeMean.cnt++;
+  //-----------------------------------------------------------
+	myCam->values_ModeMean.current_mean = 0.0;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.33333334); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.11111111); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.0); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.0); myCam->values_ModeMean.cnt++;
+  //-----------------------------------------------------------
+	myCam->values_ModeMean.current_mean = 1.0;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.66666669); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.8888889); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),1.0); myCam->values_ModeMean.cnt++;
+	EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),1.0); myCam->values_ModeMean.cnt++;
+  //-----------------------------------------------------------
+	myCam->values_ModeMean.current_mean = 0.0; EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.33333334); myCam->values_ModeMean.cnt++;
+	myCam->values_ModeMean.current_mean = 1.0; EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.77777779); myCam->values_ModeMean.cnt++;
+	myCam->values_ModeMean.current_mean = 0.0; EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.22222222); myCam->values_ModeMean.cnt++;
+	myCam->values_ModeMean.current_mean = 1.0; EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.77777779); myCam->values_ModeMean.cnt++;
+	myCam->values_ModeMean.current_mean = 0.0; EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.22222222); myCam->values_ModeMean.cnt++;
+	myCam->values_ModeMean.current_mean = 1.0; EXPECT_FLOAT_EQ( myCam->calculateMeanAVG(),0.77777779); myCam->values_ModeMean.cnt++;
+	delete myCam;
+}
+
 TEST(ModeMean, calculateExposurelevelChange) {
 	// shuttersteps = 6;
 	// mean_p0 = 5.0;		// ExposureChange (Steps) = p0 + p1 * diff + (p2*diff)^2
@@ -58,5 +96,5 @@ TEST(ModeMean, calculateExposurelevelChange) {
 	// negative 
 	EXPECT_EQ( myCam->calculateExposurelevelChange(-0.5),521) << "erwarte 5.0 + 0.5 * 20.0 + (0.5 * 45)^2 = 521";
 
-
+	delete myCam;
 }
