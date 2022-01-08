@@ -1,5 +1,8 @@
-#ifndef ALLSKY_H
-#define ALLSKY_H
+#pragma once
+
+#define US_IN_MS 1000                     // microseconds in a millisecond
+#define MS_IN_SEC 1000                    // milliseconds in a second
+#define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -8,16 +11,16 @@
 #include <opencv2/freetype.hpp>
 
 #include "log.h"
+#include "modeMean.h"
 
 #if defined CAM_RPIHQ
 // new includes (MEAN)
 #include "include/RPiHQ_raspistill.h"
-#include "include/mode_RPiHQ_mean.h"
+//#include "include/mode_RPiHQ_mean.h"
 #elif defined CAM_ZWO
 #include "include/ASICamera2.h"
 #elif defined CAM_NEW
 #endif
-
 
 #define NOT_SET				  -1		// signifies something isn't set yet
 
@@ -30,9 +33,6 @@
 #define ASI_IMG_Y8		3
 #endif
 
-#define US_IN_MS 1000                     // microseconds in a millisecond
-#define MS_IN_SEC 1000                    // milliseconds in a second
-#define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
 
 #define DEFAULT_SHOWTIME         1
 #define DEFAULT_ITEXTX      15
@@ -101,7 +101,7 @@
 #endif
 
 
-class Allsky: public Log {
+class Allsky: public Log, public ModeMean {
 
 	//enums
 	public:
@@ -123,6 +123,12 @@ class Allsky: public Log {
 			std::string lastDayOrNight;
 			//Camera* myCam;
 		} static runtime;
+
+		struct Allsky_valuesCapture {
+			int exposure_us;
+			double gain;
+			int gain_dB;
+		} static valuesCapture;
 
 		struct Allsky_current {
 			int currentDelay_ms;
@@ -247,7 +253,7 @@ class Allsky: public Log {
 		static std::vector<int> compression_params;
 		static char exposureStart[128];
 #if defined CAM_RPIHQ
-		static modeMeanSetting myModeMeanSetting;
+		//static modeMeanSetting myModeMeanSetting;
 		static raspistillSetting myRaspistillSetting;
 		static int background;
 		static int min_brightness;					// what user enters on command line
@@ -337,13 +343,13 @@ class Allsky: public Log {
 
 		// main functions
 		void init(int argc, char *argv[]);
-		static void info(void);
+		void info(void);
 		int run(void);
 		static void preCapture(void);
 		static void deliverImage(void);
 		static bool dayOrNightNotChanged(void);
 		//helper functions
-		static void overlayText(int &);
+		void overlayText(int &);
 		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
 		static unsigned long createRGB(int r, int g, int b);
 		static char *length_in_units(long us, bool multi);
@@ -358,6 +364,6 @@ class Allsky: public Log {
 		static void closeUp(int e);
 		static void calculateDayOrNight(void);
 		static int calculateTimeToNightTime(void);
+		static int gain2zwoGain(float);
+		static int zwoGain2gain(int);
 };
-
-#endif

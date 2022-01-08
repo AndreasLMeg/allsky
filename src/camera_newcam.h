@@ -8,10 +8,10 @@ class CameraNewCam : public Camera {
 		CameraNewCam () {};
 		CameraNewCam (int argc, char *argv[]) 
 		{
-			init(argc, argv);
+			printf("CameraNewCam (int argc, char *argv[])\n");
+			Camera::init(argc, argv);
 		};
 
-		// overloaded
 		void kill();
 		void initCamera();
 		void setupForCapture();

@@ -1,18 +1,20 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include "allsky.h"
+#include "modeMean.h"
 #include <unistd.h>
 
 // Base class
 class Camera: public Allsky {
   public:
 
-		Camera () {};
-		Camera (int argc, char *argv[]) 
+		Camera () 
 		{
-			//Allsky(argc, argv);
+			Allsky::Debug("Camera::Camera\n");
 		};
+		Camera (int argc, char *argv[]);
+
+		void init(int argc, char *argv[]);
 
 		void setWaitForNextCapture(long waitForNextCapture_us) {m_waitForNextCapture_us = waitForNextCapture_us;};
 		long getWaitForNextCapture(void) {return m_waitForNextCapture_us;};
@@ -45,5 +47,3 @@ class Camera: public Allsky {
 		private:
 			long m_waitForNextCapture_us = 1000000;
 };
-
-#endif

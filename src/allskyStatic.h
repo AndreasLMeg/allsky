@@ -9,6 +9,9 @@ Allsky::Allsky_runtime Allsky::runtime;
 // current values
 Allsky::Allsky_current Allsky::current;
 
+// capture
+Allsky::Allsky_valuesCapture Allsky::valuesCapture;
+
 // settings (json) - don't change !
 Allsky::Allsky_settings Allsky::settings;
 
@@ -69,7 +72,7 @@ char Allsky::exposureStart[128];
 
 //camera depending vars
 #if defined CAM_RPIHQ
-modeMeanSetting Allsky::myModeMeanSetting;
+//modeMeanSetting Allsky::myModeMeanSetting;
 raspistillSetting Allsky::myRaspistillSetting;
 float Allsky::min_saturation;				// produces black and white
 float Allsky::max_saturation;

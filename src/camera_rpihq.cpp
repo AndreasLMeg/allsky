@@ -1,5 +1,6 @@
 #include "allsky.h"
 #include "camera_rpihq.h"
+#include "modeMean.h"
 
 #include <string.h>
 #include <string>
@@ -100,7 +101,7 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 		// normally short so the camera can home in on the correct exposure quickly.
 		if (auto_exposure)
 		{
-			if (Allsky::myModeMeanSetting.mode_mean)
+			if (mode_mean)
 			{
 				// We do our own auto-exposure so no need to wait at all.
 				ss << 1;
@@ -174,8 +175,8 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 
 	Allsky::Info("RPiHQcapture:4\n");
 
-	if (Allsky::myModeMeanSetting.mode_mean)
-		*exposure_us = Allsky::myRaspistillSetting.shutter_us;
+	if (mode_mean)
+		*exposure_us = Allsky::valuesCapture.exposure_us;
 
 	if (*exposure_us < 1)
 	{
@@ -190,7 +191,7 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 	// Check if automatic determined exposure time is selected
 	if (auto_exposure)
 	{
-		if (Allsky::myModeMeanSetting.mode_mean) {
+		if (mode_mean) {
 			ss.str("");
 			ss << *exposure_us;
 			if (! libcamera)
@@ -218,10 +219,10 @@ int CameraRPi::RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, 
 	// Check if auto gain is selected
 	if (auto_gain)
 	{
-		if (Allsky::myModeMeanSetting.mode_mean)
+		if (mode_mean)
 		{
 			ss.str("");
-			ss << Allsky::myRaspistillSetting.analoggain;
+			ss << valuesCapture.gain;
 			if (libcamera)
 				command += " --gain " + ss.str();
 			else
@@ -264,7 +265,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 
 	Allsky::Info("RPiHQcapture:6\n");
 
-	if (Allsky::myModeMeanSetting.mode_mean) {
+	if (mode_mean) {
 		 	stringstream Str_ExposureTime;
 	 		stringstream Str_Reinforcement;
 	 		Str_ExposureTime <<  Allsky::myRaspistillSetting.shutter_us;
@@ -290,7 +291,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 //xxx libcamera: if the red and blue numbers are given it turns off AWB.
 //xxx I don't think the check for myModeMeanSetting.mode_mean is needed anymore.
 	// Check if R and B component are given
-	if (Allsky::myModeMeanSetting.mode_mean) {
+	if (mode_mean) {
 		if (auto_AWB) {
 				command += " --awb auto";
 		}
@@ -505,13 +506,19 @@ void  CameraRPi::postCapture(void)
 				{
 
 					Allsky::lastGain = Allsky::currentGain;	// to be compatible with ZWO - ZWO gain=0.1 dB , RPiHQ gain=factor
-					if (Allsky::myModeMeanSetting.mode_mean)
-						Allsky::lastGain =  Allsky::myRaspistillSetting.analoggain;
+					if (mode_mean)
+						Allsky::lastGain = valuesCapture.gain;
 
-					if (Allsky::myModeMeanSetting.mode_mean)
+					if (mode_mean)
 					{
-						Allsky::lastMean = RPiHQcalcMean(settings.image.fileName, Allsky::asiNightExposure_us, settings.camera.asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
-						Allsky::Debug("  > exposure: %d shutter: %1.4f s quickstart: %d\n", Allsky::asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, Allsky::myModeMeanSetting.quickstart);
+						//Allsky::lastMean = RPiHQcalcMean(settings.image.fileName, Allsky::asiNightExposure_us, settings.camera.asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+						
+						calculateNextExposureSettings();
+						Allsky::lastMean = ModeMean::values_ModeMean.current_mean;
+						Allsky::myRaspistillSetting.shutter_us = Allsky::valuesCapture.exposure_us;
+						Allsky::myRaspistillSetting.analoggain = Allsky::valuesCapture.gain;
+
+						Allsky::Debug("  > exposure: %d shutter: %1.4f s quickstart: %d\n", Allsky::asiNightExposure_us, (double) Allsky::myRaspistillSetting.shutter_us / US_IN_SEC, quickstart);
 					}
 
  					int iYOffset = 0;
@@ -531,7 +538,7 @@ void  CameraRPi::postCapture(void)
 void CameraRPi::waitForNextCapture(void)
 {
 			long us;
-			if (Allsky::myModeMeanSetting.mode_mean && Allsky::myModeMeanSetting.quickstart)
+			if (mode_mean && quickstart)
 			{
 				us = 1 * US_IN_SEC;
 			}
@@ -556,12 +563,12 @@ void CameraRPi::prepareForDayOrNight(void)
 	calculateDayOrNight();
 	runtime.lastDayOrNight = runtime.dayOrNight;
 
-		if (Allsky::myModeMeanSetting.mode_mean && numExposures > 0) {
+		if (mode_mean && numExposures > 0) {
 // TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
 
 // TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
 // xxxxxx and "currentGain" instead of "asiNightGain"?
-				RPiHQcalcMean(settings.image.fileName, asiNightExposure_us, settings.camera.asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
+				//RPiHQcalcMean(settings.image.fileName, asiNightExposure_us, settings.camera.asiNightGain, Allsky::myRaspistillSetting, Allsky::myModeMeanSetting);
 		}
 
 		if (settings.taking_dark_frames) {

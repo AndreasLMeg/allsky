@@ -138,17 +138,17 @@ sunwait:
 
 capture:capture.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC) $@.cpp log.cpp camera_zwo.cpp allsky.cpp -o $@  $(CFLAGS) -DCAM_ZWO $(OPENCV) -lASICamera2 $(USB)
+	@$(CC) $@.cpp log.cpp modeMean.cpp camera.cpp camera_zwo.cpp allsky.cpp -o $@  $(CFLAGS) -DCAM_ZWO $(OPENCV) -lASICamera2 $(USB)
 	@echo `date +%F\ %R:%S` Done.
 
 capture_RPiHQ:capture.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC) capture.cpp log.cpp camera_rpihq.cpp allsky.cpp mode_RPiHQ_mean.cpp -o $@ $(CFLAGS) -DCAM_RPIHQ $(OPENCV)
+	@$(CC) capture.cpp log.cpp modeMean.cpp camera.cpp camera_rpihq.cpp allsky.cpp -o $@ $(CFLAGS) -DCAM_RPIHQ $(OPENCV)
 	@echo `date +%F\ %R:%S` Done.
 
 capture_NewCam:capture.cpp
 	@echo `date +%F\ %R:%S` Building $@ program...
-	@$(CC) capture.cpp log.cpp camera_newcam.cpp allsky.cpp -o $@  $(CFLAGS) -DCAM_NEW $(OPENCV)
+	@$(CC) capture.cpp log.cpp modeMean.cpp camera.cpp camera_newcam.cpp allsky.cpp -o $@  $(CFLAGS) -DCAM_NEW $(OPENCV)
 	@echo `date +%F\ %R:%S` Done.
 
 keogram:keogram.cpp

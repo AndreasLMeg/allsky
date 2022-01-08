@@ -99,7 +99,7 @@ void Allsky::overlayText(int &iYOffset) {
 	}
 
 #if defined CAM_RPIHQ
-	if (showMean == 1 && myModeMeanSetting.mode_mean)
+	if (showMean == 1 && mode_mean)
 	{
 		sprintf(bufTemp, "Mean: %.6f", lastMean);
 		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
@@ -111,6 +111,7 @@ void Allsky::overlayText(int &iYOffset) {
 #endif
 
 #if defined CAM_RPIHQ
+#if 0
 	if (showFocus == 1)
 	{
 		sprintf(bufTemp, "Focus: %.2f", get_focus_measure(settings.image.pRgb, myModeMeanSetting));
@@ -120,6 +121,7 @@ void Allsky::overlayText(int &iYOffset) {
 			settings.image.Image_type, settings.fonts.outlinefont);
 		iYOffset += iTextLineHeight;
 	}
+#endif
 #endif
 
 	/**
@@ -294,6 +296,9 @@ void Allsky::waitToFix(char const *msg)
 
 void Allsky::init(int argc, char *argv[])
 {
+	printf("Allsky::init(int argc, char *argv[])\n");
+	Allsky::Debug("Allsky::init\n");
+
 	// runtime
   runtime.endOfNight = false;
 	runtime.gotSignal = false;	// did we get a SIGINT (from keyboard) or SIGTERM (from service)?
@@ -358,8 +363,6 @@ void Allsky::init(int argc, char *argv[])
 	settings.fonts.smallFontcolor [1] = 0;
 	settings.fonts.smallFontcolor [2] = 255;
 	settings.fonts.outlinefont = DEFAULT_OUTLINEFONT;
-
-
 
 	signal(SIGINT, Allsky::IntHandle);
 	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
@@ -426,32 +429,42 @@ void Allsky::init(int argc, char *argv[])
 			}
 			else if (strcmp(argv[i], "-mean-value") == 0)
 			{
-				myModeMeanSetting.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				setting_ModeMean.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
+				mode_mean = true;
+				//myModeMeanSetting.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
+				//myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-threshold") == 0)
 			{
-				myModeMeanSetting.mean_threshold = std::min(0.1,std::max(0.0001,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				setting_ModeMean.mean_threshold = std::min(0.1,std::max(0.0001,atof(argv[i + 1])));
+				mode_mean = true;
+				//myModeMeanSetting.mean_threshold = std::min(0.1,std::max(0.0001,atof(argv[i + 1])));
+				//myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-p0") == 0)
 			{
-				myModeMeanSetting.mean_p0 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				setting_ModeMean.mean_p0 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				mode_mean = true;
+				//myModeMeanSetting.mean_p0 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				//myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-p1") == 0)
 			{
-				myModeMeanSetting.mean_p1 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				setting_ModeMean.mean_p1 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				mode_mean = true;
+				//myModeMeanSetting.mean_p1 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				//myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-mean-p2") == 0)
 			{
-				myModeMeanSetting.mean_p2 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mode_mean = true;
+				setting_ModeMean.mean_p2 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				mode_mean = true;
+				//myModeMeanSetting.mean_p2 = std::min(50.0,std::max(0.0,atof(argv[i + 1])));
+				//myModeMeanSetting.mode_mean = true;
 				i++;
 			}
 			else if (strcmp(argv[i], "-wbr") == 0)
@@ -987,12 +1000,12 @@ void Allsky::info(void)
 	printf("%s", c(KGRN));
 #if defined CAM_RPIHQ
 	printf("\nCapture Settings for RPiHQ:\n");
-	if (myModeMeanSetting.mode_mean) {
-		printf("    Mean Value: %1.3f\n", myModeMeanSetting.mean_value);
-		printf("    Threshold: %1.3f\n", myModeMeanSetting.mean_threshold);
-		printf("    p0: %1.3f\n", myModeMeanSetting.mean_p0);
-		printf("    p1: %1.3f\n", myModeMeanSetting.mean_p1);
-		printf("    p2: %1.3f\n", myModeMeanSetting.mean_p2);
+	if (mode_mean) {
+		printf("    Mean Value: %1.3f\n", setting_ModeMean.mean_value);
+		printf("    Threshold: %1.3f\n", setting_ModeMean.mean_threshold);
+		printf("    p0: %1.3f\n", setting_ModeMean.mean_p0);
+		printf("    p1: %1.3f\n", setting_ModeMean.mean_p1);
+		printf("    p2: %1.3f\n", setting_ModeMean.mean_p2);
 	}
 #elif defined CAM_ZWO
 	printf("\nCapture Settings:\n");
@@ -1334,5 +1347,17 @@ Allsky::Allsky ()
 
 Allsky::Allsky (int argc, char *argv[]) 
 {
+	printf("Allsky::Allsky (int argc, char *argv[])\n");
 	init(argc, argv);
+};
+
+
+int Allsky::gain2zwoGain(float gain)
+{
+	return (10.0 * 20.0 * log10(gain));
+};
+
+int Allsky::zwoGain2gain(int zwoGain) 
+{
+	return (pow(10,(float)zwoGain / 10.0 / 20.0));
 };

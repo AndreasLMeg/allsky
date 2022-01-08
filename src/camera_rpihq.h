@@ -9,7 +9,7 @@ class CameraRPi : public Camera {
 		CameraRPi () {};
 		CameraRPi (int argc, char *argv[]) 
 		{
-			init(argc, argv);
+			Camera::init(argc, argv);
 		};
 
 		void waitForNextCapture(void);

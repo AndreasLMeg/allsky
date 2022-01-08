@@ -19,7 +19,7 @@
 #include "allsky.h"
 
 #include "include/RPiHQ_raspistill.h"
-#include "include/mode_RPiHQ_mean.h"
+//#include "include/mode_RPiHQ_mean.h"
 
 
 double mean_history [5] = {0.0,0.0,0.0,0.0,0.0};
@@ -165,6 +165,9 @@ if (0)
 	Allsky::Debug("  > values: %d\n", values);
 	
 	mean = mean / (double) values;
+
+	Allsky::Debug("  > mean (AVG): %1.4f\n", mean);
+	Allsky::Debug("  > mean (cur): %1.4f\n", currentModeMeanSetting.mean_value);
 	mean_diff = abs(mean - currentModeMeanSetting.mean_value);
 	Allsky::Debug("  > mean_diff: %1.4f\n", mean_diff);
 
