@@ -403,7 +403,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 		// normally short so the camera can home in on the correct exposure quickly.
 		if (auto_exposure)
 		{
-			if (myModeMeanSetting.mode_mean)
+			if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto == MEAN_AUTO_OFF)
 			{
 				// We do our own auto-exposure so no need to wait at all.
 				ss << 1;
@@ -473,7 +473,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 		}
 	}
 
-	if (myModeMeanSetting.mode_mean)
+	if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 		*exposure_us = myRaspistillSetting.shutter_us;
 
 	if (*exposure_us < 1)
@@ -489,7 +489,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 	// Check if automatic determined exposure time is selected
 	if (auto_exposure)
 	{
-		if (myModeMeanSetting.mode_mean) {
+		if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF) {
 			ss.str("");
 			ss << *exposure_us;
 			if (! libcamera)
@@ -515,7 +515,7 @@ int RPiHQcapture(int auto_exposure, int *exposure_us, int auto_gain, int auto_AW
 	// Check if auto gain is selected
 	if (auto_gain)
 	{
-		if (myModeMeanSetting.mode_mean)
+		if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 		{
 			ss.str("");
 			ss << myRaspistillSetting.analoggain;
@@ -559,11 +559,11 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 			command += " --analoggain " + ss.str();
 	}
 
-	if (myModeMeanSetting.mode_mean) {
+	if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF) {
 	   	stringstream Str_ExposureTime;
    		stringstream Str_Reinforcement;
    		Str_ExposureTime <<  myRaspistillSetting.shutter_us;
-		Str_Reinforcement << myRaspistillSetting.analoggain;
+			Str_Reinforcement << myRaspistillSetting.analoggain;
 		
    		command += " --exif IFD0.Artist=li_" + Str_ExposureTime.str() + "_" + Str_Reinforcement.str();
 	}
@@ -585,7 +585,7 @@ if (! libcamera) { // TODO: need to fix this for libcamera
 //xxx libcamera: if the red and blue numbers are given it turns off AWB.
 //xxx I don't think the check for myModeMeanSetting.mode_mean is needed anymore.
 	// Check if R and B component are given
-	if (myModeMeanSetting.mode_mean) {
+	if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF) {
 		if (auto_AWB) {
   			command += " --awb auto";
 		}
@@ -1482,6 +1482,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 
 		lastDayOrNight = dayOrNight;
 
+#if 0
 		if (myModeMeanSetting.mode_mean && numExposures > 0) {
 // TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
 
@@ -1489,6 +1490,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 // xxxxxx and "currentGain" instead of "asiNightGain"?
   			RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
 		}
+#endif
 
 		if (darkframe) {
 			// We're doing dark frames so turn off autoexposure and autogain, and use
@@ -1570,6 +1572,22 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 				currentBin = dayBin;
 				currentGain = asiDayGain;
 				currentAutoGain = asiDayAutoGain;
+
+			  // init for mean 
+				if (myModeMeanSetting.mode_mean)
+				{
+					// check and set mean_auto
+					if (asiDayAutoGain && asiDayAutoExposure)
+						myModeMeanSetting.mean_auto = MEAN_AUTO;
+					else if (asiDayAutoGain)	
+						myModeMeanSetting.mean_auto = MEAN_AUTO_GAIN_ONLY;
+					else if (asiDayAutoExposure)	
+						myModeMeanSetting.mean_auto = MEAN_AUTO_EXPOSURE_ONLY;
+					else	
+						myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
+
+					RPiHQInit(asiDayExposure_us, asiDayGain, myRaspistillSetting, myModeMeanSetting);
+				}
 			}
 		}
 
@@ -1590,6 +1608,22 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			currentBin = nightBin;
 			currentGain = asiNightGain;
 			currentAutoGain = asiNightAutoGain;
+
+		  // init for mean 
+			if (myModeMeanSetting.mode_mean)
+			{
+				// check and set mean_auto
+				if (asiNightAutoGain && asiNightAutoExposure)
+					myModeMeanSetting.mean_auto = MEAN_AUTO;
+				else if (asiNightAutoGain)	
+					myModeMeanSetting.mean_auto = MEAN_AUTO_GAIN_ONLY;
+				else if (asiNightAutoExposure)	
+					myModeMeanSetting.mean_auto = MEAN_AUTO_EXPOSURE_ONLY;
+				else	
+					myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
+				
+				RPiHQInit(asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
+			}
 		}
 
 		// Adjusting variables for chosen binning
@@ -1647,12 +1681,12 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 					long last_exposure_us = currentExposure_us;
 
 					float actualGain = currentGain;	// to be compatible with ZWO - ZWO gain=0.1 dB , RPiHQ gain=factor
-					if (myModeMeanSetting.mode_mean)
+					if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 						actualGain =  myRaspistillSetting.analoggain;
 					int iYOffset = 0;
 					float mean = -1;
 
-					if (myModeMeanSetting.mode_mean)
+					if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 					{
 						mean = RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
 						Log(2, "  > exposure: %d shutter: %1.4f s quickstart: %d\n", asiNightExposure_us, (double) myRaspistillSetting.shutter_us / US_IN_SEC, myModeMeanSetting.quickstart);
@@ -1715,7 +1749,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 						iYOffset += iTextLineHeight;
 					}
 
-					if (showMean == 1 && myModeMeanSetting.mode_mean)
+					if (showMean == 1 && myModeMeanSetting.mode_mean  && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 					{
 						sprintf(bufTemp, "Mean: %.6f", mean);
 						cvText(pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
@@ -1763,7 +1797,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			}
 
 			long s;
-			if (myModeMeanSetting.mode_mean && myModeMeanSetting.quickstart)
+			if (myModeMeanSetting.mode_mean && myModeMeanSetting.quickstart && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 			{
 				s = 1 * US_IN_SEC;
 			}

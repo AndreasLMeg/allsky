@@ -8,8 +8,16 @@
 #ifndef MEAN_H
 #define MEAN_H
 
+typedef enum {
+	MEAN_AUTO_OFF = 0,
+	MEAN_AUTO,
+  MEAN_AUTO_EXPOSURE_ONLY,
+	MEAN_AUTO_GAIN_ONLY
+} MEAN_AUTO_MODE;
+
 struct modeMeanSetting {
 	bool mode_mean			= false;	// Activate mode mean.  User can change this.
+	MEAN_AUTO_MODE mean_auto = MEAN_AUTO_OFF; // at leat one of autoGain or autoExposure must be set
 	bool init				= true;		// Set some settings before first calculation.
 										// This is set to "false" after calculation.
 	double ExposureLevelMin	= - 1;		// Set during first calculation.
@@ -29,7 +37,7 @@ struct modeMeanSetting {
 	//int brightnessControl	= 0;
 };
 
-
+void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting);
 float RPiHQcalcMean(const char* fileName, int exposure_us, double Gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting);
 
 double get_focus_measure(cv::Mat, modeMeanSetting &);

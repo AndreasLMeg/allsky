@@ -51,6 +51,26 @@ double get_focus_measure(cv::Mat img, modeMeanSetting &currentModeMeanSetting)
 	return(focusMeasure);
 }
 
+// set limits
+void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
+{
+	// Init some values first
+	if (currentModeMeanSetting.init) {
+		currentModeMeanSetting.init = false;
+		// only for the output
+		for (int i=0; i < currentModeMeanSetting.historySize; i++) {
+			mean_history[i] = currentModeMeanSetting.mean_value;
+			exp_history[i] = log(1.0  * currentRaspistillSetting.shutter_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
+		}
+	}
+	currentModeMeanSetting.ExposureLevelMax = log(gain * exposure_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) + 1; 
+	currentModeMeanSetting.ExposureLevelMin = log(1.0  * 1.0        /US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
+
+	// first exposure with currentRaspistillSetting.shutter_us, so we have to calculate the startpoint for ExposureLevel 
+	currentModeMeanSetting.ExposureLevel = log(1.0  * currentRaspistillSetting.shutter_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
+	Log(1, "  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
+}
+
 // Calculate new raspistillSettings (exposure, gain)
 // Algorithm not perfect, but better than no exposure control at all
 float RPiHQcalcMean(const char* fileName, int exposure_us, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
@@ -59,21 +79,6 @@ float RPiHQcalcMean(const char* fileName, int exposure_us, double gain, raspisti
 	double mean;
 	double mean_diff;
 	double this_mean;
-
-	// Init some values first
-	if (currentModeMeanSetting.init) {
-		currentModeMeanSetting.init = false;
-		currentModeMeanSetting.ExposureLevelMax = log(gain * exposure_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) + 1; 
-		currentModeMeanSetting.ExposureLevelMin = log(1.0  * 1.0        /US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
-		// only for the output
-		for (int i=0; i < currentModeMeanSetting.historySize; i++) {
-			mean_history[i] = currentModeMeanSetting.mean_value;
-			exp_history[i] = log(1.0  * currentRaspistillSetting.shutter_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
-		}
-		// first exposure with currentRaspistillSetting.shutter_us, so we have to calculate the startpoint for ExposureLevel 
-		currentModeMeanSetting.ExposureLevel = log(1.0  * currentRaspistillSetting.shutter_us/US_IN_SEC) / log (2.0) * pow(currentModeMeanSetting.shuttersteps,2.0) - 1;
-		Log(1, "  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
-	}
 
 	// get old ExposureTime
 	double ExposureTime_s = (double) currentRaspistillSetting.shutter_us/US_IN_SEC;
