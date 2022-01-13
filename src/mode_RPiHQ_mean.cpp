@@ -85,6 +85,7 @@ void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistil
 	}
 
 	Log(3, "  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
+	Log(3, "  > Valid Exposure: %1.8f to %1.8f\n", pow(2.0, double(currentModeMeanSetting.ExposureLevelMin)/pow(currentModeMeanSetting.shuttersteps,2.0)), pow(2.0, double(currentModeMeanSetting.ExposureLevelMax)/pow(currentModeMeanSetting.shuttersteps,2.0)));
 }
 
 // Calculate new raspistillSettings (exposure, gain)
@@ -195,9 +196,10 @@ if (0)
 	lastExposureChange = ExposureChange;
 
 	Log(3, "  > ExposureChange: %d (%d)\n", ExposureChange, dExposureChange);
+	Log(3, "  > mean: %1.4f mean_value: %1.4f mean_threshold: %1.4f\n", mean, currentModeMeanSetting.mean_value, currentModeMeanSetting.mean_threshold);
 
 	if (mean < (currentModeMeanSetting.mean_value - (currentModeMeanSetting.mean_threshold))) {
-		if ((currentRaspistillSetting.analoggain < gain) || (currentRaspistillSetting.shutter_us < exposure_us)) {  // obere Grenze durch Gaim und shutter
+		if ((currentRaspistillSetting.analoggain <= gain) || (currentRaspistillSetting.shutter_us <= exposure_us)) {  // obere Grenze durch Gain und shutter
 			currentModeMeanSetting.ExposureLevel += ExposureChange;
 		}
 	}
@@ -211,7 +213,11 @@ if (0)
 	}
 
 	// check limits of exposurelevel 
-	currentModeMeanSetting.ExposureLevel = std::max(std::min((int)currentModeMeanSetting.ExposureLevel, (int)currentModeMeanSetting.ExposureLevelMax), (int)currentModeMeanSetting.ExposureLevelMin);
+	currentModeMeanSetting.ExposureLevel = std::min(std::max((int)currentModeMeanSetting.ExposureLevel, (int)currentModeMeanSetting.ExposureLevelMin), (int)currentModeMeanSetting.ExposureLevelMax);
+	Log(3, "  > ExposureLevel: %d (%d ...%d)\n", currentModeMeanSetting.ExposureLevel, (int)currentModeMeanSetting.ExposureLevelMin, (int)currentModeMeanSetting.ExposureLevelMax);
+  double ExposureTimeEff_s = pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0));
+	Log(3, "  > ExposureTimeEff_s: %1.4f\n", ExposureTimeEff_s);
+  
 
 	// fastforward ?
 	if ((currentModeMeanSetting.ExposureLevel == (int)currentModeMeanSetting.ExposureLevelMax) || (currentModeMeanSetting.ExposureLevel == (int)currentModeMeanSetting.ExposureLevelMin)) {
@@ -227,7 +233,8 @@ if (0)
 	//#############################################################################################################
 	// calculate gain und exposuretime
 	if (currentModeMeanSetting.mean_auto == MEAN_AUTO) {
-		double newGain = std::min(gain, std::max(1.0, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (exposure_us/US_IN_SEC))); 
+		printf("MEAN_AUTO\n");
+		double newGain = std::min(gain, std::max(1.0, ExposureTimeEff_s / (exposure_us/US_IN_SEC))); 
 		double deltaGain = newGain - currentRaspistillSetting.analoggain; 
 		if (deltaGain > 2.0) {
 			currentRaspistillSetting.analoggain += 2.0;
@@ -238,17 +245,23 @@ if (0)
 		else {
 			currentRaspistillSetting.analoggain = newGain;
 		}
-		ExposureTime_s = std::min(exposure_us/US_IN_SEC, std::max(1 / US_IN_SEC, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / currentRaspistillSetting.analoggain));
+		ExposureTime_s = std::min(exposure_us/US_IN_SEC, std::max(1 / US_IN_SEC, ExposureTimeEff_s / currentRaspistillSetting.analoggain));
 	}
 	else if (currentModeMeanSetting.mean_auto == MEAN_AUTO_GAIN_ONLY) {
-			ExposureTime_s = exposure_us/US_IN_SEC;
-			currentRaspistillSetting.analoggain = std::min(gain,std::max(1.0,pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (exposure_us/US_IN_SEC)));
+		printf("MEAN_AUTO_GAIN_ONLY\n");
+		ExposureTime_s = (double)exposure_us/US_IN_SEC;
+		currentRaspistillSetting.analoggain = std::min(gain,std::max(1.0,ExposureTimeEff_s / (exposure_us/US_IN_SEC)));
 	}
 	else if (currentModeMeanSetting.mean_auto == MEAN_AUTO_EXPOSURE_ONLY) {
+		printf("MEAN_AUTO_EXPOSURE_ONLY\n");
 		currentRaspistillSetting.analoggain = gain;
-		ExposureTime_s = std::min(exposure_us/US_IN_SEC,std::max(0.000001, pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / gain));
+		printf("%1.4f\n", std::max(0.000001, ExposureTimeEff_s / gain));
+		printf("exposure_us=%1.4f\n", (double)exposure_us);
+		printf("%1.4f\n", (double)exposure_us/(double)US_IN_SEC);
+		ExposureTime_s = std::min((double)exposure_us/(double)US_IN_SEC,std::max(0.000001, ExposureTimeEff_s / gain));
 	}
 	else {
+		printf("else\n");
 		ExposureTime_s = exposure_us/US_IN_SEC;
 		currentRaspistillSetting.analoggain = gain;
 	}

@@ -330,11 +330,15 @@ void waitToFix(char const *msg)
     sleep(100000);	// basically, sleep forever until the user fixes this.
 }
 
+int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle);
+
 // Calculate if it is day or night
 void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
 {
 	char sunwaitCommand[128];
 
+  calculateTimeToNightTime(latitude, longitude, angle);
+	
 	// Log data.  Don't need "exit" or "set".
 	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
 	dayOrNight = exec(sunwaitCommand);
@@ -357,6 +361,7 @@ int calculateTimeToNightTime(const char *latitude, const char *longitude, const 
     char sunwaitCommand[128];	// returns "hh:mm"
     sprintf(sunwaitCommand, "sunwait list set angle %s %s %s", angle, latitude, longitude);
     t = exec(sunwaitCommand);
+	  Log(1, "  > sunwait %s \n", t.c_str());
     t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
 
     int hNight=0, mNight=0, secsNight;
@@ -393,7 +398,7 @@ int calculateTimeToNightTime(const char *latitude, const char *longitude, const 
 }
 
 // Build capture command to capture the image from the HQ camera
-int RPiHQcapture(bool auto_exposure, int *exposure_us, bool auto_gain, bool auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int brightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int darkframe, int preview, int width, int height, bool libcamera, cv::Mat *image)
+int RPiHQcapture(bool auto_exposure, int exposure_us, bool auto_gain, bool auto_AWB, double gain, int bin, double WBR, double WBB, int rotation, int flip, float saturation, int brightness, int quality, const char* fileName, int time, const char* ImgText, int fontsize, int *fontcolor, int background, int darkframe, int preview, int width, int height, bool libcamera, cv::Mat *image)
 {
 	// Define command line.
 	string command;
@@ -492,19 +497,19 @@ int RPiHQcapture(bool auto_exposure, int *exposure_us, bool auto_gain, bool auto
 	}
 
 	if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
-		*exposure_us = myRaspistillSetting.shutter_us;
+		exposure_us = myRaspistillSetting.shutter_us;
 
-	if (*exposure_us < 1)
-		*exposure_us = 1;
-	else if (*exposure_us > 200 * US_IN_SEC)
-		*exposure_us = 200 * US_IN_SEC;
+	if (exposure_us < 1)
+		exposure_us = 1;
+	else if (exposure_us > 200 * US_IN_SEC)
+		exposure_us = 200 * US_IN_SEC;
 
 	// Check if automatic determined exposure time is selected
 	if (auto_exposure)
 	{
 		if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF) {
 			ss.str("");
-			ss << *exposure_us;
+			ss << exposure_us;
 			if (! libcamera)
 				command += " --exposure off";
 			command += " --shutter " + ss.str();
@@ -516,8 +521,9 @@ int RPiHQcapture(bool auto_exposure, int *exposure_us, bool auto_gain, bool auto
 				command += " --exposure auto";
 		}
 	}
-	else if (*exposure_us)		// manual exposure
+	else if (exposure_us)		// manual exposure
 	{
+		/*
 		if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto == MEAN_AUTO_OFF) {
 			// libcamera doesn't use "exposure off/auto".  For auto-exposure set shutter to 0.
 			if (libcamera)
@@ -525,9 +531,10 @@ int RPiHQcapture(bool auto_exposure, int *exposure_us, bool auto_gain, bool auto
 			else
 				command += " --exposure auto";
 		}
-		else {
+		else*/ 
+		{
 			ss.str("");
-			ss << *exposure_us;
+			ss << exposure_us;
 			if (! libcamera)
 				command += " --exposure off";
 			command += " --shutter " + ss.str();
@@ -1493,6 +1500,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 	printf(" Daytime capture: %s\n", yesNo(daytimeCapture));
 	printf(" Exposure (night): %1.0fms\n", round(asiNightExposure_us / US_IN_MS));
 	printf(" Auto Exposure (night): %s\n", yesNo(asiNightAutoExposure));
+	printf(" Gain (day): %1.2f\n", asiDayGain);
 	printf(" Gain (night): %1.2f\n", asiNightGain);
 	printf(" Auto Gain (night): %s\n", yesNo(asiNightAutoGain));
 	printf(" Brightness (day): %d\n", asiDayBrightness);
@@ -1775,7 +1783,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			snprintf(full_filename, sizeof(full_filename), "%s/%s", save_dir, final_file_name);
 
 			// Capture and save image
-			retCode = RPiHQcapture(currentAutoExposure, &currentExposure_us, currentAutoGain, AutoAWB, currentGain, currentBin, WBR, WBB, asiRotation, asiFlip, saturation, currentBrightness, quality, full_filename, showTime, ImgText, fontsize, fontcolor, background, darkframe, preview, width, height, is_libcamera, &pRgb);
+			retCode = RPiHQcapture(currentAutoExposure, currentExposure_us, currentAutoGain, AutoAWB, currentGain, currentBin, WBR, WBB, asiRotation, asiFlip, saturation, currentBrightness, quality, full_filename, showTime, ImgText, fontsize, fontcolor, background, darkframe, preview, width, height, is_libcamera, &pRgb);
 
 			int focus_metric;
 			if (retCode == 0)
@@ -1786,7 +1794,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 				// If taking_dark_frames is off, add overlay text to the image
 				if (! darkframe)
 				{
-					last_exposure_us = currentExposure_us;
+					last_exposure_us = myRaspistillSetting.shutter_us;
 					if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 						last_gain =  myRaspistillSetting.analoggain;
 					else
@@ -1799,7 +1807,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 // xxxxxx use max exposure and gain values, current_max_autoexposure_us, asiNightMaxGain (current_max_gain)
 // xxxxxx May need to re-initialize at day/night boundary.
 
-						mean = RPiHQcalcMean(pRgb, asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
+						mean = RPiHQcalcMean(pRgb, currentExposure_us, currentGain, myRaspistillSetting, myModeMeanSetting);
 						Log(2, "  > Got exposure: %'ld us, shutter: %1.4f s, quickstart: %d, mean=%1.6f\n", currentExposure_us, (double) myRaspistillSetting.shutter_us / US_IN_SEC, myModeMeanSetting.quickstart, mean);
 						if (mean == -1)
 						{
