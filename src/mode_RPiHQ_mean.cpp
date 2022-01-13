@@ -242,7 +242,7 @@ if (0)
 	}
 	else if (currentModeMeanSetting.mean_auto == MEAN_AUTO_GAIN_ONLY) {
 			ExposureTime_s = exposure_us/US_IN_SEC;
-			currentRaspistillSetting.analoggain = pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (exposure_us/US_IN_SEC);
+			currentRaspistillSetting.analoggain = std::min(gain,std::max(1.0,pow(2.0, double(currentModeMeanSetting.ExposureLevel)/pow(currentModeMeanSetting.shuttersteps,2.0)) / (exposure_us/US_IN_SEC)));
 	}
 	else if (currentModeMeanSetting.mean_auto == MEAN_AUTO_EXPOSURE_ONLY) {
 		currentRaspistillSetting.analoggain = gain;
