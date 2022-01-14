@@ -330,15 +330,11 @@ void waitToFix(char const *msg)
     sleep(100000);	// basically, sleep forever until the user fixes this.
 }
 
-int calculateTimeToNightTime(const char *latitude, const char *longitude, const char *angle);
-
 // Calculate if it is day or night
 void calculateDayOrNight(const char *latitude, const char *longitude, const char *angle)
 {
 	char sunwaitCommand[128];
 
-  calculateTimeToNightTime(latitude, longitude, angle);
-	
 	// Log data.  Don't need "exit" or "set".
 	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", angle, latitude, longitude);
 	dayOrNight = exec(sunwaitCommand);
@@ -361,7 +357,7 @@ int calculateTimeToNightTime(const char *latitude, const char *longitude, const 
     char sunwaitCommand[128];	// returns "hh:mm"
     sprintf(sunwaitCommand, "sunwait list set angle %s %s %s", angle, latitude, longitude);
     t = exec(sunwaitCommand);
-	  Log(1, "  > sunwait %s \n", t.c_str());
+
     t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
 
     int hNight=0, mNight=0, secsNight;
@@ -523,22 +519,11 @@ int RPiHQcapture(bool auto_exposure, int exposure_us, bool auto_gain, bool auto_
 	}
 	else if (exposure_us)		// manual exposure
 	{
-		/*
-		if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto == MEAN_AUTO_OFF) {
-			// libcamera doesn't use "exposure off/auto".  For auto-exposure set shutter to 0.
-			if (libcamera)
-				command += " --shutter 0";
-			else
-				command += " --exposure auto";
-		}
-		else*/ 
-		{
-			ss.str("");
-			ss << exposure_us;
-			if (! libcamera)
-				command += " --exposure off";
-			command += " --shutter " + ss.str();
-		}
+		ss.str("");
+		ss << exposure_us;
+		if (! libcamera)
+			command += " --exposure off";
+		command += " --shutter " + ss.str();
 	}
 
 	// Check if auto gain is selected
@@ -1572,16 +1557,6 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 
 		lastDayOrNight = dayOrNight;
 
-#if 0
-		if (myModeMeanSetting.mode_mean && numExposures > 0) {
-// TODO: Is this needed?  We also call RPiHQcalcMean() after the exposure.
-
-// TODO: xxxxx shouldn't this be "currentExposure_us" instead of "asiNightExposure_us" ?
-// xxxxxx and "currentGain" instead of "asiNightGain"?
-  			RPiHQcalcMean(fileName, asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
-		}
-#endif
-
 		if (darkframe) {
 			// We're doing dark frames so turn off autoexposure and autogain, and use
 			// nightime gain, delay, exposure, and brightness to mimic a nightime shot.
@@ -1705,7 +1680,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			currentGain = asiNightGain;
 			currentAutoGain = asiNightAutoGain;
 
-		  // init for mean 
+			// init for mean 
 			if (myModeMeanSetting.mode_mean)
 			{
 				// check and set mean_auto
