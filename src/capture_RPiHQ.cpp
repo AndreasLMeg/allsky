@@ -1627,19 +1627,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			{
 				Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
 
-                // If we went from Night to Day, then currentExposure_us will be the last night
-                // exposure so leave it if we're using auto-exposure so there's a seamless change from
-                // Night to Day, i.e., if the exposure was fine a minute ago it will likely be fine now.
-                // On the other hand, if this program just started or we're using manual exposures,
-                // use what the user specified.
-                if (numExposures == 0 || ! asiDayAutoExposure)
-                {
-					currentExposure_us = asiDayExposure_us;
-                }
-                else
-                {
-                    Log(3, "Using the last night exposure of %'ld\n", currentExposure_us);
-                }
+				currentExposure_us = asiDayExposure_us;
 				currentAutoExposure = asiDayAutoExposure;
 				currentBrightness = asiDayBrightness;
 				currentDelay_ms = dayDelay_ms;
@@ -1672,11 +1660,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
 
 			// Setup the night time capture parameters
-			if (numExposures == 0 || ! asiNightAutoExposure)
-			{
-				currentExposure_us = asiNightExposure_us;
-				Log(3, "Using night exposure (%'ld us)\n", asiNightExposure_us);
-			}
+			currentExposure_us = asiNightExposure_us;
 			currentAutoExposure = asiNightAutoExposure;
 			currentBrightness = asiNightBrightness;
 			currentDelay_ms = nightDelay_ms;
