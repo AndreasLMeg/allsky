@@ -1,3 +1,6 @@
+// 2022-01-14  MEAN_AUTO_MODE, depending in autoGain and autoExposure different modes are in use  
+//             new optional start parameter -mean-value-day
+
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>

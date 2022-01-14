@@ -1,23 +1,26 @@
 //
 // mode_RPiHQ_mean.h
 //
+// 2022-01-14  MEAN_AUTO_MODE, depending in autoGain and autoExposure different modes are in use  
+//             new optional start parameter -mean-value-day
+//
 // 2021-06-06  initial state
 //
 
 #pragma once
 
 typedef enum {
-	MEAN_AUTO_OFF = 0,
-	MEAN_AUTO,
-	MEAN_AUTO_EXPOSURE_ONLY,
-	MEAN_AUTO_GAIN_ONLY
+	MEAN_AUTO_OFF = 0, // defined exposure and gain is used 
+	MEAN_AUTO, // changes exposure between 1us and defined exposure, and gain between 1 and defined gain
+	MEAN_AUTO_EXPOSURE_ONLY, // changes exposure between 1us and defined exposure, and defined gain is used   
+	MEAN_AUTO_GAIN_ONLY // changes gain between 1 and defined gain, and defined exposureis used
 } MEAN_AUTO_MODE;
 
 struct modeMeanSetting {
-	bool mode_mean			= false;	// Activate mode mean.  User can change this.
-	MEAN_AUTO_MODE mean_auto = MEAN_AUTO_OFF; // at leat one of autoGain or autoExposure must be set
-	bool init				= true;		// Set some settings before first calculation.
-										// This is set to "false" after calculation.
+	bool mode_mean = false;	// Activate mode mean.  User can change this.
+	MEAN_AUTO_MODE mean_auto = MEAN_AUTO_OFF; // different modes are available
+	bool init = true;		// Set some settings before first calculation.
+											// This is set to "false" after calculation.
 	double ExposureLevelMin	= - 1;		// Set during first calculation.
 	double ExposureLevelMax	= 1; 		// Set during first calculation.
 	double mean_value		= 0.3;		// mean value for well exposed images
@@ -32,9 +35,6 @@ struct modeMeanSetting {
 	double mean_p0			= 5.0;		// ExposureChange (Steps) = p0 + p1 * diff + (p2*diff)^2
 	double mean_p1			= 20.0;
 	double mean_p2			= 45.0;
-	//int maskHorizon		= 0;
-	//int longplay			= 0;		// make delay between captures 
-	//int brightnessControl	= 0;
 };
 
 void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting);
