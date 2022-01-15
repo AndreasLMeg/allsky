@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#source ${ALLSKY_HOME}/mock_variables
+
+echo "$(date +'%T') MOCK: > $0: $@"
+echo "$(date +'%T') MOCK: > $0: $@" >> ${ALLSKY_HOME}/mock_output
+sleep 10
+echo "$(date +'%T') MOCK: i $0: 10 s slept" >> ${ALLSKY_HOME}/mock_output
+
+exit 0

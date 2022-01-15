@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source ${ALLSKY_HOME}/mock_variables
+
+echo "$(date +'%T') MOCK: > $0: $@" >> ${ALLSKY_HOME}/mock_output
+echo "$(date +'%T') MOCK: > $0: $@"
+
+./scripts/saveImage.sh_original $@
+
+exit 0

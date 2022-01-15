@@ -206,6 +206,8 @@ if (0)
 		ExposureChange = std::max(1.0, currentModeMeanSetting.mean_p0 + currentModeMeanSetting.mean_p1 * mean_diff);
 	}
 
+  ExposureChange = std::min(50, ExposureChange);
+
 	dExposureChange = ExposureChange-lastExposureChange;
 	lastExposureChange = ExposureChange;
 
@@ -246,15 +248,7 @@ if (0)
 	if (currentModeMeanSetting.mean_auto == MEAN_AUTO) {
 		double newGain = std::min(gain, std::max(1.0, ExposureTimeEff_s / (exposure_us/US_IN_SEC))); 
 		double deltaGain = newGain - currentRaspistillSetting.analoggain; 
-		if (deltaGain > 2.0) {
-			currentRaspistillSetting.analoggain += 2.0;
-		}
-		else if (deltaGain < -2.0) {
-			currentRaspistillSetting.analoggain -= 2.0;
-		}
-		else {
-			currentRaspistillSetting.analoggain = newGain;
-		}
+		currentRaspistillSetting.analoggain = newGain;
 		ExposureTime_s = std::min(exposure_us/US_IN_SEC, std::max(1 / US_IN_SEC, ExposureTimeEff_s / currentRaspistillSetting.analoggain));
 	}
 	else if (currentModeMeanSetting.mean_auto == MEAN_AUTO_GAIN_ONLY) {

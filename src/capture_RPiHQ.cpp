@@ -1648,8 +1648,10 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 					else	
 						myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
 
-					myRaspistillSetting.shutter_us = currentExposure_us;
 					myModeMeanSetting.mean_value = myModeMeanSetting.mean_value_day;
+					if (myModeMeanSetting.init) {
+						myRaspistillSetting.shutter_us = currentExposure_us;
+					}
 					RPiHQInit(asiDayExposure_us, asiDayGain, myRaspistillSetting, myModeMeanSetting);
 				}
 			}
@@ -1681,8 +1683,10 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 				else	
 					myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
 				
-				myRaspistillSetting.shutter_us = currentExposure_us;
 				myModeMeanSetting.mean_value = myModeMeanSetting.mean_value_night;
+				if (myModeMeanSetting.init) {
+					myRaspistillSetting.shutter_us = currentExposure_us;
+				}
 				RPiHQInit(asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
 			}
 		}
