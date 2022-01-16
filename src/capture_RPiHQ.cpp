@@ -1342,8 +1342,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 		printf(" -debuglevel                        - Default = 0. Set to 1,2 or 3 for more debugging information.\n");
 
 		printf(" -mean-value                        - Default = 0.3 Set mean-value and activates exposure control\n");
-		printf("                                      NOTE: Auto-Gain should be On in the WebUI\n");
-		printf("                                            -autoexposure should be set in config.sh:\n");
+		printf("                                      NOTE: Auto-Gain and Auto-Exposure (day&night) should be On in the WebUI for best results\n");
 		printf("                                            CAPTURE_EXTRA_PARAMETERS='-mean-value 0.3'\n"); 
 		printf(" -mean-value-day                    - Default = 0.3 Set mean-value-day and activates exposure control\n");
 		printf(" -mean-threshold                    - Default = 0.01 Set mean-value and activates exposure control\n");
