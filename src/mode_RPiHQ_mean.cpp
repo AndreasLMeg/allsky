@@ -247,7 +247,6 @@ if (0)
 	// calculate gain und exposuretime
 	if (currentModeMeanSetting.mean_auto == MEAN_AUTO) {
 		double newGain = std::min(gain, std::max(1.0, ExposureTimeEff_s / (exposure_us/US_IN_SEC))); 
-		double deltaGain = newGain - currentRaspistillSetting.analoggain; 
 		currentRaspistillSetting.analoggain = newGain;
 		ExposureTime_s = std::min(exposure_us/US_IN_SEC, std::max(1 / US_IN_SEC, ExposureTimeEff_s / currentRaspistillSetting.analoggain));
 	}
