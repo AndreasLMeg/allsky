@@ -1771,9 +1771,6 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 
 					if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 					{
-// xxxxxx use max exposure and gain values, current_max_autoexposure_us, asiNightMaxGain (current_max_gain)
-// xxxxxx May need to re-initialize at day/night boundary.
-
 						mean = RPiHQcalcMean(pRgb, currentExposure_us, currentGain, myRaspistillSetting, myModeMeanSetting);
 						Log(2, "  > Got exposure: %'ld us, shutter: %1.4f s, quickstart: %d, mean=%1.6f\n", currentExposure_us, (double) myRaspistillSetting.shutter_us / US_IN_SEC, myModeMeanSetting.quickstart, mean);
 						if (mean == -1)
@@ -1784,6 +1781,10 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 							usleep(currentDelay_ms * US_IN_MS);
 							continue;
 						}
+					}
+					else {
+						myRaspistillSetting.shutter_us = currentExposure_us;
+						myRaspistillSetting.analoggain = currentGain;
 					}
 
 					if (showTime == 1)
@@ -1843,6 +1844,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 						iYOffset += iTextLineHeight;
 					}
 
+					// TODO: in the future the calculation of mean should independend from mode_mean 
 					if (showMean == 1 && myModeMeanSetting.mode_mean  && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF)
 					{
 						sprintf(bufTemp, "Mean: %.3f", mean);
@@ -1914,8 +1916,11 @@ if (WIFSIGNALED(r)) r = WTERMSIG(r);
 			strcat(cmd, tmp);
 			snprintf(tmp, sizeof(tmp), " BRIGHTNESS=%d", currentBrightness);
 			strcat(cmd, tmp);
-			snprintf(tmp, sizeof(tmp), " MEAN=%.3f", mean);
-			strcat(cmd, tmp);
+			// TODO: in the future the calculation of mean should independend from mode_mean 
+			if (myModeMeanSetting.mode_mean && myModeMeanSetting.mean_auto != MEAN_AUTO_OFF) {
+				snprintf(tmp, sizeof(tmp), " MEAN=%.3f", mean);
+				strcat(cmd, tmp);
+			}
 			snprintf(tmp, sizeof(tmp), " AUTOEXPOSURE=%d", currentAutoExposure ? 1 : 0);
 			strcat(cmd, tmp);
 			snprintf(tmp, sizeof(tmp), " AUTOGAIN=%d", currentAutoGain ? 1 : 0);

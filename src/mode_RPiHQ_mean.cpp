@@ -97,6 +97,10 @@ void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistil
 		currentModeMeanSetting.ExposureLevelMax = calcExposureLevel(exposure_us, gain, currentModeMeanSetting) + 1;
 		currentModeMeanSetting.ExposureLevelMin = calcExposureLevel(1,           gain, currentModeMeanSetting) - 1;
 	}
+	else if (currentModeMeanSetting.mean_auto == MEAN_AUTO_OFF) {
+		currentModeMeanSetting.ExposureLevelMax = calcExposureLevel(exposure_us, gain, currentModeMeanSetting) + 1;
+		currentModeMeanSetting.ExposureLevelMin = calcExposureLevel(exposure_us, gain, currentModeMeanSetting) - 1;
+	}
 
 	Log(3, "  > Valid ExposureLevels: %1.8f to %1.8f\n", currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting.ExposureLevelMax);
 	Log(3, "  > Valid Exposure: %1.8f to %1.8f\n", calcExposureTimeEff(currentModeMeanSetting.ExposureLevelMin, currentModeMeanSetting), calcExposureTimeEff(currentModeMeanSetting.ExposureLevelMax, currentModeMeanSetting));
