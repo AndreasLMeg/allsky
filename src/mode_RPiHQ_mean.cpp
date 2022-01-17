@@ -67,11 +67,14 @@ double calcExposureTimeEff (int exposureLevel, modeMeanSetting &currentModeMeanS
 }
 
 // set limits
-void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
+void RPiHQInit(bool autoExposure, int exposure_us, bool autoGain, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting)
 {
 	// Init some values first
 	if (currentModeMeanSetting.init) {
 		currentModeMeanSetting.init = false;
+
+		currentRaspistillSetting.shutter_us = exposure_us;
+
 		// only for the output
 		if (history_size < currentModeMeanSetting.historySize) {
 			fprintf(stderr, "*** ERROR: history_size (%d) < currentModeMeanSetting.historySize (%d)\n", history_size, currentModeMeanSetting.historySize);
@@ -85,6 +88,18 @@ void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistil
 		// first exposure with currentRaspistillSetting.shutter_us, so we have to calculate the startpoint for ExposureLevel 
 		currentModeMeanSetting.ExposureLevel = calcExposureLevel(currentRaspistillSetting.shutter_us, 1.0, currentModeMeanSetting) -1;
 	}
+
+	// check and set mean_auto
+	if (autoGain && autoExposure)
+		currentModeMeanSetting.mean_auto = MEAN_AUTO;
+	else if (autoGain)	
+		currentModeMeanSetting.mean_auto = MEAN_AUTO_GAIN_ONLY;
+	else if (autoExposure)	
+		currentModeMeanSetting.mean_auto = MEAN_AUTO_EXPOSURE_ONLY;
+	else	
+		currentModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
+
+	// calculate min and max exposurelevels
 	if (currentModeMeanSetting.mean_auto == MEAN_AUTO) {
 		currentModeMeanSetting.ExposureLevelMax = calcExposureLevel(exposure_us, gain, currentModeMeanSetting) + 1;
 		currentModeMeanSetting.ExposureLevelMin = calcExposureLevel(1,           1.0,  currentModeMeanSetting) - 1;

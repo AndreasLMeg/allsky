@@ -37,6 +37,6 @@ struct modeMeanSetting {
 	double mean_p2			= 45.0;
 };
 
-void RPiHQInit(int exposure_us, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting);
+void RPiHQInit(bool autoExposure, int exposure_us, bool autoGain, double gain, raspistillSetting &currentRaspistillSetting, modeMeanSetting &currentModeMeanSetting);
 float RPiHQcalcMean(cv::Mat, int, double, raspistillSetting &, modeMeanSetting &);
 double get_focus_metric(cv::Mat);

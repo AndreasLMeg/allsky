@@ -1576,117 +1576,87 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 				system("scripts/copy_notification_image.sh DarkFrames &");
 			}
 		}
-
-		else if (dayOrNight == "DAY")
-		{
-			if (endOfNight == true)		// Execute end of night script
+		else {
+			if (dayOrNight == "DAY")
 			{
-				system("scripts/endOfNight.sh &");
+				if (endOfNight == true)		// Execute end of night script
+				{
+					system("scripts/endOfNight.sh &");
 
-				// Reset end of night indicator
-				endOfNight = false;
+					// Reset end of night indicator
+					endOfNight = false;
 
-				displayedNoDaytimeMsg = 0;
-			}
-
-			// Check if images should not be captured during day-time
-			if (daytimeCapture != 1)
-			{
-				// Only display messages once a day.
-				if (displayedNoDaytimeMsg == 0) {
-					if (notificationImages) {
-						system("scripts/copy_notification_image.sh CameraOffDuringDay &");
-					}
-					Log(0, "It's daytime... we're not saving images.\n%s\n",
-						tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
-					displayedNoDaytimeMsg = 1;
-
-					// sleep until around nighttime, then wake up and sleep more if needed.
-					int secsTillNight = calculateTimeToNightTime(latitude, longitude, angle);
-					timeval t;
-					t = getTimeval();
-					t.tv_sec += secsTillNight;
-					Log(1, "Sleeping until %s (%'d seconds)\n", formatTime(t, timeFormat), secsTillNight);
-					sleep(secsTillNight);
+					displayedNoDaytimeMsg = 0;
 				}
+
+				// Check if images should not be captured during day-time
+				if (daytimeCapture != 1)
+				{
+					// Only display messages once a day.
+					if (displayedNoDaytimeMsg == 0) {
+						if (notificationImages) {
+							system("scripts/copy_notification_image.sh CameraOffDuringDay &");
+						}
+						Log(0, "It's daytime... we're not saving images.\n%s\n",
+							tty ? "Press Ctrl+C to stop" : "Stop the allsky service to end this process.");
+						displayedNoDaytimeMsg = 1;
+
+						// sleep until around nighttime, then wake up and sleep more if needed.
+						int secsTillNight = calculateTimeToNightTime(latitude, longitude, angle);
+						timeval t;
+						t = getTimeval();
+						t.tv_sec += secsTillNight;
+						Log(1, "Sleeping until %s (%'d seconds)\n", formatTime(t, timeFormat), secsTillNight);
+						sleep(secsTillNight);
+					}
+					else
+					{
+						// Shouldn't need to sleep more than a few times before nighttime.
+						int s = 5;
+						Log(1, "Not quite nighttime; sleeping %'d more seconds\n", s);
+						sleep(s);
+					}
+
+					// No need to do any of the code below so go back to the main loop.
+					continue;
+				}
+
+				// Images should be captured during day-time
 				else
 				{
-					// Shouldn't need to sleep more than a few times before nighttime.
-					int s = 5;
-					Log(1, "Not quite nighttime; sleeping %'d more seconds\n", s);
-					sleep(s);
+					Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
+
+					currentExposure_us = asiDayExposure_us;
+					currentAutoExposure = asiDayAutoExposure;
+					currentBrightness = asiDayBrightness;
+					currentDelay_ms = dayDelay_ms;
+					currentBin = dayBin;
+					currentGain = asiDayGain;
+					currentAutoGain = asiDayAutoGain;
+					if (myModeMeanSetting.mode_mean)
+					{
+						myModeMeanSetting.mean_value = myModeMeanSetting.dayMean;
+						RPiHQInit(currentAutoExposure, currentExposure_us, currentAutoGain, currentGain, myRaspistillSetting, myModeMeanSetting);
+					}
 				}
-
-				// No need to do any of the code below so go back to the main loop.
-				continue;
 			}
-
-			// Images should be captured during day-time
-			else
+			else	// NIGHT
 			{
-				Log(0, "==========\n=== Starting daytime capture ===\n==========\n");
+				Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
 
-				currentExposure_us = asiDayExposure_us;
-				currentAutoExposure = asiDayAutoExposure;
-				currentBrightness = asiDayBrightness;
-				currentDelay_ms = dayDelay_ms;
-				currentBin = dayBin;
-				currentGain = asiDayGain;
-				currentAutoGain = asiDayAutoGain;
-
-			  // init for mean 
+				// Setup the night time capture parameters
+				currentExposure_us = asiNightExposure_us;
+				currentAutoExposure = asiNightAutoExposure;
+				currentBrightness = asiNightBrightness;
+				currentDelay_ms = nightDelay_ms;
+				currentBin = nightBin;
+				currentGain = asiNightGain;
+				currentAutoGain = asiNightAutoGain;
 				if (myModeMeanSetting.mode_mean)
 				{
-					// check and set mean_auto
-					if (asiDayAutoGain && asiDayAutoExposure)
-						myModeMeanSetting.mean_auto = MEAN_AUTO;
-					else if (asiDayAutoGain)	
-						myModeMeanSetting.mean_auto = MEAN_AUTO_GAIN_ONLY;
-					else if (asiDayAutoExposure)	
-						myModeMeanSetting.mean_auto = MEAN_AUTO_EXPOSURE_ONLY;
-					else	
-						myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
-
-					myModeMeanSetting.mean_value = myModeMeanSetting.dayMean;
-					if (myModeMeanSetting.init) {
-						myRaspistillSetting.shutter_us = currentExposure_us;
-					}
-					RPiHQInit(asiDayExposure_us, asiDayGain, myRaspistillSetting, myModeMeanSetting);
+					myModeMeanSetting.mean_value = myModeMeanSetting.nightMean;
+					RPiHQInit(currentAutoExposure, currentExposure_us, currentAutoGain, currentGain, myRaspistillSetting, myModeMeanSetting);
 				}
-			}
-		}
-
-		else	// NIGHT
-		{
-			Log(0, "==========\n=== Starting nighttime capture ===\n==========\n");
-
-			// Setup the night time capture parameters
-			currentExposure_us = asiNightExposure_us;
-			currentAutoExposure = asiNightAutoExposure;
-			currentBrightness = asiNightBrightness;
-			currentDelay_ms = nightDelay_ms;
-			currentBin = nightBin;
-			currentGain = asiNightGain;
-			currentAutoGain = asiNightAutoGain;
-
-			// init for mean 
-			if (myModeMeanSetting.mode_mean)
-			{
-				// check and set mean_auto
-				if (asiNightAutoGain && asiNightAutoExposure)
-					myModeMeanSetting.mean_auto = MEAN_AUTO;
-				else if (asiNightAutoGain)	
-					myModeMeanSetting.mean_auto = MEAN_AUTO_GAIN_ONLY;
-				else if (asiNightAutoExposure)	
-					myModeMeanSetting.mean_auto = MEAN_AUTO_EXPOSURE_ONLY;
-				else	
-					myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
-				
-				myModeMeanSetting.mean_value = myModeMeanSetting.nightMean;
-				if (myModeMeanSetting.init) {
-					myRaspistillSetting.shutter_us = currentExposure_us;
-				}
-				RPiHQInit(asiNightExposure_us, asiNightGain, myRaspistillSetting, myModeMeanSetting);
 			}
 		}
 
