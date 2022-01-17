@@ -24,8 +24,8 @@ struct modeMeanSetting {
 	double ExposureLevelMin	= - 1;		// Set during first calculation.
 	double ExposureLevelMax	= 1; 		// Set during first calculation.
 	double mean_value		= 0.3;		// mean value for well exposed images
-	double mean_value_night	= 0.3;		// mean value for well exposed images (night)
-	double mean_value_day	= -1.0;		// mean value for well exposed images (day)
+	double nightMean	= 0.3;		// mean value for well exposed images (night)
+	double dayMean	= -1.0;		// mean value for well exposed images (day)
 	double mean_threshold	= 0.01;		// threshold value
 	double shuttersteps		= 6.0;		// shuttersteps
 	int historySize			= 3;		// Use this many last images for mean target calculation

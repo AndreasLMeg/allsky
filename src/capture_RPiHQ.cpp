@@ -1060,16 +1060,16 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 			{
 				WBB = atof(argv[++i]);
 			}
-			else if (strcmp(argv[i], "-mean-value") == 0)
+			else if (strcmp(argv[i], "-nightmean") == 0 || strcmp(argv[i], "-mean-value") == 0)
 			{
 				myModeMeanSetting.mean_value = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
-				myModeMeanSetting.mean_value_night = myModeMeanSetting.mean_value;
+				myModeMeanSetting.nightMean = myModeMeanSetting.mean_value;
 				myModeMeanSetting.mode_mean = true;
 				i++;
 			}
-			else if (strcmp(argv[i], "-mean-value-day") == 0)
+			else if (strcmp(argv[i], "-daymean") == 0)
 			{
-				myModeMeanSetting.mean_value_day = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
+				myModeMeanSetting.dayMean = std::min(1.0,std::max(0.0,atof(argv[i + 1])));
 				myModeMeanSetting.mode_mean = true;
 				i++;
 			}
@@ -1341,10 +1341,10 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 		printf(" -notificationimages                - Set to 1 to enable notification images, for example, 'Camera is off during day'.\n");
 		printf(" -debuglevel                        - Default = 0. Set to 1,2 or 3 for more debugging information.\n");
 
-		printf(" -mean-value                        - Default = 0.3 Set mean-value and activates exposure control\n");
+		printf(" -nightmean                         - Default = 0.3 Set night mean value and activates exposure control\n");
 		printf("                                      NOTE: Auto-Gain and Auto-Exposure (day&night) should be On in the WebUI for best results\n");
-		printf("                                            CAPTURE_EXTRA_PARAMETERS='-mean-value 0.3'\n"); 
-		printf(" -mean-value-day                    - Default = 0.3 Set mean-value-day and activates exposure control\n");
+		printf("                                            CAPTURE_EXTRA_PARAMETERS='-nightmean 0.3'\n"); 
+		printf(" -daymean                           - Default = same value as nightmean. Set day mean value-day and activates exposure control\n");
 		printf(" -mean-threshold                    - Default = 0.01 Set mean-value and activates exposure control\n");
 		printf(" -mean-p0                           - Default = 5.0, be careful changing these values, ExposureChange (Steps) = p0 + p1 * diff + (p2*diff)^2\n");
 		printf(" -mean-p1                           - Default = 20.0\n");
@@ -1531,11 +1531,11 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 	printf(" On TTY: %s\n", tty ? "Yes" : "No");
 	printf(" Mode Mean: %s\n", yesNo(myModeMeanSetting.mode_mean));
 	if (myModeMeanSetting.mode_mean) {
-		if (myModeMeanSetting.mean_value_day == -1.0) {
-			myModeMeanSetting.mean_value_day = myModeMeanSetting.mean_value;
+		if (myModeMeanSetting.dayMean == -1.0) {
+			myModeMeanSetting.dayMean = myModeMeanSetting.mean_value;
 		}
-		printf("    Mean Value: %1.3f\n", myModeMeanSetting.mean_value);
-		printf("    Mean Value Day: %1.3f\n", myModeMeanSetting.mean_value_day);
+		printf("    Mean Value (night): %1.3f\n", myModeMeanSetting.nightMean);
+		printf("    Mean Value (day): %1.3f\n", myModeMeanSetting.dayMean);
 		printf("    Threshold: %1.3f\n", myModeMeanSetting.mean_threshold);
 		printf("    p0: %1.3f\n", myModeMeanSetting.mean_p0);
 		printf("    p1: %1.3f\n", myModeMeanSetting.mean_p1);
@@ -1647,7 +1647,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 					else	
 						myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
 
-					myModeMeanSetting.mean_value = myModeMeanSetting.mean_value_day;
+					myModeMeanSetting.mean_value = myModeMeanSetting.dayMean;
 					if (myModeMeanSetting.init) {
 						myRaspistillSetting.shutter_us = currentExposure_us;
 					}
@@ -1682,7 +1682,7 @@ if (extraFileAge == 99999 && ImgExtraText[0] == '\0') ImgExtraText = "xxxxxx   k
 				else	
 					myModeMeanSetting.mean_auto = MEAN_AUTO_OFF;
 				
-				myModeMeanSetting.mean_value = myModeMeanSetting.mean_value_night;
+				myModeMeanSetting.mean_value = myModeMeanSetting.nightMean;
 				if (myModeMeanSetting.init) {
 					myRaspistillSetting.shutter_us = currentExposure_us;
 				}
