@@ -57,14 +57,18 @@ set_config CAMERA RPiHQ ${ALLSKY_HOME}/config/config.sh
 start
 bash -x ${ALLSKY_HOME}/scripts/saveImage.sh
 seperation
+INFO i "Testcase: saveImage.sh TEST"
 ${ALLSKY_HOME}/scripts/saveImage.sh TEST
 seperation
+INFO i "Testcase: saveImage.sh DAY"
 ${ALLSKY_HOME}/scripts/saveImage.sh DAY
 seperation
+INFO i "Testcase: saveImage.sh NIGHT"
 ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT
 #seperation
 #bash -x ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg
 seperation
+INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS)"
 # setup
 INFO i "SETUP"
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
