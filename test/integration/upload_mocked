@@ -4,8 +4,14 @@ source ${ALLSKY_HOME}/mock_variables
 
 echo "$(date +'%T') MOCK: > $0: $@" >> ${ALLSKY_HOME}/mock_output
 echo "$(date +'%T') MOCK: > $0: $@"
-bash -x ./scripts/saveImage.sh_original $@
-RET=$?
-echo "$(date +'%T') MOCK: > $0: RET=$RET"
+
+cp $1 "$1_mock" 
+ls -la $1
+ls -la "$1_mock"
+
+
+#bash -x ./scripts/upload.sh_original $@
+#RET=$?
+#echo "$(date +'%T') MOCK: > $0: RET=$RET"
 
 exit 0
