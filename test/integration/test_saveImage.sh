@@ -139,6 +139,9 @@ TEST "${DATE_DIR}/image_test.jpg (identify)" 0 $?
 identify ${DATE_DIR}/thumbnails/image_test.jpg | grep "JPEG 100x75 100x75+0+0 8-bit sRGB 2135B"
 TEST "${DATE_DIR}/thumbnails/image_test.jpg (identify)" 0 $?
 
+[ -e "${ALLSKY_HOME}/tmp/image_test.jpg" ]
+TEST "${ALLSKY_HOME}/tmp/image_test.jpg removed" 1 $?
+
 [ -e "${ALLSKY_HOME}/tmp/resize-image_test.jpg" ]
 TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg removed" 1 $?
 
