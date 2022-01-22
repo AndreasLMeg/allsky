@@ -1,5 +1,0 @@
-export ALLSKY_MOCK_VARIABLES="${ALLSKY_HOME}/mock_variables"
-#
-export ALLSKY_MOCK_SUNWAIT=undefined
-#
-export ALLSKY_MOCK_SAVEIMAGE_1=undefined
