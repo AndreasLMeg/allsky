@@ -19,9 +19,25 @@ function end(){
 }
 
 function set_config(){
-    sudo sed -i "s/\($1\s*=\s*\).*\$/\1$2/" $3
+    sudo sed -i "s#\($1\s*=\s*\).*\$#\1$2#" $3
     echo "$(date +'%T') TEST: i $3: $1=$2" >> ${ALLSKY_HOME}/mock_output
 }
+
+function set_setting(){
+    file="$3"
+    tmpfile="$3_tmp"
+    newvalue="$2"
+    key="$1"
+
+	echo "$key old: " $(jq -r --arg searchKey "$key" '.[$searchKey]' "${file}")
+
+    cp $file "$tmpfile" &&
+    jq --arg searchKey "$key" --argjson newval "$newvalue" '.[$searchKey] |= $newval' "$tmpfile" > "${file}" &&
+    rm -f "$tmpfile"
+
+	echo "$key new: " $(jq -r --arg searchKey "$key" '.[$searchKey]' "${file}")
+}
+
 
 function INFO(){
     echo "$(date +'%T') TEST: $1 $2" >> ${ALLSKY_HOME}/mock_output
