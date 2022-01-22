@@ -115,6 +115,7 @@ TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg removed" 1 $?
 
 # cleanup
 INFO i "TEARDOWN"
+tree ${ALLSKY_HOME}
 rm -f "${ALLSKY_HOME}/tmp/image_test.jpg"
 rm -f "${DATE_DIR}/image_test.jpg"
 rm -f "${DATE_DIR}/thumbnails/image_test.jpg"
