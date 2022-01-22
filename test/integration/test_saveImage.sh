@@ -23,7 +23,7 @@ pushd ${ALLSKY_HOME}
 set_config CAMERA RPiHQ ${ALLSKY_HOME}/config/config.sh 
 
 start
-bash -x ${ALLSKY_HOME}/scripts/saveImage.sh
+${ALLSKY_HOME}/scripts/saveImage.sh
 seperation
 INFO i "Testcase: saveImage.sh TEST"
 ${ALLSKY_HOME}/scripts/saveImage.sh TEST
@@ -34,7 +34,7 @@ seperation
 INFO i "Testcase: saveImage.sh NIGHT"
 ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT
 #seperation
-#bash -x ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg
+#${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg
 seperation
 INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS)"
 # setup
@@ -73,7 +73,7 @@ identify ${ALLSKY_HOME}/tmp/image_test.jpg
 
 # test
 INFO i "EXECUTION"
-bash -x ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg
+${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg
 
 # evaluation
 INFO i "EVALUATION"
