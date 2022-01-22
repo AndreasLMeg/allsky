@@ -44,5 +44,9 @@ jobs:
       - name: run integrationtests
         run: |
           export ALLSKY_HOME=$(pwd)
+          mkdir -p $ALLSKY_HOME/config
+          touch $ALLSKY_HOME/config/config.sh
           cd test/integration
           ./test_saveImage.sh
+          rm --rf$ALLSKY_HOME/config
+
