@@ -39,3 +39,9 @@ jobs:
       - name: check bash files
         run: |
           err=0;for i in $(find . -name '*.sh'); do echo "$i"; bash -n $i; if [ $? -ne 0 ]; then err=$((err + 1)); fi; done; echo $err; exit $err
+
+      # Run integrationtests
+      - name: run integrationtests
+        run: |
+          cd test/integration
+          ./test_saveImage.sh
