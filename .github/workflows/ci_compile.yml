@@ -43,5 +43,6 @@ jobs:
       # Run integrationtests
       - name: run integrationtests
         run: |
+          export ALLSKY_HOME=$(pwd)
           cd test/integration
           ./test_saveImage.sh

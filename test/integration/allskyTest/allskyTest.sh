@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "ALLSKY_HOME=${ALLSKY_HOME}"
+
 function start(){
     echo "$(date +'%T') ======================================================================" > ${ALLSKY_HOME}/mock_output
     echo "$(date +'%T') TEST: s $0: $@" >> ${ALLSKY_HOME}/mock_output
