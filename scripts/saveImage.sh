@@ -63,7 +63,7 @@ fi
 # Get passed-in variables.
 # Normally at least the exposure will be passed and the sensor temp if known.
 while [ $# -gt 0 ]; do
-	VARIABLE="THIS_${1%=*}"		# everything before the "="
+	VARIABLE="AS_${1%=*}"		# everything before the "="
 	VALUE="${1##*=}"			# everything after the "="
 	shift
 	# Export the variable so other scripts we call can use it.
@@ -142,9 +142,9 @@ if [ "${DAYTIME_SAVE}" = "true" -o "${DAY_OR_NIGHT}" = "NIGHT" ] ; then
 
 	FINAL_FILE="${DATE_DIR}/${IMAGE_NAME}"
 	cp "${IMAGE_TO_USE}" "${FINAL_FILE}" || echo "*** ERROR: ${ME}: unable to copy ${IMAGE_TO_USE} ***"
-	mv "${IMAGE_TO_USE}" "${WORKING_DIR}/${FULL_FILENAME}"	# Websites look for $FULL_FILENAME
 	IMAGE_TO_USE="${FINAL_FILE}"
 fi
+cp "${IMAGE_TO_USE}" "${WORKING_DIR}/${FULL_FILENAME}"	# Websites look for $FULL_FILENAME
 
 # If upload is true, optionally create a smaller version of the image; either way, upload it
 if [ "${UPLOAD_IMG}" = "true" ] ; then
