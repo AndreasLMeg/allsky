@@ -23,6 +23,7 @@ jobs:
           ls -la
           uptime
           echo make
+          which convert
 
       # Runs a set of commands using the runners shell
       - name: make deps
