@@ -36,6 +36,7 @@ function set_setting(){
     rm -f "$tmpfile"
 
 	echo "$key new: " $(jq -r --arg searchKey "$key" '.[$searchKey]' "${file}")
+    echo "$(date +'%T') TEST: i $3: $1=$2" >> ${ALLSKY_HOME}/mock_output
 }
 
 

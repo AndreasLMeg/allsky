@@ -80,6 +80,9 @@ identify ${ALLSKY_HOME}/tmp/image_test.jpg
 # Darkframe activ !
 identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
 TEST "${ALLSKY_HOME}/tmp/image_test.jpg darkframe->no change (identify)" 0 $?
+identify ${ALLSKY_HOME}/darks/image_test.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
+TEST "${ALLSKY_HOME}/darks/image_test.jpg darkframe->no change (identify)" 0 $?
+
 
 # Resize
 #identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 2028x1520 2028x1520+0+0 8-bit sRGB 406513B"
@@ -103,6 +106,7 @@ DATE_DIR="${ALLSKY_IMAGES}/$(date -d '12 hours ago' +'%Y%m%d')"
 #DATE_DIR="${ALLSKY_IMAGES}/$(date +'%Y%m%d')"
 [ -d "${DATE_DIR}" ]; TEST "${DATE_DIR} exists" 0 $?
 [ -d "${DATE_DIR}" ]; TEST "${DATE_DIR}/thumbnails exists" 0 $?
+[ -d "${ALLSKY_HOME}/darks" ]; TEST "${ALLSKY_HOME}/darks exists" 0 $?
 
 [ -e "${DATE_DIR}/image_test.jpg" ]
 TEST "${DATE_DIR}/image_test.jpg darkframe not to copy" 1 $?
@@ -123,6 +127,7 @@ rm -f "${ALLSKY_HOME}/tmp/image_test.jpg"
 rm -f "${DATE_DIR}/image_test.jpg"
 rm -f "${DATE_DIR}/thumbnails/image_test.jpg"
 rm -f "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock"
+rm -f "${ALLSKY_HOME}/darks/image_test.jpg"
 
 end
 popd
