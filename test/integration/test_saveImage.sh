@@ -77,19 +77,6 @@ ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg
 
 # evaluation
 INFO i "EVALUATION"
-identify ${ALLSKY_HOME}/tmp/image_test.jpg
-# Resize
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 2028x1520 2028x1520+0+0 8-bit sRGB 406513B"
-#TEST "${ALLSKY_HOME}/tmp/image_test.jpg resized (identify)" 0 $?
-# Crop
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 46269B"
-#TEST "${ALLSKY_HOME}/tmp/image_test.jpg croped (identify)" 0 $?
-# stretch
-identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 59459B"
-TEST "${ALLSKY_HOME}/tmp/image_test.jpg streched (identify)" 0 $?
-# resize and upload
-identify ${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock | grep "JPEG 958x720 958x720+0+0 8-bit sRGB 108202B"
-TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock resized for upload (identify)" 0 $?
 
 # directory
 # The 12 hours ago option ensures that we're always using today's date
@@ -100,6 +87,20 @@ DATE_DIR="${ALLSKY_IMAGES}/$(date -d '12 hours ago' +'%Y%m%d')"
 #DATE_DIR="${ALLSKY_IMAGES}/$(date +'%Y%m%d')"
 [ -d "${DATE_DIR}" ]; TEST "${DATE_DIR} exists" 0 $?
 [ -d "${DATE_DIR}" ]; TEST "${DATE_DIR}/thumbnails exists" 0 $?
+
+# no more image in tmp folder, nothing to check !
+# Resize
+#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 2028x1520 2028x1520+0+0 8-bit sRGB 406513B"
+#TEST "${ALLSKY_HOME}/tmp/image_test.jpg resized (identify)" 0 $?
+# Crop
+#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 46269B"
+#TEST "${ALLSKY_HOME}/tmp/image_test.jpg croped (identify)" 0 $?
+# stretch
+#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 59459B"
+#TEST "${ALLSKY_HOME}/tmp/image_test.jpg streched (identify)" 0 $?
+# resize and upload
+identify ${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock | grep "JPEG 958x720 958x720+0+0 8-bit sRGB 108202B"
+TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock resized for upload (identify)" 0 $?
 
 identify ${DATE_DIR}/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 59459B"
 TEST "${DATE_DIR}/image_test.jpg (identify)" 0 $?
