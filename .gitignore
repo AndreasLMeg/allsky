@@ -38,6 +38,8 @@ capture_RPiHQ
 keogram
 startrails
 sunwait
+
+# misc
 .vscode/configurationCache.log
-src/sunwait-src
-src/sunwait-src
+.vscode/targets.log
+.vscode/dryrun.log
