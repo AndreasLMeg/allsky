@@ -34,7 +34,12 @@ set_config CAMERA_SETTINGS_DIR ${ALLSKY_HOME}/config ${ALLSKY_HOME}/config/confi
 cat ${ALLSKY_HOME}/config/config.sh| grep CAMERA
 
 start
-INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS)"
+INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (darks)"
+INFO i "  Testimage = image_test.jpg"
+INFO i "  darkframe = 1: image should be copied to dark"
+INFO i "  notificationimages = 0: image should be shown in webserver"
+INFO i "  /tmp/image_test.jpg should be deleted"
+
 # setup
 INFO i "SETUP"
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
