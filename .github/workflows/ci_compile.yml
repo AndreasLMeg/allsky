@@ -51,7 +51,7 @@ jobs:
           ./test_saveImage.sh
           tree $ALLSKY_HOME
           ./test_saveImage_darks.sh
-          tree $ALLSKY_HOME
+          tree $ALLSKY_HOME -Dsp
           rm --rf $ALLSKY_HOME/config
           rm --rf $ALLSKY_HOME/tmp
 
@@ -63,7 +63,7 @@ jobs:
           touch $ALLSKY_HOME/config/config.sh
           cd test/integration
           ./test_saveImage_darks.sh
-          tree $ALLSKY_HOME
+          tree $ALLSKY_HOME -Dsp
           rm --rf $ALLSKY_HOME/config
           rm --rf $ALLSKY_HOME/tmp
 
