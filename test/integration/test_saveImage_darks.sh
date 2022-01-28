@@ -122,7 +122,8 @@ TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg darkframe not to resize and uploa
 
 # cleanup
 INFO i "TEARDOWN"
-#tree ${ALLSKY_HOME}
+ls -la ${ALLSKY_HOME}/tmp
+tree ${ALLSKY_HOME} -Dsp
 rm -f "${ALLSKY_HOME}/tmp/image_test.jpg"
 rm -f "${DATE_DIR}/image_test.jpg"
 rm -f "${DATE_DIR}/thumbnails/image_test.jpg"
