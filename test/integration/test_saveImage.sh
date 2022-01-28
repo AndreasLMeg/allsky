@@ -72,9 +72,6 @@ set_config IMG_UPLOAD true ${ALLSKY_HOME}/config/config.sh
 # Resize uploaded images.  Change the size to fit your sensor.
 set_config RESIZE_UPLOADS true ${ALLSKY_HOME}/config/config.sh 
 set_config RESIZE_UPLOADS_SIZE "962x720" ${ALLSKY_HOME}/config/config.sh 
-# Path to the camera settings (exposure, gain, delay, overlay, etc) files.
-# Do not change unless you know what you are doing.
-set_config CAMERA_SETTINGS_DIR /etc/raspap ${ALLSKY_HOME}/config/config.sh
 
 
 cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp/image_test.jpg
