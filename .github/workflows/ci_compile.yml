@@ -61,6 +61,7 @@ jobs:
           mkdir -p $ALLSKY_HOME/config
           mkdir -p $ALLSKY_HOME/tmp
           touch $ALLSKY_HOME/config/config.sh
+          touch $ALLSKY_HOME/tmp/image.jpg
           cd test/integration
           ./test_saveImage_darks.sh
           tree $ALLSKY_HOME -Dsp
@@ -74,6 +75,7 @@ jobs:
           mkdir -p $ALLSKY_HOME/config
           mkdir -p $ALLSKY_HOME/tmp
           touch $ALLSKY_HOME/config/config.sh
+          touch $ALLSKY_HOME/tmp/image.jpg
           cd test/integration
           ./test_saveImage_darks_notificationimages.sh
           tree $ALLSKY_HOME -Dsp
