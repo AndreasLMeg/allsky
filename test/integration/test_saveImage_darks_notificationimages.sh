@@ -66,7 +66,8 @@ set_config RESIZE_UPLOADS_SIZE "962x720" ${ALLSKY_HOME}/config/config.sh
 set_config DARK_FRAME_SUBTRACTION true ${ALLSKY_HOME}/config/config.sh
 
 set_setting "darkframe" "1" ${ALLSKY_HOME}/config/settings_RPiHQ.json
-set_setting "notificationimages" "0" ${ALLSKY_HOME}/config/settings_RPiHQ.json
+set_setting "notificationimages" "1" ${ALLSKY_HOME}/config/settings_RPiHQ.json
+
 
 cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp/image_test.jpg
 identify ${ALLSKY_HOME}/tmp/image_test.jpg
@@ -77,7 +78,7 @@ ${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg
 
 # evaluation
 INFO i "EVALUATION"
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg
+identify ${ALLSKY_HOME}/tmp/image_test.jpg
 # Darkframe activ !
 #identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
 #TEST "${ALLSKY_HOME}/tmp/image_test.jpg darkframe->no change (identify)" 0 $?
@@ -110,26 +111,26 @@ DATE_DIR="${ALLSKY_IMAGES}/$(date -d '12 hours ago' +'%Y%m%d')"
 [ -d "${ALLSKY_HOME}/darks" ]; TEST "${ALLSKY_HOME}/darks exists" 0 $?
 
 [ -e "${ALLSKY_HOME}/darks/image_test.jpg" ]
-TEST "${ALLSKY_HOME}/darks/image_test.jpg exists (darkframe)" 0 $?
+TEST "${ALLSKY_HOME}/darks/image_test.jpg darkframe exists" 0 $?
 
 [ -e "${DATE_DIR}/image_test.jpg" ]
-TEST "${DATE_DIR}/image_test.jpg (do not copy darkframe)" 1 $?
+TEST "${DATE_DIR}/image_test.jpg darkframe not to copy" 1 $?
 
 [ -e "${DATE_DIR}/thumbnails/image_test.jpg" ]
-TEST "${DATE_DIR}/thumbnails/image_test.jpg (do not copy darkframe)" 1 $?
+TEST "${DATE_DIR}/thumbnails/image_test.jpg darkframe not to copy" 1 $?
 
 [ -e "${ALLSKY_HOME}/tmp/image_test.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/image_test.jpg (removed)" 1 $?
+TEST "${ALLSKY_HOME}/tmp/image_test.jpg removed" 1 $?
 
 [ -e "${ALLSKY_HOME}/tmp/resize-image_test.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg (darkframe not to resize and upload)" 1 $?
+TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg darkframe not to resize and upload" 1 $?
 
 [ -e "${ALLSKY_HOME}/tmp/image.jpg" ]
 TEST "${ALLSKY_HOME}/tmp/image.jpg exists" 0 $?
 
 identify ${ALLSKY_HOME}/tmp/image.jpg
 identify ${ALLSKY_HOME}/tmp/image.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
-TEST "${ALLSKY_HOME}/tmp/image.jpg  notificationimages=1, show darkframe (identify)" 0 $?
+TEST "${ALLSKY_HOME}/tmp/image.jpg  notificationimages=0, dont show darkframe (identify)" 1 $?
 
 # cleanup
 INFO i "TEARDOWN"

@@ -8,4 +8,4 @@ bash -x ./scripts/darkCapture.sh_original $@
 RET=$?
 echo "$(date +'%T') MOCK: > $0: RET=$RET"
 
-exit 0
+exit $RET

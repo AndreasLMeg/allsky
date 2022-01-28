@@ -120,6 +120,12 @@ TEST "${ALLSKY_HOME}/tmp/image_test.jpg removed" 1 $?
 [ -e "${ALLSKY_HOME}/tmp/resize-image_test.jpg" ]
 TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg removed" 1 $?
 
+[ -e "${ALLSKY_HOME}/tmp/image.jpg" ]
+TEST "${ALLSKY_HOME}/tmp/image.jpg exists" 0 $?
+
+identify ${ALLSKY_HOME}/tmp/image.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 59459B"
+TEST "${ALLSKY_HOME}/tmp/image.jpg (identify)" 0 $?
+
 # cleanup
 INFO i "TEARDOWN"
 ls -la ${ALLSKY_HOME}/tmp
