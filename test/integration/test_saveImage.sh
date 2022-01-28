@@ -22,6 +22,13 @@ source "${ALLSKY_HOME}/variables.sh"
 pushd ${ALLSKY_HOME}
 
 set_config CAMERA RPiHQ ${ALLSKY_HOME}/config/config.sh 
+CAMERA_SETTINGS_DIR="${ALLSKY_HOME}/config" 
+# redefine the settings variable
+CAMERA_SETTINGS="${CAMERA_SETTINGS_DIR}/settings_RPiHQ.json" 
+# Path to the camera settings (exposure, gain, delay, overlay, etc) files.
+# Do not change unless you know what you are doing.
+set_config CAMERA_SETTINGS_DIR ${ALLSKY_HOME}/config ${ALLSKY_HOME}/config/config.sh
+
 
 start
 ${ALLSKY_HOME}/scripts/saveImage.sh

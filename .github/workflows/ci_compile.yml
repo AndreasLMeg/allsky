@@ -44,6 +44,7 @@ jobs:
       - name: run integrationtests saveImage.sh
         run: |
           export ALLSKY_HOME=$(pwd)
+          export ALLSKY_DEBUG_LEVEL=4
           mkdir -p $ALLSKY_HOME/config
           mkdir -p $ALLSKY_HOME/tmp
           touch $ALLSKY_HOME/config/config.sh
@@ -58,6 +59,7 @@ jobs:
       - name: run integrationtests saveImage.sh (darks)
         run: |
           export ALLSKY_HOME=$(pwd)
+          export ALLSKY_DEBUG_LEVEL=4
           mkdir -p $ALLSKY_HOME/config
           mkdir -p $ALLSKY_HOME/tmp
           touch $ALLSKY_HOME/config/config.sh
