@@ -51,8 +51,8 @@ jobs:
           cd test/integration
           ./test_saveImage.sh
           tree $ALLSKY_HOME -Dsp
-          rm --rf $ALLSKY_HOME/config
-          rm --rf $ALLSKY_HOME/tmp
+          rm -rf $ALLSKY_HOME/config
+          rm -rf $ALLSKY_HOME/tmp
 
       - name: run integrationtests saveImage.sh (darks)
         run: |
@@ -64,6 +64,6 @@ jobs:
           cd test/integration
           ./test_saveImage_darks.sh
           tree $ALLSKY_HOME -Dsp
-          rm --rf $ALLSKY_HOME/config
-          rm --rf $ALLSKY_HOME/tmp
+          rm -rf $ALLSKY_HOME/config
+          rm -rf $ALLSKY_HOME/tmp
 
