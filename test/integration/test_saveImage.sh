@@ -39,6 +39,7 @@ seperation
 INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS)"
 # setup
 INFO i "SETUP"
+ls -la ${ALLSKY_HOME}/tmp
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
 set_config IMG_WIDTH 2028 ${ALLSKY_HOME}/config/config.sh
 set_config IMG_HEIGHT 1520 ${ALLSKY_HOME}/config/config.sh
@@ -116,6 +117,7 @@ TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg removed" 1 $?
 
 # cleanup
 INFO i "TEARDOWN"
+ls -la ${ALLSKY_HOME}/tmp
 tree ${ALLSKY_HOME} -Dsp
 rm -f "${ALLSKY_HOME}/tmp/image_test.jpg"
 rm -f "${DATE_DIR}/image_test.jpg"
