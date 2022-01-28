@@ -32,6 +32,16 @@ if [ "$1" == "mock" ]; then
 	fi
 	cp "${ALLSKY_HOME}/config_repo/settings_RPiHQ.json.repo" ${ALLSKY_HOME}/config/settings_RPiHQ.json
 	echo "${ALLSKY_HOME}config/settings_RPiHQ.json mocked"
+
+	# /home/pi/INTEGRATIONTEST/config_repo/ftp-settings.sh.repo
+	if [ ! -e "${ALLSKY_HOME}/config/ftp-settings.sh_original" ] ; then
+		if [ ! -e "${ALLSKY_HOME}/config/ftp-settings.sh" ] ; then
+			touch ${ALLSKY_HOME}/config/ftp-settings.sh
+		fi
+		cp ${ALLSKY_HOME}/config/ftp-settings.sh ${ALLSKY_HOME}/config/ftp-settings.sh_original 
+	fi
+	cp "${ALLSKY_HOME}/config_repo/ftp-settings.sh.repo" ${ALLSKY_HOME}/config/ftp-settings.sh
+	echo "${ALLSKY_HOME}config/ftp-settings.sh mocked"
 else
 	# ZWO
 	cp ${ALLSKY_HOME}/config/settings_ZWO.json_original ${ALLSKY_HOME}/config/settings_ZWO.json
@@ -40,5 +50,9 @@ else
 	# RPiHQ
 	cp ${ALLSKY_HOME}/config/settings_RPiHQ.json_original ${ALLSKY_HOME}/config/settings_RPiHQ.json
 	echo "${ALLSKY_HOME}/config/settings_RPiHQ democked"
+
+	# /home/pi/INTEGRATIONTEST/config_repo/ftp-settings.sh.repo
+	cp ${ALLSKY_HOME}/config/ftp-settings.sh_original ${ALLSKY_HOME}/config/ftp-settings.sh
+	echo "${ALLSKY_HOME}/config/ftp-settings.sh democked"
 fi
 
