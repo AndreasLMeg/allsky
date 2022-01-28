@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Script to save a DAY or NIGHT image.
-echo "################# INTEGRATION ######################"
 
 ME="$(basename "${BASH_ARGV0}")"
 
@@ -44,9 +43,7 @@ fi
 # The image may be in a memory filesystem, so do all the processing there and
 # leave the image used by the website(s) in that directory.
 IMAGE_NAME=$(basename "${IMAGE_TO_USE}")	# just the file name
-echo "IMAGE_NAME=$IMAGE_NAME"
 WORKING_DIR=$(dirname "${IMAGE_TO_USE}")	# the directory the image is currently in
-echo "WORKING_DIR=$WORKING_DIR"
 
 # Optional full check for bad images.
 if [ "${REMOVE_BAD_IMAGES}" = "true" ]; then
@@ -116,9 +113,7 @@ if [ "${DAY_OR_NIGHT}" = "NIGHT" -a ${AUTO_STRETCH} = "true" ]; then
 fi
 
 SAVED_FILE="${IMAGE_TO_USE}"				# The name of the file saved from the camera.
-echo "SAVED_FILE=$SAVED_FILE"
 WEBSITE_FILE="${WORKING_DIR}/${FULL_FILENAME}"		# The name of the file the websites look for
-echo "WEBSITE_FILE=$WEBSITE_FILE"
 
 # If needed, save the current image in today's directory.
 if [ "${DAYTIME_SAVE}" = "true" -o "${DAY_OR_NIGHT}" = "NIGHT" ] ; then
@@ -208,5 +203,5 @@ fi
 
 # We create $WEBSITE_FILE as late as possible to avoid it being overwritten.
 mv "${SAVED_FILE}" "${WEBSITE_FILE}"
-echo "################# INTEGRATION ######################"
+
 exit 0
