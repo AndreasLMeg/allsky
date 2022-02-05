@@ -13,7 +13,36 @@ enable_testing()
 # git clone https://github.com/google/googletest.git
 add_subdirectory(test/googletest)
 
-add_definitions(-DCAM_NEW -DVERSION_TAG -DVERSION_BUILD -DVERSION_BUILD_DATE)
+#https://embeddedartistry.com/blog/2016/12/21/giving-your-firmware-build-a-version/
+execute_process( 
+	COMMAND git describe --long --dirty --always 
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
+	OUTPUT_VARIABLE RAW_GIT_VERSION 
+	OUTPUT_STRIP_TRAILING_WHITESPACE 
+) 
+string(REPLACE "-dirty" "+" BUILD_INFO ${RAW_GIT_VERSION}) 
+
+string(TIMESTAMP BUILD_DATE "%d-%m-%Y, %H:%M" UTC ) 
+
+cmake_host_system_information(RESULT BUILD_MACHINE QUERY HOSTNAME) 
+
+string(COMPARE EQUAL ${BUILD_MACHINE} jenkins-server _cmp) 
+if (NOT _cmp) 
+	string(PREPEND BUILD_INFO dev-) 
+endif() 
+
+string(REPLACE "-" ";" GIT_INFO_LIST ${RAW_GIT_VERSION}) 
+list(GET GIT_INFO_LIST 0 VERSION_NUMBER) 
+message("VERSION NUMBER: ${VERSION_NUMBER}") 
+add_compile_definitions(VERSION_TAG="${VERSION_NUMBER}") 
+message("BUILD DATE: ${BUILD_DATE}") 
+add_compile_definitions(VERSION_BUILD_DATE="${BUILD_DATE}") 
+message("BUILD MACHINE: ${BUILD_MACHINE}") 
+add_compile_definitions(VERSION_BUILD_MACHINE="${BUILD_MACHINE}") 
+message("BUILD_INFO: ${BUILD_INFO}") 
+add_compile_definitions(VERSION_BUILD="${BUILD_INFO}") 
+
+add_definitions(-DCAM_NEW)
 
 find_package(OpenCV REQUIRED) 
 include_directories( ${OpenCV_INCLUDE_DIRS} )
