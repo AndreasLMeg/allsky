@@ -49,6 +49,30 @@ TEST(Allsky, zwoGain2gain) {
 	EXPECT_EQ( Allsky::zwoGain2gain(400),100);
 }
 
+TEST(Allsky, length_in_units) {
+	myCam = new CameraNewCam();
+	EXPECT_STREQ(myCam->length_in_units(987654321, true), "987.7 sec");
+	EXPECT_STREQ(myCam->length_in_units(654321, true), "654.32 ms (0.65 sec)");
+	EXPECT_STREQ(myCam->length_in_units(54321, true), "54.32 ms (0.05 sec)");
+	EXPECT_STREQ(myCam->length_in_units(4321, true), "4.32 ms (0.00 sec)");
+	EXPECT_STREQ(myCam->length_in_units(321, true), "321 us");
+	EXPECT_STREQ(myCam->length_in_units(21, true), "21 us");
+	EXPECT_STREQ(myCam->length_in_units(1, true), "1 us");
+	EXPECT_STREQ(myCam->length_in_units(0, true), "0 us");
+	EXPECT_STREQ(myCam->length_in_units(-1, true), "-1 us");
+	// multi= false
+	EXPECT_STREQ(myCam->length_in_units(987654321, false), "987.7 sec");
+	EXPECT_STREQ(myCam->length_in_units(654321, false), "654.3 ms");
+	EXPECT_STREQ(myCam->length_in_units(54321, false), "54.32 ms");
+	EXPECT_STREQ(myCam->length_in_units(4321, false), "4.32 ms");
+	EXPECT_STREQ(myCam->length_in_units(321, false), "321 us");
+	EXPECT_STREQ(myCam->length_in_units(21, false), "21 us");
+	EXPECT_STREQ(myCam->length_in_units(1, false), "1 us");
+	EXPECT_STREQ(myCam->length_in_units(0, false), "0 us");
+	EXPECT_STREQ(myCam->length_in_units(-1, false), "-1 us");
+	delete myCam;
+}
+
 //############################################################################################################
 TEST(ModeMean, calculateMeanAVG) {
 	myCam = new CameraNewCam();

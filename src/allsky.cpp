@@ -1206,7 +1206,7 @@ void Allsky::closeUp(int e)
 	exit(e);
 }
 
-// Calculate if it is day or night
+// Calculate if it is day or night (uses sunwait)
 void Allsky::calculateDayOrNight(void)
 {
 
@@ -1234,7 +1234,7 @@ void Allsky::calculateDayOrNight(void)
 }
 
 
-// Calculate how long until nighttime.
+// Calculate how long until nighttime. (uses sunwait)
 int Allsky::calculateTimeToNightTime(void)
 {
 	std::string t;
@@ -1272,10 +1272,9 @@ void Allsky::preCapture(void) {
 	// with an image (which has the date/time in the filename).
 	timeval t;
 	t = Allsky::getTimeval();
-	//char exposureStart[128];
 	char f[10] = "%F %T";
-	snprintf(exposureStart, sizeof(exposureStart), "%s", Allsky::formatTime(t, f));
-	Allsky::Info("STARTING EXPOSURE at: %s   @ %s\n", exposureStart, Allsky::length_in_units(Allsky::currentExposure_us, true));
+	snprintf(runtime.exposureStart, sizeof(runtime.exposureStart), "%s", Allsky::formatTime(t, f));
+	Allsky::Info("STARTING EXPOSURE at: %s   @ %s\n", runtime.exposureStart, Allsky::length_in_units(Allsky::currentExposure_us, true));
 
 	// Get start time for overlay.  Make sure it has the same time as exposureStart.
 	if (Allsky::showTime == 1)

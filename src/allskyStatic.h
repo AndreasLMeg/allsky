@@ -68,7 +68,6 @@ char const *Allsky::fontnames[] = {		// Character representation of names for cl
 		"SCRIPT_SIMPLEX",               "SCRIPT_COMPLEX" };
 std::vector<int> Allsky::compression_params;
 int Allsky::numExposures = 0;	// how many valid pictures have we taken so far?
-char Allsky::exposureStart[128];
 
 //camera depending vars
 #if defined CAM_RPIHQ

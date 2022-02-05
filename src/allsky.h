@@ -122,6 +122,7 @@ class Allsky: public Log, public ModeMean {
 			std::string dayOrNight;
 			std::string lastDayOrNight;
 			//Camera* myCam;
+		  char exposureStart[128];
 		} static runtime;
 
 		struct Allsky_valuesCapture {
@@ -251,7 +252,6 @@ class Allsky: public Log, public ModeMean {
 		static int asiDayExposure_us;
 		static int asiNightExposure_us;
 		static std::vector<int> compression_params;
-		static char exposureStart[128];
 #if defined CAM_RPIHQ
 		//static modeMeanSetting myModeMeanSetting;
 		static raspistillSetting myRaspistillSetting;

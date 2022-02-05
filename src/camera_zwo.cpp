@@ -942,7 +942,7 @@ printf(" >xxx mean was %d and went from %d below min of %d to %d above max of %d
 					// Hopefully the user can use the time it took to save a file to disk
 					// to help determine why they are getting this warning.
 					// Perhaps their disk is very slow or their delay is too short.
-					Allsky::Warning("  > WARNING: currently saving an image; can't save new one at %s.\n", Allsky::exposureStart);
+					Allsky::Warning("  > WARNING: currently saving an image; can't save new one at %s.\n", Allsky::runtime.exposureStart);
 
 					// TODO: wait for the prior image to finish saving.
 				}
