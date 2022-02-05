@@ -29,6 +29,8 @@ src/*.a
 *.gcda
 gmon.out
 .*.sw[pomnq]
+build/*
+Testing/Temporary/*
 
 # generated binaries
 capture
@@ -37,3 +39,4 @@ capture_NewCam
 keogram
 startrails
 sunwait
+
