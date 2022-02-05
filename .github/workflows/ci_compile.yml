@@ -39,10 +39,11 @@ jobs:
         run: |
           cd test
           git clone https://github.com/google/googletest.git
+          cd ..
           cmake -S . -B build
           cmake --build build
           cd build && ctest -V
-          cd ../..
+          cd ..
 
       # Runs a set of commands using the runners shell
       - name: check bash files
