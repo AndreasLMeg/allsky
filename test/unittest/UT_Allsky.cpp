@@ -1,4 +1,3 @@
-#include "../Example.hpp"
 #include "../../src/camera_rpihq.h"
 #include "../../src/camera_newcam.h"
 

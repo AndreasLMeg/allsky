@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-set(This Example)
+set(This UT_Allsky)
 
 project($(This) C CXX)
 
@@ -64,4 +64,4 @@ set(Sources
 
 add_library(${This} STATIC  ${Sources} ${Headers} )
 
-add_subdirectory(test/test)
+add_subdirectory(test/unittest)

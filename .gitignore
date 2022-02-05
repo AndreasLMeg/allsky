@@ -30,6 +30,7 @@ src/*.a
 gmon.out
 .*.sw[pomnq]
 build/*
+rebuild/*
 Testing/Temporary/*
 
 # generated binaries

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.8)
 
-set(This ExampleTests)
+set(This UT_AllskyTest)
 
 set(Sources
-	ExampleTests.cpp
+	UT_Allsky.cpp
 )
 
 add_executable(${This} ${Sources})
@@ -22,7 +22,7 @@ endif()
 
 target_link_libraries(${This} PUBLIC
 	gtest_main
-	Example
+	UT_Allsky
 	${OpenCV_LIBS}
 )
 
