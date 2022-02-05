@@ -15,6 +15,9 @@ add_subdirectory(test/googletest)
 
 add_definitions(-DCAM_NEW -DVERSION_TAG -DVERSION_BUILD -DVERSION_BUILD_DATE)
 
+find_package(OpenCV REQUIRED) 
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+
 set(Headers
 	src/camera_newcam.h
 	src/allsky.h
