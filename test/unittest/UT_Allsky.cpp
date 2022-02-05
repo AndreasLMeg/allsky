@@ -8,7 +8,35 @@
 
 Camera* myCam;
 
+//############################################################################################################
+TEST(Camera, setWaitForNextCaptureANDgetWaitForNextCaptureANDwaitForNextCapture) {
+	myCam = new CameraNewCam();
+	myCam->setWaitForNextCapture(-100); EXPECT_EQ( myCam->getWaitForNextCapture(),0);
+	myCam->setWaitForNextCapture(0); EXPECT_EQ( myCam->getWaitForNextCapture(),0);
+	myCam->setWaitForNextCapture(1500000); EXPECT_EQ( myCam->getWaitForNextCapture(),1500000);
 
+	// Acquire time
+  time_t p1, t1 = time(&p1);
+  // valid?
+  ASSERT_NE(static_cast<time_t>(0), t1);
+  ASSERT_NE(static_cast<time_t>(-1), t1);
+  ASSERT_EQ(p1, t1);
+
+  myCam->waitForNextCapture();
+	
+	time_t p2, t2 = time(&p2);
+  // valid?
+  ASSERT_NE(static_cast<time_t>(0), t2);
+  ASSERT_NE(static_cast<time_t>(-1), t2);
+  ASSERT_EQ(p2, t2);
+  // Expect time progression
+  ASSERT_LT(p1, p2);
+  ASSERT_LE(t2 - t1, static_cast<time_t>(2));
+
+	delete myCam;
+}
+
+//############################################################################################################
 TEST(Allsky, gain2zwoGain) {
 	EXPECT_EQ( Allsky::gain2zwoGain(1.0),0);
 	EXPECT_EQ( Allsky::gain2zwoGain(10.0),200);
@@ -21,6 +49,7 @@ TEST(Allsky, zwoGain2gain) {
 	EXPECT_EQ( Allsky::zwoGain2gain(400),100);
 }
 
+//############################################################################################################
 TEST(ModeMean, calculateMeanAVG) {
 	myCam = new CameraNewCam();
 	myCam->values_ModeMean.current_mean = 0.3;

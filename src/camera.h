@@ -1,7 +1,6 @@
 #pragma once
 
 #include "allsky.h"
-#include "modeMean.h"
 #include <unistd.h>
 
 // Base class
@@ -16,11 +15,13 @@ class Camera: public Allsky {
 
 		void init(int argc, char *argv[]);
 
-		void setWaitForNextCapture(long waitForNextCapture_us) {m_waitForNextCapture_us = waitForNextCapture_us;};
+		/* set waiting time before next capture, negative values will be set to 0 */
+		void setWaitForNextCapture(long waitForNextCapture_us) {m_waitForNextCapture_us = std::max((long) 0, waitForNextCapture_us);};
 		long getWaitForNextCapture(void) {return m_waitForNextCapture_us;};
 
 		/* all camara depending things before using */
 		virtual void initCamera(void) = 0;
+		
 		/* all camara depending things before the capture */
 		//virtual void setupForCapture(void) = 0;
 		/* Camera captures one image */
@@ -45,5 +46,5 @@ class Camera: public Allsky {
 		}
 
 		private:
-			long m_waitForNextCapture_us = 1000000;
+			long m_waitForNextCapture_us = 1 * US_IN_SEC;
 };
