@@ -297,9 +297,9 @@ const char *imagetype = "";
 			// MaxValue is in MS so convert to microseconds
 			camera_max_autoexposure_us = Allsky::ControlCaps.MaxValue * US_IN_MS;
 			break;
+#endif
 		default:	// needed to keep compiler quiet
 			break;
-#endif
 		}
 		if (settings.debugLevel >= 4)
 		{
