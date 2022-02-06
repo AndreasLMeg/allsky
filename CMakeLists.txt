@@ -50,6 +50,7 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 set(Headers
 	src/camera_newcam.h
 	src/allsky.h
+	src/allsky_helper.h
 	src/allskyStatic.h
 	src/allsky_common.h
 	src/log.h
@@ -57,6 +58,7 @@ set(Headers
 )
 set(Sources
 	src/allsky.cpp
+	src/allsky_helper.cpp
 	src/camera_newcam.cpp
 	src/log.cpp
 	src/modeMean.cpp

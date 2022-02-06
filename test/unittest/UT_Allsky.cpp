@@ -1,7 +1,10 @@
 #include "../../src/camera_rpihq.h"
 #include "../../src/camera_newcam.h"
 
-#include <gtest/gtest.h>
+//#include <gtest/gtest.h>
+//#include <gmock/gmock.h>
+//#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 #include "../../src/allsky.h"
 #include "../../src/allskyStatic.h"
@@ -37,19 +40,19 @@ TEST(Camera, setWaitForNextCaptureANDgetWaitForNextCaptureANDwaitForNextCapture)
 }
 
 //############################################################################################################
-TEST(Allsky, gain2zwoGain) {
-	EXPECT_EQ( Allsky::gain2zwoGain(1.0),0);
-	EXPECT_EQ( Allsky::gain2zwoGain(10.0),200);
-	EXPECT_EQ( Allsky::gain2zwoGain(100.0),400);
+TEST(AllskyHelper, gain2zwoGain) {
+	EXPECT_EQ( AllskyHelper::gain2zwoGain(1.0),0);
+	EXPECT_EQ( AllskyHelper::gain2zwoGain(10.0),200);
+	EXPECT_EQ( AllskyHelper::gain2zwoGain(100.0),400);
 }
 
-TEST(Allsky, zwoGain2gain) {
-	EXPECT_EQ( Allsky::zwoGain2gain(0),1.0);
-	EXPECT_EQ( Allsky::zwoGain2gain(200),10);
-	EXPECT_EQ( Allsky::zwoGain2gain(400),100);
+TEST(AllskyHelper, zwoGain2gain) {
+	EXPECT_EQ( AllskyHelper::zwoGain2gain(0),1.0);
+	EXPECT_EQ( AllskyHelper::zwoGain2gain(200),10);
+	EXPECT_EQ( AllskyHelper::zwoGain2gain(400),100);
 }
 
-TEST(Allsky, length_in_units) {
+TEST(AllskyHelper, length_in_units) {
 	myCam = new CameraNewCam();
 	EXPECT_STREQ(myCam->length_in_units(987654321, true), "987.7 sec");
 	EXPECT_STREQ(myCam->length_in_units(654321, true), "654.32 ms (0.65 sec)");
@@ -70,6 +73,43 @@ TEST(Allsky, length_in_units) {
 	EXPECT_STREQ(myCam->length_in_units(1, false), "1 us");
 	EXPECT_STREQ(myCam->length_in_units(0, false), "0 us");
 	EXPECT_STREQ(myCam->length_in_units(-1, false), "-1 us");
+	delete myCam;
+}
+
+TEST(AllskyHelper, yesNo) {
+	EXPECT_STREQ(AllskyHelper::yesNo(0), "No");
+	EXPECT_STREQ(AllskyHelper::yesNo(1), "Yes");
+	EXPECT_STREQ(AllskyHelper::yesNo(100), "Yes");
+	EXPECT_STREQ(AllskyHelper::yesNo(-100), "Yes");
+}
+
+TEST(AllskyHelper, createRGB) {
+	EXPECT_EQ( AllskyHelper::createRGB(0,0,0),0x000000);
+	EXPECT_EQ( AllskyHelper::createRGB(0x01,0x02,0x03),0x010203);
+	EXPECT_EQ( AllskyHelper::createRGB(0x101,0x102,0x103),0x010203);
+	EXPECT_EQ( AllskyHelper::createRGB(0xFF,0x02,0x03),0xFF0203);
+	EXPECT_EQ( AllskyHelper::createRGB(0x01,0xFF,0x03),0x01FF03);
+	EXPECT_EQ( AllskyHelper::createRGB(0x01,0x02,0xFF),0x0102FF);
+	// todo ?
+	EXPECT_NE( AllskyHelper::createRGB(-1,-1,-1),0x000000) << "Todo ?";
+}
+
+TEST(AllskyHelper, DISABLED_getTime) {
+	using ::testing::Ge;
+	using ::testing::Le;
+	using ::testing::MatchesRegex;
+	// don't know how to use EXPECT_THAT !!!
+	//EXPECT_THAT(AllskyHelper::getTime("%H:%M"), MatchesRegex("%d.:%d."));
+	EXPECT_STREQ(AllskyHelper::getTime("%H:%M"), "*:*");
+}
+
+//############################################################################################################
+TEST(Allsky, c) {
+	myCam = new CameraNewCam();
+	myCam->settings.tty = false;
+	EXPECT_STREQ(myCam->c("green"), "");
+	myCam->settings.tty = true;
+	EXPECT_STREQ(myCam->c("green"), "green");
 	delete myCam;
 }
 

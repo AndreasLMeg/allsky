@@ -28,7 +28,7 @@ void ModeMean::initModeMean(int maxExposure_us, double maxGain, int Exposure_us)
 		
 		Allsky::valuesCapture.exposure_us = Exposure_us;
 		Allsky::valuesCapture.gain = 1.0;
-		Allsky::valuesCapture.gain_dB = Allsky::gain2zwoGain(Allsky::valuesCapture.gain); 
+		Allsky::valuesCapture.gain_dB = AllskyHelper::gain2zwoGain(Allsky::valuesCapture.gain); 
 		m_init = false;
 	}
 }
@@ -170,7 +170,7 @@ int ModeMean::calculateExposureLevel(int ExposurelevelChange, float meanForcast)
 	else {
 		Allsky::valuesCapture.gain = newGain;
 	}
-	Allsky::valuesCapture.gain_dB = Allsky::gain2zwoGain(Allsky::valuesCapture.gain); 
+	Allsky::valuesCapture.gain_dB = AllskyHelper::gain2zwoGain(Allsky::valuesCapture.gain); 
 
   double current_Exposuretime_s = pow(2.0, double(Exposurelevel)/pow(shuttersteps,2.0))/Allsky::valuesCapture.gain;
   double current_Exposuretime_us = current_Exposuretime_s * (double) US_IN_SEC;

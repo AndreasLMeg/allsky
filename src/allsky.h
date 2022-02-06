@@ -1,8 +1,6 @@
 #pragma once
 
-#define US_IN_MS 1000                     // microseconds in a millisecond
-#define MS_IN_SEC 1000                    // milliseconds in a second
-#define US_IN_SEC (US_IN_MS * MS_IN_SEC)  // microseconds in a second
+#include "allsky_common.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -10,6 +8,7 @@
 #include <opencv2/core/types.hpp>
 #include <opencv2/freetype.hpp>
 
+#include "allsky_helper.h"
 #include "log.h"
 #include "modeMean.h"
 
@@ -101,7 +100,7 @@
 #endif
 
 
-class Allsky: public Log, public ModeMean {
+class Allsky: public AllskyHelper, public Log, public ModeMean {
 
 	//enums
 	public:
@@ -330,14 +329,13 @@ class Allsky: public Log, public ModeMean {
 		Allsky ();
 		Allsky (int argc, char *argv[]);
 
-		//
+		// camera API
+		/* all camara depending things before the capture */
+		virtual void setupForCapture(void) = 0;
 		/* Camera captures one image */
 		virtual int capture(void) = 0;
 		/* all camara depending things after the capture */
 		virtual void postCapture(void) = 0;
-		/* all camara depending things before the capture */
-		virtual void setupForCapture(void) = 0;
-		/* all camara depending things before the capture */
 		virtual void waitForNextCapture(void) = 0;
 		virtual void prepareForDayOrNight(void) = 0;
 
@@ -347,23 +345,15 @@ class Allsky: public Log, public ModeMean {
 		int run(void);
 		static void preCapture(void);
 		static void deliverImage(void);
-		static bool dayOrNightNotChanged(void);
-		//helper functions
+		static void closeUp(int e);
+		// some other functions
 		void overlayText(int &);
 		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
-		static unsigned long createRGB(int r, int g, int b);
-		static char *length_in_units(long us, bool multi);
+		static bool dayOrNightNotChanged(void);
 		static void waitToFix(char const *msg);
-		static char const *yesNo(int flag);
 		static char const *c(char const *color);
-		static timeval getTimeval();
-		static char *formatTime(timeval t, char const *tf);
-		static char *getTime(char const *tf);
 		static std::string exec(const char *cmd);
 		static void IntHandle(int i);
-		static void closeUp(int e);
 		static void calculateDayOrNight(void);
 		static int calculateTimeToNightTime(void);
-		static int gain2zwoGain(float);
-		static int zwoGain2gain(int);
 };
