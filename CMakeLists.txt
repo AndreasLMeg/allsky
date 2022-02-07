@@ -8,6 +8,8 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+set(BUILD_GMOCK ON)
+
 enable_testing()
 
 # git clone https://github.com/google/googletest.git
@@ -47,6 +49,10 @@ add_definitions(-DCAM_NEW)
 find_package(OpenCV REQUIRED) 
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 
+
+include_directories("${gtest_SOURCE_DIR}/include"
+                    "${gmock_SOURCE_DIR}/include")
+										
 set(Headers
 	src/camera_newcam.h
 	src/allsky.h

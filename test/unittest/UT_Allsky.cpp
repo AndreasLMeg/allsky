@@ -3,13 +3,16 @@
 
 //#include <gtest/gtest.h>
 //#include <gmock/gmock.h>
-//#include "gmock/gmock.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include "../../src/allsky.h"
 #include "../../src/allskyStatic.h"
 
 Camera* myCam;
+
+
+//todo mock allsky,....
 
 //############################################################################################################
 TEST(Camera, setWaitForNextCaptureANDgetWaitForNextCaptureANDwaitForNextCapture) {
@@ -94,13 +97,9 @@ TEST(AllskyHelper, createRGB) {
 	EXPECT_NE( AllskyHelper::createRGB(-1,-1,-1),0x000000) << "Todo ?";
 }
 
-TEST(AllskyHelper, DISABLED_getTime) {
-	using ::testing::Ge;
-	using ::testing::Le;
+TEST(AllskyHelper, getTime) {
 	using ::testing::MatchesRegex;
-	// don't know how to use EXPECT_THAT !!!
-	//EXPECT_THAT(AllskyHelper::getTime("%H:%M"), MatchesRegex("%d.:%d."));
-	EXPECT_STREQ(AllskyHelper::getTime("%H:%M"), "*:*");
+	EXPECT_THAT(AllskyHelper::getTime("%H:%M"), MatchesRegex("[0-9]+:[0-9]+"));
 }
 
 //############################################################################################################
