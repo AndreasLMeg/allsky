@@ -22,6 +22,7 @@ endif()
 
 target_link_libraries(${This} PUBLIC
 	gtest_main
+	gmock_main
 	UT_Allsky
 	${OpenCV_LIBS}
 )

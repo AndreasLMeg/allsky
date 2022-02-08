@@ -52,7 +52,7 @@ include_directories( ${OpenCV_INCLUDE_DIRS} )
 
 include_directories("${gtest_SOURCE_DIR}/include"
                     "${gmock_SOURCE_DIR}/include")
-										
+
 set(Headers
 	src/camera_newcam.h
 	src/allsky.h

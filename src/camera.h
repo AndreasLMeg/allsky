@@ -12,6 +12,7 @@ class Camera: public Allsky {
 			Allsky::Debug("Camera::Camera\n");
 		};
 		Camera (int argc, char *argv[]);
+		Camera (AllskyExternalsInterface *Externals);
 
 		void init(int argc, char *argv[]);
 

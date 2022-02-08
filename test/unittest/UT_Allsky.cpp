@@ -11,8 +11,27 @@
 
 Camera* myCam;
 
+class AllskyUT : public Allsky {
+  public:
+		AllskyUT () {};
+		AllskyUT (AllskyExternalsInterface *Externals) 
+		{
+			Allsky::externals = Externals;
+		};
 
-//todo mock allsky,....
+		void setupForCapture(void) {};
+		/* Camera captures one image */
+		int capture(void) { return (0);};
+		/* all camara depending things after the capture */
+		void postCapture(void) {};
+		void waitForNextCapture(void) {};
+		void prepareForDayOrNight(void) {};
+		void kill();
+		void initCamera();
+};
+
+AllskyExternals MyAllskyExternals;
+Allsky* myAllsky = new AllskyUT(&MyAllskyExternals);
 
 //############################################################################################################
 TEST(Camera, setWaitForNextCaptureANDgetWaitForNextCaptureANDwaitForNextCapture) {
@@ -99,7 +118,7 @@ TEST(AllskyHelper, createRGB) {
 
 TEST(AllskyHelper, getTime) {
 	using ::testing::MatchesRegex;
-	EXPECT_THAT(AllskyHelper::getTime("%H:%M"), MatchesRegex("[0-9]+:[0-9]+"));
+	EXPECT_THAT(myAllsky->externals->getTime ("%H:%M"), MatchesRegex("[0-9]+:[0-9]+"));
 }
 
 //############################################################################################################
@@ -110,6 +129,32 @@ TEST(Allsky, c) {
 	myCam->settings.tty = true;
 	EXPECT_STREQ(myCam->c("green"), "green");
 	delete myCam;
+}
+
+class MockAllskyExternalsInterface : public AllskyExternalsInterface {
+ public:
+  MockAllskyExternalsInterface() {}
+  MOCK_METHOD(std::string, exec, (const char *cmd), (override));
+  MOCK_METHOD(char *, getTime, (char const *tf), (override));
+  MOCK_METHOD(char *, formatTime, (timeval t, char const *tf), (override));
+  MOCK_METHOD(timeval, getTimeval, (), (override));
+};
+
+TEST(Allsky, calculateTimeToNightTime) {
+	using ::testing::_;
+	using ::testing::Return;
+	//using ::testing::StrictMock;
+
+	MockAllskyExternalsInterface mockAllskyExternals;
+  EXPECT_CALL(mockAllskyExternals, exec(_))
+	.Times(1)
+	.WillRepeatedly(Return("14:00, 08:00"));
+  EXPECT_CALL(mockAllskyExternals, getTime(_))
+	.Times(1)
+	.WillRepeatedly(Return((char*)"00:00"));
+	
+	Allsky* myAllsky = new AllskyUT(&mockAllskyExternals);
+  EXPECT_EQ(myAllsky->calculateTimeToNightTime(), 50400);
 }
 
 //############################################################################################################

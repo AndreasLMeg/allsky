@@ -100,8 +100,46 @@
 #endif
 
 
-class Allsky: public AllskyHelper, public Log, public ModeMean {
+class AllskyInterface {
 
+	public:
+		virtual char const *c(char const *color) = 0;
+ 		virtual std::string exec(const char *cmd) = 0;
+};
+
+class AllskyExternalsInterface {
+public:
+ 		virtual std::string exec(const char *cmd) = 0;
+		virtual	char *getTime(char const *tf) = 0;
+		virtual char *formatTime(timeval t, char const *tf) = 0;
+		virtual timeval getTimeval() = 0;
+    virtual ~AllskyExternalsInterface() = default;
+};
+
+class AllskyExternals : public AllskyExternalsInterface {
+public:
+		//static std::string Iexec(const char *cmd);
+ 		virtual std::string exec(const char *cmd) {
+      //std::cout << "AllskyExternals exec" << std::endl;
+    	return ("todo implement and run externals.exec !");
+  	}
+		// Return the numeric time.
+		virtual timeval getTimeval() override	{
+			timeval curTime;
+			gettimeofday(&curTime, NULL);
+			return(curTime);
+		}
+		// Format a numeric time as a string.
+		virtual char *formatTime(timeval t, char const *tf) override {
+			static char TimeString[128];
+			strftime(TimeString, 80, tf, localtime(&t.tv_sec));
+			return(TimeString);
+		}
+		virtual char *getTime(char const *tf) override {
+    	return(formatTime(getTimeval(), tf));
+  	}
+};
+class Allsky: public AllskyInterface, public AllskyHelper, public Log, public ModeMean {
 	//enums
 	public:
 		enum Status
@@ -114,6 +152,7 @@ class Allsky: public AllskyHelper, public Log, public ModeMean {
 
 	//variables
 	public:
+		AllskyExternalsInterface *externals = nullptr;
 		struct Allsky_runtime {
 			Status status;
 			bool endOfNight;
@@ -328,7 +367,13 @@ class Allsky: public AllskyHelper, public Log, public ModeMean {
 
 		Allsky ();
 		Allsky (int argc, char *argv[]);
-
+   	Allsky(AllskyExternalsInterface *Externals)
+    : externals(Externals) {
+        // If the dependency was not defined, throw an exception.
+        if(externals == nullptr){
+            throw std::invalid_argument("service must not be null");
+        }
+    }
 		// camera API
 		/* all camara depending things before the capture */
 		virtual void setupForCapture(void) = 0;
@@ -343,7 +388,7 @@ class Allsky: public AllskyHelper, public Log, public ModeMean {
 		void init(int argc, char *argv[]);
 		void info(void);
 		int run(void);
-		static void preCapture(void);
+		void preCapture(void);
 		static void deliverImage(void);
 		static void closeUp(int e);
 		// some other functions
@@ -351,9 +396,22 @@ class Allsky: public AllskyHelper, public Log, public ModeMean {
 		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
 		static bool dayOrNightNotChanged(void);
 		static void waitToFix(char const *msg);
-		static char const *c(char const *color);
-		static std::string exec(const char *cmd);
+		static char const *_c(char const *color);
+		static std::string _exec(const char *cmd);
 		static void IntHandle(int i);
-		static void calculateDayOrNight(void);
-		static int calculateTimeToNightTime(void);
+		void calculateDayOrNight(void);
+		int calculateTimeToNightTime(void);
+
+		// interface
+ 		virtual char const *c(char const *color) override {
+    	return _c(color);
+  	}
+
+ 		virtual std::string exec(const char *cmd) override {
+    	return (_exec(cmd));
+  	}
+
+
+		// depended function:
+		
 };

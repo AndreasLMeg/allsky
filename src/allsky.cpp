@@ -1033,7 +1033,7 @@ void Allsky::info(void)
 }
 
 // Return the string for the specified color, or "" if we're not on a tty.
-char const *Allsky::c(char const *color)
+char const *Allsky::_c(char const *color)
 {
 	if (settings.tty)
 	{
@@ -1045,9 +1045,7 @@ char const *Allsky::c(char const *color)
 	}
 }
 
-
-
-std::string Allsky::exec(const char *cmd)
+std::string Allsky::_exec(const char *cmd)
 {
 	std::tr1::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
 	if (!pipe)
@@ -1124,6 +1122,7 @@ void Allsky::closeUp(int e)
 }
 
 // Calculate if it is day or night (uses sunwait)
+// dedending on exec
 void Allsky::calculateDayOrNight(void)
 {
 
@@ -1131,7 +1130,7 @@ void Allsky::calculateDayOrNight(void)
 
 	char sunwaitCommand[128];
 	sprintf(sunwaitCommand, "sunwait poll angle %s %s %s", settings.angle, settings.latitude, settings.longitude);
-	runtime.dayOrNight = Allsky::exec(sunwaitCommand);
+	runtime.dayOrNight = externals->exec(sunwaitCommand);
 	runtime.dayOrNight.erase(std::remove(runtime.dayOrNight.begin(), runtime.dayOrNight.end(), '\n'), runtime.dayOrNight.end());
 
 	if (runtime.dayOrNight != "DAY" && runtime.dayOrNight != "NIGHT")
@@ -1152,12 +1151,13 @@ void Allsky::calculateDayOrNight(void)
 
 
 // Calculate how long until nighttime. (uses sunwait)
+// depending on exec, getTime
 int Allsky::calculateTimeToNightTime(void)
 {
 	std::string t;
 	char sunwaitCommand[128];	// returns "hh:mm, hh:mm" (sunrise, sunset)
 	sprintf(sunwaitCommand, "sunwait list angle %s %s %s | awk '{print $2}'", settings.angle, settings.latitude, settings.longitude);
-	t = Allsky::exec(sunwaitCommand);
+	t = externals->exec(sunwaitCommand);
 	t.erase(std::remove(t.begin(), t.end(), '\n'), t.end());
 
 	int h=0, m=0, secs;
@@ -1165,7 +1165,7 @@ int Allsky::calculateTimeToNightTime(void)
 	sscanf(t.c_str(), "%d:%d", &h, &m);
 	secs = (h*60*60) + (m*60);
 
-	char *now = Allsky::getTime("%H:%M");
+	char *now = externals->getTime("%H:%M");
 	int hNow=0, mNow=0, secsNow;
 	sscanf(now, "%d:%d", &hNow, &mNow);
 	secsNow = (hNow*60*60) + (mNow*60);
@@ -1188,16 +1188,17 @@ void Allsky::preCapture(void) {
 	// date/time is added to many log entries to make it easier to associate them
 	// with an image (which has the date/time in the filename).
 	timeval t;
-	t = Allsky::getTimeval();
+	t = externals->getTimeval();
 	char f[10] = "%F %T";
-	snprintf(runtime.exposureStart, sizeof(runtime.exposureStart), "%s", Allsky::formatTime(t, f));
+	snprintf(runtime.exposureStart, sizeof(runtime.exposureStart), "%s", externals->formatTime(t, f));
 	Allsky::Info("STARTING EXPOSURE at: %s   @ %s\n", runtime.exposureStart, Allsky::length_in_units(Allsky::currentExposure_us, true));
 
 	// Get start time for overlay.  Make sure it has the same time as exposureStart.
 	if (Allsky::showTime == 1)
-		sprintf(Allsky::bufTime, "%s", Allsky::formatTime(t, Allsky::timeFormat));
+		sprintf(Allsky::bufTime, "%s", externals->formatTime(t, Allsky::timeFormat));
 }
 
+// dedending on system
 void Allsky::deliverImage(void)
 {
 	// Check for night time
@@ -1263,6 +1264,7 @@ Allsky::Allsky ()
 
 Allsky::Allsky (int argc, char *argv[]) 
 {
+	externals = new AllskyExternals;
 	printf("Allsky::Allsky (int argc, char *argv[])\n");
 	init(argc, argv);
 };

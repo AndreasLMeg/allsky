@@ -77,7 +77,7 @@ unsigned long AllskyHelper::createRGB(int r, int g, int b)
 {
 	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 }
-
+/*
 // Return the numeric time.
 timeval AllskyHelper::getTimeval()
 {
@@ -95,7 +95,8 @@ char *AllskyHelper::formatTime(timeval t, char const *tf)
 }
 
 // Return the current time as a string.  Uses both functions above.
-char *AllskyHelper::getTime(char const *tf)
+char *AllskyHelper::_getTime(char const *tf)
 {
 		return(formatTime(getTimeval(), tf));
 }
+*/
