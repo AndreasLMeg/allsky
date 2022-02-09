@@ -1,6 +1,7 @@
 #pragma once
 
 #include "allsky_common.h"
+#include <unistd.h>
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -109,16 +110,35 @@ class AllskyInterface {
 
 class AllskyExternalsInterface {
 public:
+		virtual int system(const char *__command) = 0;
+		virtual unsigned int s_sleep(unsigned int __seconds) = 0;
+
+		//##############################################
  		virtual std::string exec(const char *cmd) = 0;
 		virtual	char *getTime(char const *tf) = 0;
 		virtual char *formatTime(timeval t, char const *tf) = 0;
 		virtual timeval getTimeval() = 0;
+		virtual void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont) = 0;
+		virtual unsigned long createRGB(int r, int g, int b) = 0;
+
+
     virtual ~AllskyExternalsInterface() = default;
 };
 
 class AllskyExternals : public AllskyExternalsInterface {
 public:
-		//static std::string Iexec(const char *cmd);
+
+    void _cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
+		virtual unsigned long createRGB(int r, int g, int b);
+
+		virtual int system(const char *__command) {
+    	return std::system(__command);
+		}
+
+		virtual unsigned int s_sleep(unsigned int __seconds) {
+    	return sleep(__seconds);
+		}
+
  		virtual std::string exec(const char *cmd) {
       //std::cout << "AllskyExternals exec" << std::endl;
     	return ("todo implement and run externals.exec !");
@@ -138,6 +158,9 @@ public:
 		virtual char *getTime(char const *tf) override {
     	return(formatTime(getTimeval(), tf));
   	}
+		virtual void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont) override {
+			_cvText(img, text, x, y, fontsize, linewidth, linetype, fontname, fontcolor, imgtype, outlinefont);
+		} 
 };
 class Allsky: public AllskyInterface, public AllskyHelper, public Log, public ModeMean {
 	//enums
@@ -389,13 +412,13 @@ class Allsky: public AllskyInterface, public AllskyHelper, public Log, public Mo
 		void info(void);
 		int run(void);
 		void preCapture(void);
-		static void deliverImage(void);
+		void deliverImage(void);
 		static void closeUp(int e);
 		// some other functions
 		void overlayText(int &);
-		static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
+		//static void cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont);
 		static bool dayOrNightNotChanged(void);
-		static void waitToFix(char const *msg);
+		void waitToFix(char const *msg);
 		static char const *_c(char const *color);
 		static std::string _exec(const char *cmd);
 		static void IntHandle(int i);

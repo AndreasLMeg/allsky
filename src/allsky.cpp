@@ -17,6 +17,36 @@
 using namespace std;
 
 
+
+
+// Create Hex value from RGB
+unsigned long AllskyExternals::createRGB(int r, int g, int b)
+{
+	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+}
+
+void AllskyExternals::_cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname,
+						int fontcolor[], int imgtype, int outlinefont)
+{
+	int outline_size = std::max(2.0, (fontsize/4));	// need smaller outline when font size is smaller
+	if (imgtype == ASI_IMG_RAW16)
+	{
+		unsigned long fontcolor16 = createRGB(fontcolor[2], fontcolor[1], fontcolor[0]);
+		if (outlinefont)
+			cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0), linewidth+outline_size, linetype);
+		cv::putText(img, text, cv::Point(x, y), fontname, fontsize, fontcolor16, linewidth, linetype);
+	}
+	else
+	{
+		if (outlinefont)
+			cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0, 255), linewidth+outline_size, linetype);
+		cv::putText(img, text, cv::Point(x, y), fontname, fontsize,
+			cv::Scalar(fontcolor[0], fontcolor[1], fontcolor[2], 255), linewidth, linetype);
+	}
+}
+
+//###############################################################################
+
 /**
  * Text_overlay
 **/
@@ -25,7 +55,7 @@ void Allsky::overlayText(int &iYOffset) {
 	if (showTime == 1)
 	{
 		// The time and ImgText are in the larger font; everything else is in smaller font.
-		cvText(settings.image.pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, bufTime, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * 0.1, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.fontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -34,7 +64,7 @@ void Allsky::overlayText(int &iYOffset) {
 
 	if (ImgText[0] != '\0')
 	{
-		cvText(settings.image.pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, ImgText, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * 0.1, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.fontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -53,7 +83,7 @@ void Allsky::overlayText(int &iYOffset) {
 			sprintf(F, "  %.0fF", (((float)actualTemp / 10 * 1.8) + 32));
 		}
 		sprintf(bufTemp, "Sensor: %s %s", C, F);
-		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -69,7 +99,7 @@ void Allsky::overlayText(int &iYOffset) {
 			sprintf(bufTemp, "Exposure: %'.2f ms%s", (float)currentExposure_us / US_IN_MS, bufTemp2);
 		// Indicate if in auto-exposure mode.
 		if (currentAutoExposure == ASI_TRUE) strcat(bufTemp, " (auto)");
-		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -81,7 +111,7 @@ void Allsky::overlayText(int &iYOffset) {
 		sprintf(bufTemp, "Gain: %1.2f", lastGain);
 		// Indicate if in auto gain mode.
 		if (currentAutoGain == ASI_TRUE) strcat(bufTemp, " (auto)");
-		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -91,7 +121,7 @@ void Allsky::overlayText(int &iYOffset) {
 	if (showBrightness == 1)
 	{
 		sprintf(bufTemp, "Brightness: %d", currentBrightness);
-		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -102,7 +132,7 @@ void Allsky::overlayText(int &iYOffset) {
 	if (showMean == 1 && mode_mean)
 	{
 		sprintf(bufTemp, "Mean: %.6f", lastMean);
-		cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
+		externals->cvText(settings.image.pRgb, bufTemp, iTextX, iTextY + (iYOffset / currentBin),
 			settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 			linetype[linenumber], fontname[settings.fonts.fontnumber], settings.fonts.smallFontcolor,
 			settings.image.Image_type, settings.fonts.outlinefont);
@@ -174,7 +204,7 @@ void Allsky::overlayText(int &iYOffset) {
 							line[slen-1] = '\0';
 						}
 
-						cvText(settings.image.pRgb, line, iTextX, iTextY + (iYOffset / currentBin),
+						externals->cvText(settings.image.pRgb, line, iTextX, iTextY + (iYOffset / currentBin),
 							settings.fonts.fontsize * SMALLFONTSIZE_MULTIPLIER, linewidth,
 							linetype[linenumber], fontname[settings.fonts.fontnumber],
 							settings.fonts.smallFontcolor, settings.image.Image_type, settings.fonts.outlinefont);
@@ -202,26 +232,6 @@ void Allsky::overlayText(int &iYOffset) {
 	}
 }
 
-void Allsky::cvText(cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname,
-						int fontcolor[], int imgtype, int outlinefont)
-{
-	int outline_size = std::max(2.0, (fontsize/4));	// need smaller outline when font size is smaller
-	if (imgtype == ASI_IMG_RAW16)
-	{
-		unsigned long fontcolor16 = createRGB(fontcolor[2], fontcolor[1], fontcolor[0]);
-		if (outlinefont)
-			cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0), linewidth+outline_size, linetype);
-		cv::putText(img, text, cv::Point(x, y), fontname, fontsize, fontcolor16, linewidth, linetype);
-	}
-	else
-	{
-		if (outlinefont)
-			cv::putText(img, text, cv::Point(x, y), fontname, fontsize, cv::Scalar(0,0,0, 255), linewidth+outline_size, linetype);
-		cv::putText(img, text, cv::Point(x, y), fontname, fontsize,
-			cv::Scalar(fontcolor[0], fontcolor[1], fontcolor[2], 255), linewidth, linetype);
-	}
-}
-
 // A user error was found.  Wait for the user to fix it.
 void Allsky::waitToFix(char const *msg)
 {
@@ -233,11 +243,11 @@ void Allsky::waitToFix(char const *msg)
 	else
 		printf("restart the allsky service.\n");
 	if (settings.notificationImages)
-		system("scripts/copy_notification_image.sh Error &");
-	sleep(5);	// give time for image to be copied
+		externals->system("scripts/copy_notification_image.sh Error &");
+	externals->s_sleep(5);	// give time for image to be copied
 	printf("*** Sleeping until you fix the problem.\n");
 	printf("**********\n");
-	sleep(100000);	// basically, sleep forever until the user fixes this.
+	externals->s_sleep(100000);	// basically, sleep forever until the user fixes this.
 }
 
 void Allsky::init(int argc, char *argv[])
@@ -310,8 +320,8 @@ void Allsky::init(int argc, char *argv[])
 	settings.fonts.smallFontcolor [2] = 255;
 	settings.fonts.outlinefont = DEFAULT_OUTLINEFONT;
 
-	signal(SIGINT, Allsky::IntHandle);
-	signal(SIGTERM, Allsky::IntHandle);	// The service sends SIGTERM to end this program.
+	signal(SIGINT, IntHandle);
+	signal(SIGTERM, IntHandle);	// The service sends SIGTERM to end this program.
 
 	setlinebuf(stdout);   // Line buffer output so entries appear in the log immediately.
 	if (setlocale(LC_NUMERIC, locale) == NULL)
@@ -1205,12 +1215,12 @@ void Allsky::deliverImage(void)
 	if (runtime.dayOrNight == "NIGHT")
 	{
 		// Preserve image during night time
-		system("scripts/saveImageNight.sh &");
+		externals->system("scripts/saveImageNight.sh &");
 	}
 	else
 	{
 		// Upload and resize image when configured
-		system("scripts/saveImageDay.sh &");
+		externals->system("scripts/saveImageDay.sh &");
 	}
 }
 

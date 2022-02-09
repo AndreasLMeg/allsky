@@ -105,18 +105,18 @@ TEST(AllskyHelper, yesNo) {
 	EXPECT_STREQ(AllskyHelper::yesNo(-100), "Yes");
 }
 
-TEST(AllskyHelper, createRGB) {
-	EXPECT_EQ( AllskyHelper::createRGB(0,0,0),0x000000);
-	EXPECT_EQ( AllskyHelper::createRGB(0x01,0x02,0x03),0x010203);
-	EXPECT_EQ( AllskyHelper::createRGB(0x101,0x102,0x103),0x010203);
-	EXPECT_EQ( AllskyHelper::createRGB(0xFF,0x02,0x03),0xFF0203);
-	EXPECT_EQ( AllskyHelper::createRGB(0x01,0xFF,0x03),0x01FF03);
-	EXPECT_EQ( AllskyHelper::createRGB(0x01,0x02,0xFF),0x0102FF);
+TEST(AllskyExternals, createRGB) {
+	EXPECT_EQ( myAllsky->externals->createRGB(0,0,0),0x000000);
+	EXPECT_EQ( myAllsky->externals->createRGB(0x01,0x02,0x03),0x010203);
+	EXPECT_EQ( myAllsky->externals->createRGB(0x101,0x102,0x103),0x010203);
+	EXPECT_EQ( myAllsky->externals->createRGB(0xFF,0x02,0x03),0xFF0203);
+	EXPECT_EQ( myAllsky->externals->createRGB(0x01,0xFF,0x03),0x01FF03);
+	EXPECT_EQ( myAllsky->externals->createRGB(0x01,0x02,0xFF),0x0102FF);
 	// todo ?
-	EXPECT_NE( AllskyHelper::createRGB(-1,-1,-1),0x000000) << "Todo ?";
+	EXPECT_NE( myAllsky->externals->createRGB(-1,-1,-1),0x000000) << "Todo ?";
 }
 
-TEST(AllskyHelper, getTime) {
+TEST(AllskyExternals, getTime) {
 	using ::testing::MatchesRegex;
 	EXPECT_THAT(myAllsky->externals->getTime ("%H:%M"), MatchesRegex("[0-9]+:[0-9]+"));
 }
@@ -134,10 +134,14 @@ TEST(Allsky, c) {
 class MockAllskyExternalsInterface : public AllskyExternalsInterface {
  public:
   MockAllskyExternalsInterface() {}
+	MOCK_METHOD(int, system, (const char *__command), (override));
+	MOCK_METHOD(unsigned int, s_sleep, (unsigned int __seconds), (override));
   MOCK_METHOD(std::string, exec, (const char *cmd), (override));
   MOCK_METHOD(char *, getTime, (char const *tf), (override));
   MOCK_METHOD(char *, formatTime, (timeval t, char const *tf), (override));
   MOCK_METHOD(timeval, getTimeval, (), (override));
+	MOCK_METHOD(void, cvText, (cv::Mat img, const char *text, int x, int y, double fontsize, int linewidth, int linetype, int fontname, int fontcolor[], int imgtype, int outlinefont), (override));
+	MOCK_METHOD(unsigned long, createRGB, (int r, int g, int b), (override));
 };
 
 TEST(Allsky, calculateTimeToNightTime) {
@@ -155,6 +159,77 @@ TEST(Allsky, calculateTimeToNightTime) {
 	
 	Allsky* myAllsky = new AllskyUT(&mockAllskyExternals);
   EXPECT_EQ(myAllsky->calculateTimeToNightTime(), 50400);
+}
+
+TEST(Allsky, waitToFix) {
+	using ::testing::_;
+	using ::testing::Return;
+
+	MockAllskyExternalsInterface mockAllskyExternals;
+
+  EXPECT_CALL(mockAllskyExternals, s_sleep(5))
+	.Times(1)
+	.WillRepeatedly(Return(0));
+
+  EXPECT_CALL(mockAllskyExternals, s_sleep(100000))
+	.Times(1)
+	.WillRepeatedly(Return(0));
+	
+	Allsky* myAllsky = new AllskyUT(&mockAllskyExternals);
+  myAllsky->waitToFix("Test");
+}
+
+TEST(Allsky, waitToFixSettingsNotificationImages) {
+	using ::testing::_;
+	using ::testing::Return;
+
+	MockAllskyExternalsInterface mockAllskyExternals;
+  EXPECT_CALL(mockAllskyExternals, system(_))
+	.Times(1)
+	.WillRepeatedly(Return(0));
+
+  EXPECT_CALL(mockAllskyExternals, s_sleep(5))
+	.Times(1)
+	.WillRepeatedly(Return(0));
+
+  EXPECT_CALL(mockAllskyExternals, s_sleep(100000))
+	.Times(1)
+	.WillRepeatedly(Return(0));
+	
+	Allsky* myAllsky = new AllskyUT(&mockAllskyExternals);
+	myAllsky->settings.notificationImages = true;
+  myAllsky->waitToFix("Test");
+}
+
+TEST(Allsky, preCapture) {
+	using ::testing::_;
+	using ::testing::Return;
+
+  timeval retval_timeval;
+	retval_timeval.tv_sec = 0;
+	retval_timeval.tv_usec = 0;
+	
+	MockAllskyExternalsInterface mockAllskyExternals;
+  EXPECT_CALL(mockAllskyExternals, getTimeval())
+	.Times(1)
+	.WillRepeatedly(Return(retval_timeval));
+
+  EXPECT_CALL(mockAllskyExternals, formatTime(_,_))
+	.Times(2)
+	.WillRepeatedly(Return((char*)"Formated Timestring"));
+
+	Allsky* myAllsky = new AllskyUT(&mockAllskyExternals);
+	myAllsky->currentExposure_us = 0;
+  myAllsky->preCapture();
+}
+
+TEST(Allsky, dayOrNightNotChanged) {
+	using ::testing::_;
+	using ::testing::Return;
+	
+	myAllsky->runtime.lastDayOrNight="NIGHT"; myAllsky->runtime.dayOrNight="NIGHT"; EXPECT_EQ(myAllsky->dayOrNightNotChanged(), true);
+	myAllsky->runtime.lastDayOrNight="NIGHT"; myAllsky->runtime.dayOrNight="DAY"; EXPECT_EQ(myAllsky->dayOrNightNotChanged(), false);
+	myAllsky->runtime.lastDayOrNight="DAY"; myAllsky->runtime.dayOrNight="DAY"; EXPECT_EQ(myAllsky->dayOrNightNotChanged(), true);
 }
 
 //############################################################################################################

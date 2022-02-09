@@ -72,31 +72,3 @@ char const *AllskyHelper::yesNo(int flag)
 		return("No");
 }
 
-// Create Hex value from RGB
-unsigned long AllskyHelper::createRGB(int r, int g, int b)
-{
-	return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-}
-/*
-// Return the numeric time.
-timeval AllskyHelper::getTimeval()
-{
-	timeval curTime;
-	gettimeofday(&curTime, NULL);
-	return(curTime);
-}
-
-// Format a numeric time as a string.
-char *AllskyHelper::formatTime(timeval t, char const *tf)
-{
-		static char TimeString[128];
-		strftime(TimeString, 80, tf, localtime(&t.tv_sec));
-		return(TimeString);
-}
-
-// Return the current time as a string.  Uses both functions above.
-char *AllskyHelper::_getTime(char const *tf)
-{
-		return(formatTime(getTimeval(), tf));
-}
-*/
