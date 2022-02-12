@@ -108,6 +108,9 @@ TEST "${ALLSKY_HOME}/tmp/resize-dark.jpg darkframe -> not to resize and upload" 
 [ -e "${ALLSKY_HOME}/tmp/image.jpg" ]
 TEST "${ALLSKY_HOME}/tmp/image.jpg does not exists, because notification is made from capture (is not running during test)" 1 $?  
 
+[ -e "${ALLSKY_HOME}/image.jpg" ]
+TEST "${ALLSKY_HOME}/image.jpg should not exists" 1 $?  
+
 identify ${ALLSKY_HOME}/tmp/image.jpg
 identify ${ALLSKY_HOME}/tmp/image.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
 TEST "${ALLSKY_HOME}/tmp/image.jpg  notificationimages=1, dont show darkframe (identify)" 1 $?
