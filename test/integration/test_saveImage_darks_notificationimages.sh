@@ -34,7 +34,7 @@ set_config CAMERA_SETTINGS_DIR ${ALLSKY_HOME}/config ${ALLSKY_HOME}/config/confi
 cat ${ALLSKY_HOME}/config/config.sh| grep CAMERA
 
 start
-INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS)"
+INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/dark.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS)"
 # setup
 INFO i "SETUP"
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
@@ -69,79 +69,59 @@ set_setting "darkframe" "1" ${ALLSKY_HOME}/config/settings_RPiHQ.json
 set_setting "notificationimages" "1" ${ALLSKY_HOME}/config/settings_RPiHQ.json
 
 
-cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp/image_test.jpg
-identify ${ALLSKY_HOME}/tmp/image_test.jpg
+cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp/dark.jpg
+identify ${ALLSKY_HOME}/tmp/dark.jpg
 
 # test
 INFO i "EXECUTION"
-${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg
+${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/dark.jpg
 
 # evaluation
 INFO i "EVALUATION"
-identify ${ALLSKY_HOME}/tmp/image_test.jpg
-# Darkframe activ !
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
-#TEST "${ALLSKY_HOME}/tmp/image_test.jpg darkframe->no change (identify)" 0 $?
-identify ${ALLSKY_HOME}/darks/image_test.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
-TEST "${ALLSKY_HOME}/darks/image_test.jpg darkframe->no change (identify)" 0 $?
-
-
-# Resize
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 2028x1520 2028x1520+0+0 8-bit sRGB 406513B"
-#TEST "${ALLSKY_HOME}/tmp/image_test.jpg resized (identify)" 0 $?
-# Crop
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 46269B"
-#TEST "${ALLSKY_HOME}/tmp/image_test.jpg croped (identify)" 0 $?
-# stretch
-#identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 59459B"
-#TEST "${ALLSKY_HOME}/tmp/image_test.jpg streched (identify)" 0 $? # dark
-# resize and upload
-#identify ${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock | grep "JPEG 958x720 958x720+0+0 8-bit sRGB 108202B"
-#TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock resized for upload (identify)" 0 $?
+identify ${ALLSKY_HOME}/tmp/dark.jpg
 
 # directory
 # The 12 hours ago option ensures that we're always using today's date
 # even at high latitudes where civil twilight can start after midnight.
 DATE_DIR="${ALLSKY_IMAGES}/$(date -d '12 hours ago' +'%Y%m%d')"
-# else
-# During the daytime we alway save the file in today's directory.
-#DATE_DIR="${ALLSKY_IMAGES}/$(date +'%Y%m%d')"
-#[ -d "${DATE_DIR}" ]; TEST "${DATE_DIR} exists" 0 $?
-#[ -d "${DATE_DIR}" ]; TEST "${DATE_DIR}/thumbnails exists" 0 $?
+
 [ -d "${ALLSKY_HOME}/darks" ]; TEST "${ALLSKY_HOME}/darks exists" 0 $?
 
-[ -e "${ALLSKY_HOME}/darks/image_test.jpg" ]
-TEST "${ALLSKY_HOME}/darks/image_test.jpg darkframe exists" 0 $?
+# Darkframe activ !
+[ -e "${ALLSKY_HOME}/darks/dark.jpg" ]
+TEST "${ALLSKY_HOME}/darks/dark.jpg darkframe exists" 0 $?
+identify ${ALLSKY_HOME}/darks/dark.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
+TEST "${ALLSKY_HOME}/darks/dark.jpg darkframe -> image should not change (identify)" 0 $?
 
-[ -e "${DATE_DIR}/image_test.jpg" ]
-TEST "${DATE_DIR}/image_test.jpg darkframe not to copy" 1 $?
+[ -e "${DATE_DIR}/dark.jpg" ]
+TEST "${DATE_DIR}/dark.jpg darkframe -> should not exists in date-dir" 1 $?
 
-[ -e "${DATE_DIR}/thumbnails/image_test.jpg" ]
-TEST "${DATE_DIR}/thumbnails/image_test.jpg darkframe not to copy" 1 $?
+[ -e "${DATE_DIR}/thumbnails/dark.jpg" ]
+TEST "${DATE_DIR}/thumbnails/dark.jpg darkframe -> should not exists in date-dir/thumbnails" 1 $?
 
-[ -e "${ALLSKY_HOME}/tmp/image_test.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/image_test.jpg removed" 1 $?
+[ -e "${ALLSKY_HOME}/tmp/dark.jpg" ]
+TEST "${ALLSKY_HOME}/tmp/dark.jpg removed by script" 1 $?
 
-[ -e "${ALLSKY_HOME}/tmp/resize-image_test.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg darkframe not to resize and upload" 1 $?
+[ -e "${ALLSKY_HOME}/tmp/resize-dark.jpg" ]
+TEST "${ALLSKY_HOME}/tmp/resize-dark.jpg darkframe -> not to resize and upload" 1 $?
 
 [ -e "${ALLSKY_HOME}/tmp/image.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/image.jpg exists" 0 $?
+TEST "${ALLSKY_HOME}/tmp/image.jpg does not exists, because notification is made from capture (is not running during test)" 1 $?  
 
 identify ${ALLSKY_HOME}/tmp/image.jpg
 identify ${ALLSKY_HOME}/tmp/image.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
-TEST "${ALLSKY_HOME}/tmp/image.jpg  notificationimages=0, dont show darkframe (identify)" 1 $?
+TEST "${ALLSKY_HOME}/tmp/image.jpg  notificationimages=1, dont show darkframe (identify)" 1 $?
 
 # cleanup
 INFO i "TEARDOWN"
 ls -la ${ALLSKY_HOME}/tmp
 ls -la ${ALLSKY_HOME}/darks
 #tree ${ALLSKY_HOME} -Dsp
-rm -f "${ALLSKY_HOME}/tmp/image_test.jpg"
-rm -f "${DATE_DIR}/image_test.jpg"
-rm -f "${DATE_DIR}/thumbnails/image_test.jpg"
-rm -f "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock"
-rm -f "${ALLSKY_HOME}/darks/image_test.jpg"
+rm -f "${ALLSKY_HOME}/tmp/dark.jpg"
+rm -f "${DATE_DIR}/dark.jpg"
+rm -f "${DATE_DIR}/thumbnails/dark.jpg"
+rm -f "${ALLSKY_HOME}/tmp/resize-dark.jpg_mock"
+rm -f "${ALLSKY_HOME}/darks/dark.jpg"
 rm -f "${ALLSKY_HOME}/tmp/image.jpg"
 
 end
