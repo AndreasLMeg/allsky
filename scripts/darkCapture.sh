@@ -36,7 +36,7 @@ if [ "${DARK_MODE}" = "1" ] ; then
 	# If the camera doesn't support temperature, we will keep overwriting the file until
 	# the user creates a temperature.txt file.
 	if [ "${AS_TEMPERATURE}" = "n/a" ]; then
-		cp "${CURRENT_IMAGE}" "${DARKS_DIR}"
+		cp "${CURRENT_IMAGE}" "${DARKS_DIR}/noTemperature.${DARK_EXTENSION}"
 	else
 		cp "${CURRENT_IMAGE}" "${DARKS_DIR}/${AS_TEMPERATURE}.${DARK_EXTENSION}"
 	fi
@@ -48,7 +48,9 @@ if [ "${DARK_MODE}" = "1" ] ; then
 	USE_NOTIFICATION_IMAGES=$(jq -r '.notificationimages' "${CAMERA_SETTINGS}")
 	if [ "${USE_NOTIFICATION_IMAGES}" = "0" ] ; then
 		# Go ahead and let the web sites see the dark frame to see if it's working.
-		cp "${CURRENT_IMAGE}" "${FULL_FILENAME}"
+		mv "${CURRENT_IMAGE}" "${WORKING_DIR}/${FULL_FILENAME}"
+	else
+		rm "${CURRENT_IMAGE}"
 	fi
 
 	exit 0	# exit so the calling script exits and doesn't try to process the file.
