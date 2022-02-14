@@ -14,7 +14,7 @@ if [ "$1" == "mock" ]; then
 	if [ ! -e "${ALLSKY_HOME}/config/config.sh_original" ] ; then
 		cp ${ALLSKY_HOME}/config/config.sh ${ALLSKY_HOME}/config/config.sh_original 
 	fi
-	cp "${BASEDIR}/config_mocked" ${ALLSKY_HOME}/config/config.sh
+	#cp "${BASEDIR}/config_mocked" ${ALLSKY_HOME}/config/config.sh
 
 	echo "${ALLSKY_HOME}config/config.sh mocked"
 else
