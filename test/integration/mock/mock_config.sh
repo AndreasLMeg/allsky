@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 # mocking config.sh
 # usage:
