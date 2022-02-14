@@ -52,10 +52,6 @@ INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+C
 INFO i "SETUP"
 SETUP
 
-echo "########################################"
-cat ${ALLSKY_HOME}/config/settings_RPiHQ.json
-echo "########################################"
-
 ls -la ${IT_IMG_DIR}
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
 set_config IMG_WIDTH 2028 ${ALLSKY_HOME}/config/config.sh
@@ -82,7 +78,10 @@ set_config IMG_UPLOAD true ${ALLSKY_HOME}/config/config.sh
 set_config RESIZE_UPLOADS true ${ALLSKY_HOME}/config/config.sh 
 set_config RESIZE_UPLOADS_SIZE "962x720" ${ALLSKY_HOME}/config/config.sh 
 
+echo "########################################"
 cat ${ALLSKY_HOME}/config/settings_RPiHQ.json
+cat ${ALLSKY_HOME}/config/config.sh
+echo "########################################"
 
 # test
 INFO i "EXECUTION"
