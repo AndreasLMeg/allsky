@@ -29,7 +29,7 @@ set_config CAMERA_SETTINGS_DIR ${ALLSKY_HOME}/config ${ALLSKY_HOME}/config/confi
 
 
 start
-INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS+DARK_FRAME_SUBTRACTION)"
+INFO i "Testcase: saveImage.sh NIGHT ${IT_IMG_DIR}/image_test.jpg (RESIZE+CROP+AUTO_STRECH+RESIZE_UPLOADS+DARK_FRAME_SUBTRACTION)"
 INFO i "  Testimage = image_test.jpg"
 INFO i "  /tmp/temperature.txt with 10.0"
 INFO i "  DARK_FRAME_SUBTRACTION = true: darks/10.0.jpg should be subtracted"

@@ -15,13 +15,9 @@ source "allskyTest/allskyTest.sh"
 ./mock/mock_settings.sh mock
 
 #  scripts/saveImage.sh: NIGHT /home/pi/allsky/tmp/image-20220117200347.jpg EXPOSURE_US=30000000 BRIGHTNESS=50 MEAN=0.329 AUTOEXPOSURE=1 AUTOGAIN=1 AUTOWB=0 WBR=2.80 WBB=2.00 GAIN=2.09 GAINDB=064 BIN=1 FLIP=3 BIT_DEPTH=08 FOCUS=014
-ls -la images
-cp ./images/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp
 
 source "${ALLSKY_HOME}/variables.sh"
 pushd ${ALLSKY_HOME}
-
-cat ${ALLSKY_HOME}/config/config.sh| grep CAMERA
 
 set_config CAMERA RPiHQ ${ALLSKY_HOME}/config/config.sh
 CAMERA_SETTINGS_DIR="${ALLSKY_HOME}/config" 
@@ -34,14 +30,16 @@ set_config CAMERA_SETTINGS_DIR ${ALLSKY_HOME}/config ${ALLSKY_HOME}/config/confi
 cat ${ALLSKY_HOME}/config/config.sh| grep CAMERA
 
 start
-INFO i "Testcase: saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/dark.jpg (darks)"
+INFO i "Testcase: saveImage.sh NIGHT ${IT_IMG_DIR}/dark.jpg (darks)"
 INFO i "  Testimage = dark.jpg"
 INFO i "  darkframe = 1: image should be copied to dark"
 INFO i "  notificationimages = 0: image should be shown in webserver (${ALLSKY_HOME}/tmp/image.jpg)"
-INFO i "  ${ALLSKY_HOME}/tmp/dark.jpg should be deleted"
+INFO i "  ${IT_IMG_DIR}/dark.jpg should be deleted"
 
 # setup
 INFO i "SETUP"
+SETUP
+
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
 set_config IMG_WIDTH 2028 ${ALLSKY_HOME}/config/config.sh
 set_config IMG_HEIGHT 1520 ${ALLSKY_HOME}/config/config.sh
@@ -73,30 +71,35 @@ set_config DARK_FRAME_SUBTRACTION true ${ALLSKY_HOME}/config/config.sh
 set_setting "darkframe" "1" ${ALLSKY_HOME}/config/settings_RPiHQ.json
 set_setting "notificationimages" "0" ${ALLSKY_HOME}/config/settings_RPiHQ.json
 
+echo "########################################"
+cat ${ALLSKY_HOME}/config/settings_RPiHQ.json
+cat ${ALLSKY_HOME}/config/config.sh
+echo "########################################"
 
-cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp/dark.jpg
-identify ${ALLSKY_HOME}/tmp/dark.jpg
+
+cp ${IT_IMG_DIR}/${IT_TEST_IMG} ${IT_IMG_DIR}/dark.jpg
+identify ${IT_IMG_DIR}/dark.jpg
 
 # test
 INFO i "EXECUTION"
-${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/dark.jpg
+${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${IT_IMG_DIR}/dark.jpg
 
 # evaluation
 INFO i "EVALUATION"
-identify ${ALLSKY_HOME}/tmp/dark.jpg
+identify ${IT_IMG_DIR}/dark.jpg
 
 # directory
 # The 12 hours ago option ensures that we're always using today's date
 # even at high latitudes where civil twilight can start after midnight.
 DATE_DIR="${ALLSKY_IMAGES}/$(date -d '12 hours ago' +'%Y%m%d')"
 
-[ -d "${ALLSKY_HOME}/darks" ]; TEST "${ALLSKY_HOME}/darks exists" 0 $?
+[ -d "${ALLSKY_DARKS}" ]; TEST "${ALLSKY_DARKS} exists" 0 $?
 
 # Darkframe activ !
-[ -e "${ALLSKY_HOME}/darks/dark.jpg" ]
-TEST "${ALLSKY_HOME}/darks/dark.jpg darkframe exists" 0 $?
-identify ${ALLSKY_HOME}/darks/dark.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
-TEST "${ALLSKY_HOME}/darks/dark.jpg darkframe -> image should not change (identify)" 0 $?
+[ -e "${ALLSKY_DARKS}/dark.jpg" ]
+TEST "${ALLSKY_DARKS}/dark.jpg darkframe exists" 0 $?
+identify ${ALLSKY_DARKS}/dark.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
+TEST "${ALLSKY_DARKS}/dark.jpg darkframe -> image should not change (identify)" 0 $?
 
 [ -e "${DATE_DIR}/dark.jpg" ]
 TEST "${DATE_DIR}/dark.jpg darkframe -> should not exists in date-dir" 1 $?
@@ -104,24 +107,26 @@ TEST "${DATE_DIR}/dark.jpg darkframe -> should not exists in date-dir" 1 $?
 [ -e "${DATE_DIR}/thumbnails/dark.jpg" ]
 TEST "${DATE_DIR}/thumbnails/dark.jpg darkframe -> should not exists in date-dir/thumbnails" 1 $?
 
-[ -e "${ALLSKY_HOME}/tmp/dark.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/dark.jpg removed by script" 1 $?
+[ -e "${IT_IMG_DIR}/dark.jpg" ]
+TEST "${IT_IMG_DIR}/dark.jpg removed by script" 1 $?
 
-[ -e "${ALLSKY_HOME}/tmp/resize-dark.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/resize-dark.jpg darkframe -> not to resize and upload" 1 $?
+[ -e "${IT_IMG_DIR}/resize-dark.jpg" ]
+TEST "${IT_IMG_DIR}/resize-dark.jpg darkframe -> not to resize and upload" 1 $?
 
-[ -e "${ALLSKY_HOME}/tmp/image.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/image.jpg exists" 0 $?
+[ -e "${IT_IMG_DIR}/${IT_DEST_IMG}" ]
+TEST "${IT_IMG_DIR}/${IT_DEST_IMG} exists" 0 $?
 
-identify ${ALLSKY_HOME}/tmp/image.jpg
-identify ${ALLSKY_HOME}/tmp/image.jpg | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
-TEST "${ALLSKY_HOME}/tmp/image.jpg  notificationimages=0, show darkframe (identify)" 0 $?
+identify ${IT_IMG_DIR}/${IT_DEST_IMG}
+identify ${IT_IMG_DIR}/${IT_DEST_IMG} | grep "JPEG 4056x3040 4056x3040+0+0 8-bit sRGB 1512650B"
+TEST "${IT_IMG_DIR}/${IT_DEST_IMG}  notificationimages=0, show darkframe (identify)" 0 $?
 
-[ -e "${ALLSKY_HOME}/image.jpg" ]
-TEST "${ALLSKY_HOME}/image.jpg should not exists" 1 $?  
+[ -e "${ALLSKY_HOME}/${IT_DEST_IMG}" ]
+TEST "${ALLSKY_HOME}/${IT_DEST_IMG} should not exists" 1 $?  
 
 # cleanup
 INFO i "TEARDOWN"
+TEARDOWN
+
 ls -la ${ALLSKY_HOME}/tmp
 ls -la ${ALLSKY_HOME}/darks
 #tree ${ALLSKY_HOME} -Dsp

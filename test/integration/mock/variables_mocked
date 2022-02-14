@@ -52,7 +52,7 @@ if [ "${ALLSKY_VARIABLE_SET}" = "" ]; then
 	ALLSKY_NOTIFICATION_IMAGES="${ALLSKY_NOTIFICATION_IMAGES:-${ALLSKY_HOME}/notification_images}"
 
 	# Holds all the dark frames.
-	ALLSKY_DARKS="${ALLSKY_DARKS:-${ALLSKY_HOME}/darks_IT}"
+	ALLSKY_DARKS="${ALLSKY_DARKS:-${ALLSKY_HOME}/IT_darks}"
 
 	# Location of optional allsky-portal package.
 	PORTAL_DIR=${PORTAL_DIR:-/var/www/html}
