@@ -14,7 +14,6 @@ if [ "$1" == "mock" ]; then
   ls -la "${ALLSKY_HOME}"
 	if [ ! -d "${ALLSKY_HOME}/config" ]; then
 		mkdir -p "${ALLSKY_HOME}/config" 
-		cp "${ALLSKY_HOME}/config_repo/config.sh.repo" ${ALLSKY_HOME}/config/config.sh
 	else
 	  echo "${ALLSKY_HOME}/config exists"
 	fi
@@ -22,6 +21,7 @@ if [ "$1" == "mock" ]; then
 	if [ ! -e "${ALLSKY_HOME}/config/config.sh_original" ]; then
 		cp ${ALLSKY_HOME}/config/config.sh ${ALLSKY_HOME}/config/config.sh_original 
 	fi
+	cp "${ALLSKY_HOME}/config_repo/config.sh.repo" ${ALLSKY_HOME}/config/config.sh
 
 	echo "${ALLSKY_HOME}config/config.sh mocked"
 else
