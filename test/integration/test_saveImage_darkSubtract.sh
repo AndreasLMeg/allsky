@@ -15,8 +15,6 @@ source "allskyTest/allskyTest.sh"
 ./mock/mock_settings.sh mock
 
 #  scripts/saveImage.sh: NIGHT /home/pi/allsky/tmp/image-20220117200347.jpg EXPOSURE_US=30000000 BRIGHTNESS=50 MEAN=0.329 AUTOEXPOSURE=1 AUTOGAIN=1 AUTOWB=0 WBR=2.80 WBB=2.00 GAIN=2.09 GAINDB=064 BIN=1 FLIP=3 BIT_DEPTH=08 FOCUS=014
-ls -la images
-cp ./images/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp
 
 source "${ALLSKY_HOME}/variables.sh"
 pushd ${ALLSKY_HOME}
@@ -39,7 +37,8 @@ INFO i "  /tmp/image_test.jpg should be deleted"
 
 # setup
 INFO i "SETUP"
-ls -la ${ALLSKY_HOME}/tmp
+SETUP
+
 set_config IMG_RESIZE true ${ALLSKY_HOME}/config/config.sh
 set_config IMG_WIDTH 2028 ${ALLSKY_HOME}/config/config.sh
 set_config IMG_HEIGHT 1520 ${ALLSKY_HOME}/config/config.sh
@@ -66,16 +65,17 @@ set_config RESIZE_UPLOADS true ${ALLSKY_HOME}/config/config.sh
 set_config RESIZE_UPLOADS_SIZE "962x720" ${ALLSKY_HOME}/config/config.sh 
 
 
-INFO i "create /tmp/image_test.jpg"
-cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/tmp/image_test.jpg
-identify ${ALLSKY_HOME}/tmp/image_test.jpg
+echo "########################################"
+cat ${ALLSKY_HOME}/config/settings_RPiHQ.json
+cat ${ALLSKY_HOME}/config/config.sh
+echo "########################################"
 
 
-INFO i "create /tmp/temperature.txt (10.0)"
-echo "10.0" > ${ALLSKY_HOME}/tmp/temperature.txt
+INFO i "create ${IT_IMG_DIR}/temperature.txt (10.0)"
+echo "10.0" > ${IT_IMG_DIR}/temperature.txt
 INFO i "create /darks/10.0.jpg"
 mkdir ${ALLSKY_HOME}/darks
-cp ${ALLSKY_HOME}/tmp/image_4056_3040_night.jpg ${ALLSKY_HOME}/darks/10.0.jpg
+cp ${IT_IMG_DIR}/image_4056_3040_night.jpg ${ALLSKY_HOME}/darks/10.0.jpg
 
 
 # Set to "true" if you want to enable dark frame subtraction on your night-time images.
@@ -84,7 +84,7 @@ set_config DARK_FRAME_SUBTRACTION true ${ALLSKY_HOME}/config/config.sh
 
 # test
 INFO i "EXECUTION"
-${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${ALLSKY_HOME}/tmp/image_test.jpg
+${ALLSKY_HOME}/scripts/saveImage.sh NIGHT ${IT_IMG_DIR}/${IT_TEST_IMG}
 
 # evaluation
 INFO i "EVALUATION"
@@ -110,40 +110,44 @@ DATE_DIR="${ALLSKY_IMAGES}/$(date -d '12 hours ago' +'%Y%m%d')"
 #identify ${ALLSKY_HOME}/tmp/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 59459B"
 #TEST "${ALLSKY_HOME}/tmp/image_test.jpg streched (identify)" 0 $?
 # resize and upload
-identify ${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock
-identify ${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock | grep "JPEG 958x720 958x720+0+0 8-bit Gray 256c 2861B"
-TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock resized for upload (identify)" 0 $?
 
-identify ${DATE_DIR}/image_test.jpg
-identify ${DATE_DIR}/image_test.jpg | grep "JPEG 640x480 640x480+0+0 8-bit Gray 256c 1361B"
-TEST "${DATE_DIR}/image_test.jpg (identify)" 0 $?
+[ -e "${IT_IMG_DIR}/resize-${IT_TEST_IMG}_mock" ]
+TEST "${IT_IMG_DIR}/resize-${IT_TEST_IMG}_mock resized for upload exists" 0 $?
 
-identify ${DATE_DIR}/thumbnails/image_test.jpg
-identify ${DATE_DIR}/thumbnails/image_test.jpg | grep "JPEG 100x75 100x75+0+0 8-bit Gray 256c 193B"
-TEST "${DATE_DIR}/thumbnails/image_test.jpg (identify)" 0 $?
+identify ${IT_IMG_DIR}/resize-${IT_TEST_IMG}_mock
+identify ${IT_IMG_DIR}/resize-${IT_TEST_IMG}_mock | grep "JPEG 958x720 958x720+0+0 8-bit sRGB 82947B"
+TEST "${IT_IMG_DIR}/resize-${IT_TEST_IMG}_mock resized for upload (identify)" 0 $?
 
-[ -e "${ALLSKY_HOME}/tmp/image_test.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/image_test.jpg removed" 1 $?
+identify ${DATE_DIR}/${IT_TEST_IMG}
+identify ${DATE_DIR}/${IT_TEST_IMG} | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 46269B"
+TEST "${DATE_DIR}/${IT_TEST_IMG} (identify)" 0 $?
 
-[ -e "${ALLSKY_HOME}/tmp/resize-image_test.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/resize-image_test.jpg removed" 1 $?
+identify ${DATE_DIR}/thumbnails/${IT_TEST_IMG}
+identify ${DATE_DIR}/thumbnails/${IT_TEST_IMG} | grep "JPEG 100x75 100x75+0+0 8-bit sRGB 1649B"
+TEST "${DATE_DIR}/thumbnails/${IT_TEST_IMG} (identify)" 0 $?
 
-[ -e "${ALLSKY_HOME}/tmp/image.jpg" ]
-TEST "${ALLSKY_HOME}/tmp/image.jpg exists" 0 $?
+[ -e "${IT_IMG_DIR}/${IT_TEST_IMG}" ]
+TEST "${IT_IMG_DIR}/${IT_TEST_IMG} removed" 1 $?
 
-identify ${ALLSKY_HOME}/tmp/image.jpg
-identify ${ALLSKY_HOME}/tmp/image.jpg | grep "JPEG 640x480 640x480+0+0 8-bit Gray 256c 1361B"
-TEST "${ALLSKY_HOME}/tmp/image.jpg (identify)" 0 $?
+[ -e "${IT_IMG_DIR}/resize-${IT_TEST_IMG}" ]
+TEST "${IT_IMG_DIR}/resize-${IT_TEST_IMG} removed" 1 $?
+
+[ -e "${IT_IMG_DIR}/${IT_DEST_IMG}" ]
+TEST "${IT_IMG_DIR}/${IT_DEST_IMG} exists" 0 $?
+
+identify ${IT_IMG_DIR}/${IT_DEST_IMG}
+identify ${IT_IMG_DIR}/${IT_DEST_IMG} | grep "JPEG 640x480 640x480+0+0 8-bit sRGB 46269B"
+TEST "${IT_IMG_DIR}/${IT_DEST_IMG} (identify)" 0 $?
 
 # cleanup
 INFO i "TEARDOWN"
-#ls -la ${ALLSKY_HOME}/tmp
+TEARDOWN
 #tree ${ALLSKY_HOME} -Dsp
 rm -f "${ALLSKY_HOME}/tmp/image_test.jpg"
 rm -f "${DATE_DIR}/image_test.jpg"
 rm -f "${DATE_DIR}/thumbnails/image_test.jpg"
-rm -f "${ALLSKY_HOME}/tmp/resize-image_test.jpg_mock"
-rm -f "${ALLSKY_HOME}/tmp/temperature.txt"
+rm -f "${IT_IMG_DIR}/resize-image_test.jpg_mock"
+rm -f "${IT_IMG_DIR}/temperature.txt"
 rm -f "${ALLSKY_HOME}/darks/10.0.jpg"
 
 end
