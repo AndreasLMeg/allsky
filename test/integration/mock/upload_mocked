@@ -5,6 +5,29 @@ source ${ALLSKY_HOME}/mock_variables
 echo "$(date +'%T') MOCK: > $0: $@" >> ${ALLSKY_HOME}/mock_output
 echo "$(date +'%T') MOCK: > $0: $@"
 
+echo "$(date +'%T') MOCK: > $0: param cnt=$#" >> ${ALLSKY_HOME}/mock_output
+if [ $# -lt 3 ] ; then
+	echo "$(date +'%T') MOCK: Usage: [--silent]  file_to_upload  directory  destination_file_name [unique_name] [local_directory]" >> ${ALLSKY_HOME}/mock_output
+fi	
+if [ $# -ge 1 -a "$1" = "" ] ; then
+		echo "$(date +'%T') MOCK: > $0: param 1 = '$1'" >> ${ALLSKY_HOME}/mock_output
+	  exit 1
+fi		
+if [ $# -ge 2 -a "$2" = "" ] ; then
+		echo "$(date +'%T') MOCK: > $0: param 2 = '${2}'" >> ${ALLSKY_HOME}/mock_output
+	  exit 1
+fi		
+if [ $# -ge 3 -a "$3" = "" ] ; then
+		echo "$(date +'%T') MOCK: > $0: param 3 = '$3'" >> ${ALLSKY_HOME}/mock_output
+	  exit 1
+fi		
+if [ $# -ge 4 -a "$4" = "" ] ; then
+		echo "$(date +'%T') MOCK: > $0: param 4 = '$4'" >> ${ALLSKY_HOME}/mock_output
+	  exit 1
+fi		
+
+
+
 cp $1 "$1_mock" 
 ls -la $1
 ls -la "$1_mock"

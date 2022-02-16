@@ -23,7 +23,13 @@ function end(){
 
 function set_config(){
     sudo sed -i "s#\($1\s*=\s*\).*\$#\1$2#" $3
-    echo "$(date +'%T') TEST: i $3: $1=$2" >> ${ALLSKY_HOME}/mock_output
+    cat $3 | grep "$1=$2"
+    if [ $? -ne 0 ]; then
+      echo "$(date +'%T') TEST: e $3: $1=$2: does not exist !" >> ${ALLSKY_HOME}/mock_output
+      ERR_CNT=$((ERR_CNT+1))
+    else  
+      echo "$(date +'%T') TEST: i $3: $1=$2" >> ${ALLSKY_HOME}/mock_output
+    fi
 }
 
 function set_setting(){

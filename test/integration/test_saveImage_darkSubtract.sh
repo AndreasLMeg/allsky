@@ -12,6 +12,7 @@ source "allskyTest/allskyTest.sh"
 ./mock/mock_upload.sh mock
 ./mock/mock_saveImage.sh mock
 ./mock/mock_config.sh mock
+./mock/mock_ftp-settings.sh mock
 ./mock/mock_settings.sh mock
 
 #  scripts/saveImage.sh: NIGHT /home/pi/allsky/tmp/image-20220117200347.jpg EXPOSURE_US=30000000 BRIGHTNESS=50 MEAN=0.329 AUTOEXPOSURE=1 AUTOGAIN=1 AUTOWB=0 WBR=2.80 WBB=2.00 GAIN=2.09 GAINDB=064 BIN=1 FLIP=3 BIT_DEPTH=08 FOCUS=014
@@ -26,6 +27,8 @@ CAMERA_SETTINGS="${CAMERA_SETTINGS_DIR}/settings_RPiHQ.json"
 # Path to the camera settings (exposure, gain, delay, overlay, etc) files.
 # Do not change unless you know what you are doing.
 set_config CAMERA_SETTINGS_DIR ${ALLSKY_HOME}/config ${ALLSKY_HOME}/config/config.sh
+
+set_config IMAGE_DIR "." ${ALLSKY_HOME}/config/ftp-settings.sh 
 
 
 start
@@ -156,6 +159,7 @@ popd
 ./mock/mock_upload.sh demock
 ./mock/mock_saveImage.sh demock
 ./mock/mock_config.sh demock
+./mock/mock_ftp-settings.sh demock
 ./mock/mock_settings.sh demock
 ./mock/mock_variables.sh demock
 
