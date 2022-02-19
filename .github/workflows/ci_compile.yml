@@ -95,3 +95,16 @@ jobs:
           rm -rf $ALLSKY_HOME/config
           rm -rf $ALLSKY_HOME/tmp
 
+      - name: run integrationtests upload.sh
+        run: |
+          export ALLSKY_HOME=$(pwd)
+          export ALLSKY_DEBUG_LEVEL=4
+          mkdir -p $ALLSKY_HOME/config
+          mkdir -p $ALLSKY_HOME/tmp
+          touch $ALLSKY_HOME/config/config.sh
+          cd test/integration
+          ./test_upload.sh
+          tree $ALLSKY_HOME -Dsp
+          rm -rf $ALLSKY_HOME/config
+          rm -rf $ALLSKY_HOME/tmp
+
