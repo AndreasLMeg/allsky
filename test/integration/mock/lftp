@@ -1,0 +1,25 @@
+#!/bin/bash
+
+source ${ALLSKY_HOME}/mock_variables
+
+echo "$(date +'%T') MOCK: > $0: $@" >> ${ALLSKY_HOME}/mock_output
+
+if [ "$1" = "-f" ]; then
+
+  cat $2 || exit 1
+
+  grep "ftp-settings_lftp_commands" ${2} || exit 2
+  grep "set net:max-retries 2" ${2} || exit 3
+  grep "set net:timeout 10" ${2} || exit 4
+  grep "open --user 'ftp-settings_remote_user' --password 'ftp-settings_remote_password' '://ftp-settings_remote_host'" ${2} || exit 5
+  grep "rm -f 'remote_dir/x-.*'" ${2} || exit 6
+  grep "put '/home/pi/allsky/IT_tmp/IT_image_test.jpg' -o 'remote_dir/x-.*' || (echo 'put of /home/pi/allsky/IT_tmp/IT_image_test.jpg failed!'; exit 1) || exit 2" ${2} || exit 7
+  grep "rm -f 'remote_dir/destination_file_name'" ${2} || exit 8
+  grep "mv 'remote_dir/x-.*' 'remote_dir/destination_file_name' || (echo 'mv of x-.* to destination_file_name in remote_dir/ failed!'; exit 1) || exit 3" ${2} || exit 9
+  grep "exit 0" ${2} || exit 10
+  echo "$(date +'%T') MOCK: > $0: all 'greps' ok" >> ${ALLSKY_HOME}/mock_output
+  exit 0
+fi
+
+echo "$(date +'%T') MOCK: > $0: no parameter '-f' !" >> ${ALLSKY_HOME}/mock_output
+exit 100
