@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# test split CI
+# test split CI 2
 
 # This script is (more than a bit of) a hack to reduce sdcard writes by using
 # tmpfs overlaid upon the allsky directory. It does not appear possible to do
