@@ -3,7 +3,7 @@
 // Based on a script by Thomas Jacquin
 // Rotation added by Agustin Nunez @agnunez
 // SPDX-License-Identifier: MIT
-// test split CI
+// test split CI 2
 using namespace std;
 
 #include <getopt.h>
